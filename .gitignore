@@ -1,2 +1,5 @@
 # Don't want to push massive csv files
 *.csv
+*.pdf
+__pycache__/
+figures/
