@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import cvxpy as cp
-import matplotlib.pyplot as plt
 
 # ==========================================================
 # GLOBAL PARAMETERS
@@ -16,38 +15,26 @@ ETA = 0.95
 
 FEED_IN = 0.08
 
+
 # ==========================================================
 # DATASET LOADER
 # ==========================================================
 
 def load_dataset(path):
 
-    df = pd.read_csv(path, skiprows=1)
+    df = pd.read_csv(path)
 
-    time_cols = df.columns[5:]
+    # Ensure correct ordering (CRITICAL for optimisation)
+    df = df.sort_values(["Customer", "date", "time"])
 
-    df_long = df.melt(
-        id_vars=["Customer","Generator Capacity","Postcode",
-                 "Consumption Category","date"],
-        value_vars=time_cols,
-        var_name="time",
-        value_name="energy"
-    )
+    # Convert to consistent datetime (optional but safer)
+    df["date"] = pd.to_datetime(df["date"], errors="coerce")
+    df["time"] = pd.to_datetime(df["time"], errors="coerce")
 
-    pivot = df_long.pivot_table(
-        index=["Customer","date","time"],
-        columns="Consumption Category",
-        values="energy"
-    ).reset_index()
-
-    pivot["load"] = pivot["GC"].fillna(0) + pivot["CL"].fillna(0)
-    pivot["pv"] = pivot["GG"].fillna(0)
-
-    return pivot
-
+    return df
 
 # ==========================================================
-# TARIFF MODELS
+# TARIFF
 # ==========================================================
 
 def build_tariff():
@@ -66,7 +53,7 @@ def build_tariff():
 
 
 # ==========================================================
-# BILLING MODELS
+# BILLING
 # ==========================================================
 
 def bill_net_metering(p, tariff):
@@ -80,16 +67,8 @@ def bill_net_metering(p, tariff):
     return bill
 
 
-def bill_gross(load, pv, tariff):
-
-    consumption_cost = np.sum(load * tariff * DT)
-    generation_credit = np.sum(pv * FEED_IN * DT)
-
-    return consumption_cost - generation_credit
-
-
 # ==========================================================
-# BATTERY OPTIMISATION MODEL
+# BATTERY OPTIMISATION
 # ==========================================================
 
 def solve_battery(load, pv, H):
@@ -115,11 +94,9 @@ def solve_battery(load, pv, H):
 
         soc >= 0,
         soc <= E_MAX
-
     ]
 
     prob = cp.Problem(objective, constraints)
-
     prob.solve(solver=cp.OSQP, warm_start=True, verbose=False)
 
     b = b_discharge.value - b_charge.value
@@ -128,7 +105,7 @@ def solve_battery(load, pv, H):
 
 
 # ==========================================================
-# H HEURISTIC OPTIMISATION
+# H HEURISTIC
 # ==========================================================
 
 def optimise_H(load, pv, tariff):
@@ -156,9 +133,7 @@ def optimise_H(load, pv, tariff):
             best_savings = savings
             best_H = H.copy()
 
-            # increase weights during peak price
             weights[tariff == np.max(tariff)] *= 2
-
         else:
             break
 
@@ -166,7 +141,7 @@ def optimise_H(load, pv, tariff):
 
 
 # ==========================================================
-# DAILY SIMULATION
+# DAILY SIMULATION (KEY CHANGE)
 # ==========================================================
 
 def simulate_day(load, pv, tariff):
@@ -177,18 +152,29 @@ def simulate_day(load, pv, tariff):
 
     p = load - pv - b
 
-    soc = np.cumsum(b * DT)
+    # ✅ Correct SOC calculation
+    soc = np.cumsum(
+        ETA * np.maximum(-b,0) * DT
+        - (1/ETA) * np.maximum(b,0) * DT
+    )
 
-    bill_no = bill_net_metering(load-pv, tariff)
+    bill_no = bill_net_metering(load - pv, tariff)
     bill_yes = bill_net_metering(p, tariff)
 
     savings = bill_no - bill_yes
 
-    return savings
+    return {
+        "savings": savings,
+        "battery": b,
+        "power": p,
+        "soc": soc,
+        "load": load,
+        "pv": pv
+    }
 
 
 # ==========================================================
-# CUSTOMER ANNUAL SIMULATION
+# CUSTOMER SIMULATION
 # ==========================================================
 
 def simulate_customer(df, customer, tariff):
@@ -207,15 +193,15 @@ def simulate_customer(df, customer, tariff):
         if len(load) != 48:
             continue
 
-        savings = simulate_day(load, pv, tariff)
+        result = simulate_day(load, pv, tariff)
 
-        savings_total += savings
+        savings_total += result["savings"]
 
     return savings_total
 
 
 # ==========================================================
-# ALL CUSTOMERS SIMULATION
+# ALL CUSTOMERS
 # ==========================================================
 
 def run_all_customers(df):
@@ -227,90 +213,47 @@ def run_all_customers(df):
     results = []
 
     for c in customers:
-
         print("Simulating customer", c)
-
         annual = simulate_customer(df, c, tariff)
-
         results.append(annual)
 
     return np.array(results)
 
 
 # ==========================================================
-# FIGURE GENERATION
-# ==========================================================
-
-def plot_histogram(savings):
-
-    plt.figure()
-
-    plt.hist(savings, bins=30)
-
-    plt.title("Annual Savings Distribution")
-    plt.xlabel("Savings ($)")
-    plt.ylabel("Number of customers")
-
-    plt.show()
-
-
-# ==========================================================
-# BATTERY CAPACITY SWEEP
+# CAPACITY SWEEP (NO PLOTTING)
 # ==========================================================
 
 def capacity_sweep(load, pv, tariff):
 
     capacities = [0,2,4,6,8,10,13,20]
-
     savings = []
 
     global E_MAX
 
     for cap in capacities:
-
         E_MAX = cap
+        result = simulate_day(load, pv, tariff)
+        savings.append(result["savings"])
 
-        s = simulate_day(load, pv, tariff)
-
-        savings.append(s)
-
-    plt.figure()
-
-    plt.plot(capacities, savings, marker="o")
-
-    plt.title("Savings vs Battery Capacity")
-    plt.xlabel("Battery capacity (kWh)")
-    plt.ylabel("Savings ($)")
-
-    plt.show()
+    return capacities, savings
 
 
 # ==========================================================
-# MAIN
+# MAIN ENTRY
 # ==========================================================
 
 def main():
 
-    df = load_dataset("data.csv")
+    df = load_dataset("cleaned_data.csv")
 
     tariff = build_tariff()
-
-    print("Running full simulation across customers...")
 
     savings = run_all_customers(df)
 
     print("Average annual savings:", np.mean(savings))
 
-    plot_histogram(savings)
-
-    # Example capacity sweep for first household
-    sample = df[df["Customer"] == 1]
-    day = sample[sample["date"] == sample["date"].iloc[0]]
-
-    load = day["load"].values
-    pv = day["pv"].values
-
-    capacity_sweep(load, pv, tariff)
+    return df, tariff, savings
 
 
 if __name__ == "__main__":

@@ -1,29 +1,24 @@
 import os
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
+from battery_simulation import *
+
 # ==========================================================
-# PUBLICATION PLOT STYLE
+# STYLE
 # ==========================================================
 
 plt.rcParams.update({
-
     "font.family": "serif",
     "font.size": 11,
-
     "axes.labelsize": 12,
     "axes.titlesize": 12,
-
     "xtick.labelsize": 10,
     "ytick.labelsize": 10,
-
     "legend.fontsize": 10,
-
     "figure.figsize": (6,4),
     "figure.dpi": 150
 })
-
 
 FIG_DIR = "figures"
 os.makedirs(FIG_DIR, exist_ok=True)
@@ -34,27 +29,18 @@ DT = 0.5
 def save_fig(name):
 
     plt.tight_layout()
-
     plt.savefig(f"{FIG_DIR}/{name}.pdf")
     plt.savefig(f"{FIG_DIR}/{name}.png", dpi=600)
-
     plt.close()
 
 
 # ==========================================================
-# FIGURE 3 — TOU TARIFF
+# FIGURE 3 — TARIFF
 # ==========================================================
 
 def figure3_tariff():
 
-    tariff = np.zeros(48)
-
-    tariff[0:14] = 0.03
-    tariff[14:28] = 0.06
-    tariff[28:40] = 0.30
-    tariff[40:44] = 0.06
-    tariff[44:48] = 0.03
-
+    tariff = build_tariff()
     t = np.arange(48) * 0.5
 
     plt.step(t, tariff, where="post")
@@ -69,13 +55,12 @@ def figure3_tariff():
 
 
 # ==========================================================
-# FIGURE 4 — LOAD VS PV EXAMPLE
+# FIGURE 4 — LOAD VS PV
 # ==========================================================
 
 def figure4_load_pv(df, customer=1):
 
     data = df[df["Customer"] == customer]
-
     day = data[data["date"] == data["date"].iloc[0]]
 
     load = day["load"].values
@@ -88,21 +73,18 @@ def figure4_load_pv(df, customer=1):
 
     plt.xlabel("Time of day (hours)")
     plt.ylabel("Power (kW)")
-
     plt.legend()
 
     plt.title("Daily household load and PV generation")
 
-    save_fig("figure4_load_pv_example")
+    save_fig("figure4_load_pv")
 
 
 # ==========================================================
-# FIGURE 5 — SOC TRAJECTORY
+# FIGURE 5 — SOC
 # ==========================================================
 
-def figure5_soc(b):
-
-    soc = np.cumsum(b) * DT
+def figure5_soc(soc):
 
     t = np.arange(len(soc))*DT
 
@@ -110,14 +92,13 @@ def figure5_soc(b):
 
     plt.xlabel("Time of day (hours)")
     plt.ylabel("State of Charge (kWh)")
-
     plt.title("Battery state of charge trajectory")
 
     save_fig("figure5_soc")
 
 
 # ==========================================================
-# FIGURE 6/7 — SAVINGS HISTOGRAM
+# FIGURE 6 — SAVINGS HISTOGRAM
 # ==========================================================
 
 def figure6_savings_histogram(savings):
@@ -133,7 +114,7 @@ def figure6_savings_histogram(savings):
 
 
 # ==========================================================
-# FIGURE 8 — BATTERY CAPACITY SWEEP
+# FIGURE 8 — CAPACITY SWEEP
 # ==========================================================
 
 def figure8_capacity_sweep(capacities, savings):
@@ -146,3 +127,35 @@ def figure8_capacity_sweep(capacities, savings):
     plt.title("Battery savings vs capacity")
 
     save_fig("figure8_capacity_sweep")
+
+
+# ==========================================================
+# MAIN FIGURE DRIVER
+# ==========================================================
+
+def main():
+
+    df, tariff, savings = simulation.main()
+
+    # Figures
+    figure3_tariff()
+    figure4_load_pv(df)
+    figure6_savings_histogram(savings)
+
+    # Example day
+    sample = df[df["Customer"] == 1]
+    day = sample[sample["date"] == sample["date"].iloc[0]]
+
+    load = day["load"].values
+    pv = day["pv"].values
+
+    result = simulate_day(load, pv, tariff)
+
+    figure5_soc(result["soc"])
+
+    caps, sav = capacity_sweep(load, pv, tariff)
+    figure8_capacity_sweep(caps, sav)
+
+
+if __name__ == "__main__":
+    main()
