@@ -4,3 +4,6 @@ cvxpy
 matplotlib
 osqp
 scipy
+dss-python
+py-dss-interface
+py-dss-toolkit
