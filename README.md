@@ -140,7 +140,7 @@ Returns a length-48 vector encoding the time-of-use billing profile ηᵇ(M₂) 
 | Shoulder | 15–28, 41–44 | 07:00–14:00, 20:00–22:00 | 0.06 |
 | Peak | 29–40 | 14:00–20:00 | 0.30 |
 
-The peak rate is 10× the shoulder rate and 100× the off-peak rate, which gives the QP a strong incentive to shift load out of the peak window. The paper notes that peak billing rates are assumed to coincide with generation shortages or peak grid demand ([R15] Section 1).
+The peak rate is ×5 the shoulder rate and ×10 the off-peak rate, which gives the QP a strong incentive to shift load out of the peak window. The paper notes that peak billing rates are assumed to coincide with generation shortages or peak grid demand ([R15] Section 1).
 
 ---
 
