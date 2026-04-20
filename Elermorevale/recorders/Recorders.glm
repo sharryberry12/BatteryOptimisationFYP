@@ -1,0 +1,64 @@
+// A recorder for the Zone bus
+// note: the naming of the csv is important. *_recorder.csv will be excluded from the model releases. 
+object recorder {
+	//Zone bus meter
+	name Zone_Currents_Simulated_recorder;
+	parent _10053D80784J_PV;
+	property measured_current_A.real, measured_current_A.imag, measured_current_B.real, measured_current_B.imag, measured_current_C.real, measured_current_C.imag, measured_voltage_A.real, measured_voltage_A.imag, measured_voltage_B.real, measured_voltage_B.imag,measured_voltage_C.real, measured_voltage_C.imag,measured_power.real,measured_power.imag, measured_power;
+	interval 600;
+	limit 1000000;
+	file output/Zone_Simulated.csv;
+}
+object recorder {
+	//Dist bus meter
+	name DC1_recorder;
+	parent HS00038585GTX00000001_LV;
+	property measured_current_A.real, measured_current_A.imag, measured_current_B.real, measured_current_B.imag, measured_current_C.real, measured_current_C.imag, measured_voltage_A.real, measured_voltage_A.imag, measured_voltage_B.real, measured_voltage_B.imag,measured_voltage_C.real, measured_voltage_C.imag,measured_power_A,measured_power_B,measured_power_C;
+	interval 600;
+	limit 1000000;
+	file output/DC1_Simulated.csv;
+}
+object recorder {
+	//Dist bus meter
+	name DC2_recorder;
+	parent HP00012447GTX00000001_LV;
+	property measured_current_A.real, measured_current_A.imag, measured_current_B.real, measured_current_B.imag, measured_current_C.real, measured_current_C.imag, measured_voltage_A.real, measured_voltage_A.imag, measured_voltage_B.real, measured_voltage_B.imag,measured_voltage_C.real, measured_voltage_C.imag,measured_power_A,measured_power_B,measured_power_C;
+	interval 600;
+	limit 1000000;
+	file output/DC2_Simulated.csv;
+}
+object recorder {
+	//Zone bus meter
+	name EOL1_recorder;
+	parent FDR_38588_LV_SP_5213346;
+	property measured_voltage_C.real, measured_voltage_C.imag, measured_power.real, measured_power.imag;
+	interval 600;
+	limit 1000000;
+	file output/EOL1_Simulated.csv;
+}
+object recorder {
+	//Zone bus meter
+	name EOL2_recorder;
+	parent FDR_12447_LV_SP_5213189;
+	property measured_voltage_C.real, measured_voltage_C.imag, measured_power.real, measured_power.imag;
+	interval 600;
+	limit 1000000;
+	file output/EOL2_Simulated.csv;
+}
+object recorder {
+	name Temp_recorder;
+	parent ElermoreClimate;
+	property temperature,solar_flux;
+	interval 600;
+	limit 100000;
+	file output/temp.csv;
+}
+object recorder {
+	name Tx_tap_recorder;
+	parent TXZoneSubOLTC;
+	property tap_A;
+	interval 600;
+	limit 100000;
+	file output/taps.csv;
+}
+

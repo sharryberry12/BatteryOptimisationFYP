@@ -1,0 +1,194 @@
+class topology
+{
+	//GLMtype vars
+	//inputs
+	char256 swing_name;
+	//outputs
+	int64 data_ptr; //for passing the address of the network structure, so other objects can access
+	
+	//C vars
+		//pointers for accessing external objects'
+	public OBJECT *object_ptr;
+	public PROPERTY *property_ptr;
+	public struct s_findlist *findlist;
+	
+	//Hash table structure
+	public typedef struct hashtable
+	{
+		unsigned long int size;
+		void **buckets;
+		unsigned long int collisions;
+	}; 
+	
+	//Network structures
+	public typedef struct node;
+	public typedef struct link
+	{
+		char name[256];
+		node *from, *to;
+	};
+	public typedef struct node
+	{
+		char name[256];
+		link *upstream[10], *downstream[10];
+	};
+	
+	//Helper functions
+	public unsigned long int hashstring(const char* s)
+	{
+		unsigned long int key = 0;
+		while (*s)
+		{
+			key = key*37 + *(s++);
+		}
+		return key;
+	};
+	public void hashtable_add(hashtable *table, char *key, void *value)
+	{
+		unsigned long int i = hashstring(key)%(table->size);
+
+		if(table->buckets[i] != NULL)
+			table->collisions++;
+		while(table->buckets[i] != NULL)
+		{
+			if(++i == table->size)
+				i=0;	
+		}
+		//gl_verbose("Adding %s : %d to bucket %d", key, value, i);
+		table->buckets[i] = value;
+	};
+	public void* hashtable_lookup(hashtable *table, const char *key)
+	{
+		unsigned int i = hashstring(key)%(table->size);
+		//gl_verbose("Looking for %s in bucket %d", key, i);
+		
+		while(table->buckets[i] != NULL)
+		{
+			//gl_verbose("Something in there...");
+			if(strcmp((char*)table->buckets[i],key)==0)
+			{
+				//gl_verbose("Match");
+				return table->buckets[i];
+			}
+			//gl_verbose("No match - next bucket");
+			if(++i == table->size)
+				i=0;	
+		}
+		//gl_verbose("Not Found");
+		return NULL;
+	};
+	public link* create_link(char* name)
+	{
+		link *link_ptr = new link;
+		strcpy(link_ptr->name, name);
+		hashtable_add(nodes_links,link_ptr->name,link_ptr);
+		return link_ptr;
+	};
+	public node* find_or_make_node(char* name)
+	{
+		node *node_ptr;
+		node_ptr = (node*)hashtable_lookup(nodes_links, name);
+		if(node_ptr == NULL)
+		{
+			node_ptr = new node;
+			strcpy(node_ptr->name, name);
+			hashtable_add(nodes_links,node_ptr->name,node_ptr);
+			//gl_verbose("Added %s",node_ptr->name);
+		}
+		else
+		{
+			//gl_verbose("Found %s",node_ptr->name);
+		}
+		return node_ptr;
+	};
+	
+	//Temporary variables
+	public link *link_ptr;
+	public node *node_ptr;
+	public char name[256];
+	public unsigned int i;
+	
+	//Network hash table pointer
+	public hashtable *nodes_links;
+	
+	intrinsic create(object parent)
+	{
+		//allocate hash table memory to store pointers to nodes and links
+		nodes_links = new hashtable;
+		nodes_links->collisions = 0;
+		nodes_links->size = 8388608;//2^23 = 8MB RAM
+		nodes_links->buckets = (void**)malloc(nodes_links->size*sizeof(void*));
+		memset(nodes_links->buckets, 0, nodes_links->size*sizeof(void*));
+		return SUCCESS;
+	};
+	
+	intrinsic init(object parent)
+	{
+		findlist = gl_find_objects(NULL,NULL);
+		if(findlist == NULL)
+			gl_throw("failed to get object list pointer");
+			
+		object_ptr = gl_find_next(findlist,NULL);
+		if(object_ptr == NULL)
+			gl_throw("failed to find any objects");
+		
+		//loop through all the gridlab objects to populate our topology with links and nodes
+		while(object_ptr != NULL)
+		{
+			if(callback->object_isa(object_ptr, "link"))
+			{
+				//gl_verbose("Found %s",object_ptr->name);
+				//create a link in our topology
+				link_ptr = create_link(object_ptr->name);
+				
+				//create or find the 'from' node in our topology
+				node_ptr = find_or_make_node((callback->objvar.object_var(object_ptr, callback->properties.get_property(object_ptr, "from")))->name);
+				link_ptr->from = node_ptr;
+				i=-1;
+				while(node_ptr->downstream[++i]!=NULL);
+				node_ptr->downstream[i]=link_ptr;
+				
+				//create or find the 'to' node in our topology
+				node_ptr = find_or_make_node((callback->objvar.object_var(object_ptr, callback->properties.get_property(object_ptr, "to")))->name);
+				link_ptr->to = node_ptr;
+				i=-1;
+				while(node_ptr->upstream[++i]!=NULL);
+				node_ptr->upstream[i]=link_ptr;
+			}
+			object_ptr = gl_find_next(findlist,object_ptr);
+		}
+		data_ptr = (int64)hashtable_lookup(nodes_links, (char*)swing_name);
+		if(data_ptr == NULL)
+			gl_throw("topology: failed to find node named %s",swing_name);
+		
+		//print number of hashing collisions
+		gl_verbose("%d hashing collisions when populating table",nodes_links->collisions);
+		
+		//print orphan nodes
+		gl_verbose("Orphaned meters:");
+		findlist = gl_find_objects(NULL,NULL);
+		if(findlist == NULL)
+			gl_throw("failed to get object list pointer in print_orphan_nodes");
+			
+		object_ptr = gl_find_next(findlist,NULL);
+		if(object_ptr == NULL)
+			gl_throw("failed to find any objects in print_orphan_nodes");
+		
+		while(object_ptr != NULL)
+		{
+			if(callback->object_isa(object_ptr, "node"))
+			{
+				if(hashtable_lookup(nodes_links, object_ptr->name)==NULL && (callback->objvar.object_var(object_ptr, callback->properties.get_property(object_ptr, "topological_parent")))==NULL)
+					gl_verbose("%s is a topological orphan", object_ptr->name);
+			}
+			object_ptr = gl_find_next(findlist,object_ptr);
+		}
+			
+		return SUCCESS;
+	};
+	
+	intrinsic sync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		return TS_NEVER;
+	};	
+}

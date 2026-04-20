@@ -1,0 +1,598 @@
+object transformer_configuration{	
+	// Transformer known as Alexander St. - HP7159
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00007159GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 300;
+	primary_voltage 10725;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Aquaries Ave. - HP18285
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00018285GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 300;
+	primary_voltage 11175;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Cheviot Close - HP13420
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00013420GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Close St - HP4880
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00004880GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 315;
+	primary_voltage 11275;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Irving St. - HP12447
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00012447GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 300;
+	primary_voltage 11250;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Kerry Avenue - HP10431
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00010431GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 315;
+	primary_voltage 11275;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Marian Gardens - HS23433
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HS00023433GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 300;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 2094;
+	tank_fittings_weight 1014;
+	oil_volume 145;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as MARTINDALE METCALF HP 61210
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00061210GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 400;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.038;
+	no_load_loss 647;
+	full_load_loss 5000;
+	core_coil_weight 2161;
+	tank_fittings_weight 1102;
+	oil_volume 114;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Massey Close - HP1431
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00001431GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 300;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Max St. - HP13491
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 2.5%
+	name HP00013491GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11250;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Melinda Ave. - HS21062
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HS00021062GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 300;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 2094;
+	tank_fittings_weight 1014;
+	oil_volume 145;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Perks St. - HP16740
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00016740GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Raglan Street - HS55514
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 1.25%
+	name HS00055514GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 600;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.011;
+	reactance 0.038;
+	no_load_loss 780;
+	full_load_loss 5860;
+	core_coil_weight 2712;
+	tank_fittings_weight 1345;
+	oil_volume 166;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Rays - HP2322
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.25%
+	name HP00002322GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Sagittarius Cl - HS38585
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 2.5%
+	name HS00038585GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 600;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.011;
+	reactance 0.038;
+	no_load_loss 780;
+	full_load_loss 5860;
+	core_coil_weight 2712;
+	tank_fittings_weight 1345;
+	oil_volume 166;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Taurus St. - HP16304
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 2.5%
+	name HP00016304GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Urara Pde. - HP19405
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00019405GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 400;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.038;
+	no_load_loss 647;
+	full_load_loss 5000;
+	core_coil_weight 2161;
+	tank_fittings_weight 1102;
+	oil_volume 114;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Walford St. - HP19403
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00019403GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 300;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Wallsend Admin No. 2 - HS67603
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 1.5%
+	name HS00067603GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 1000;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.009;
+	reactance 0.036;
+	no_load_loss 995;
+	full_load_loss 6260;
+	core_coil_weight 3990;
+	tank_fittings_weight 1885;
+	oil_volume 277;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Wallsend Road - HP20473
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00020473GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 315;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Wallsend South - HP8250
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00008250GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 315;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.039;
+	no_load_loss 580;
+	full_load_loss 3320;
+	core_coil_weight 1918;
+	tank_fittings_weight 841;
+	oil_volume 135;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Wallsend South Primary - HS58270
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11495 V
+	// Tap Ratio Percentage: 1.5%
+	name HS00058270GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type PADMOUNT;
+	power_rating 400;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.012;
+	reactance 0.038;
+	no_load_loss 595;
+	full_load_loss 4200;
+	core_coil_weight 2227;
+	tank_fittings_weight 1179;
+	oil_volume 155;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};
+object transformer_configuration{	
+	// Transformer known as Watkins Rd. - HP2126
+	// Principal Primary Voltage: 11000 V
+	// Min Volts Primary: 10175 V
+	// Max Volts Primary:  11137.5 V
+	// Tap Ratio Percentage: 1.5%
+	name HP00002126GTX00000001_config;
+	connect_type DELTA_GWYE;
+	install_type POLETOP;
+	power_rating 200;
+	primary_voltage 11000;
+	secondary_voltage 433;
+	resistance 0.013;
+	reactance 0.039;
+	no_load_loss 540;
+	full_load_loss 2600;
+	core_coil_weight 1301;
+	tank_fittings_weight 617;
+	oil_volume 96;
+	rated_winding_hot_spot_rise 65;
+	rated_top_oil_rise 60;
+	rated_winding_time_constant 0.06667;
+	coolant_type MINERAL_OIL;
+	cooling_type OA;
+	installed_insulation_life 1752000;
+};

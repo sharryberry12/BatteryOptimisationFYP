@@ -1,0 +1,42 @@
+//Powerflow module config
+module powerflow
+{
+	lu_solver "klu";
+	solver_method NR;
+	nominal_frequency 50;
+}
+
+// Extend the load object to include 
+class load {
+	int32	ausgrid_sa1;
+	double	ausgrid_annual_consumption;
+	double	ausgrid_annual_consumption_with_control_load;
+	int32	ausgrid_simple_cell;
+	int32	ausgrid_elec_band_residential;
+	int32	ausgrid_elec_band_business;
+	int32	ausgrid_unit;
+	int32	ausgrid_income_band;
+	int32	ausgrid_gas_band;
+	int32	ausgrid_climate_zone;
+	int32	ausgrid_controlled_load;
+	int32	ausgrid_generation;
+}
+
+
+// object power_metrics
+// {
+	// name powermetrics;
+// }
+// object fault_check
+// {
+	// name fltchk;
+	// check_mode ONCHANGE;
+	// output_filename "outage_check.txt";
+	// eventgen_object DeterEvent;
+// }
+// object restoration 
+// {
+	// reconfig_attempts 1;
+	// reconfig_iteration_limit 0;
+	// populate_tree TRUE;
+// }

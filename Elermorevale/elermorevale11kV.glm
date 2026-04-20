@@ -1,0 +1,1831 @@
+object meter {
+	name BusZoneSub11kV;
+	phases ABC;
+	nominal_voltage 6350.85 V;
+};
+
+object overhead_line {
+	name BusZoneSubOLTC10053D80784J_PV;
+	phases ABC;
+	from BusZoneSub11kV;
+	to _10053D80784J_PV;
+	length 1.00;
+	configuration Elermore_line_config_1;
+	status 1;
+};
+
+object meter {
+	name _10053D80784J_PV;
+	phases ABC;
+	nominal_voltage 6350.85;
+	voltage_A 6350.85;
+	voltage_B -3175.43-5500.00j;
+	voltage_C -3175.43+5500.00j;
+	bustype PQ;
+};
+
+object switch {
+	name HC00080784GSW00080784;
+	phases ABC;
+	from _10053D80784J_PV;
+	to _10053D80784J_PV_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10053D80784J_PV_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10053D80784J_PV__10053D80784J;
+	phases ABC;
+	from _10053D80784J_PV_1;
+	to _10053D80784J;
+	length 1.00;
+	configuration Elermore_line_config_1;
+	status 1;
+};
+
+object meter {
+	name _10053D80784J;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10053D80784J_10052E;
+	phases ABC;
+	from _10053D80784J;
+	to _10052E;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10052E;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10053D80784J_10049B;
+	phases ABC;
+	from _10053D80784J;
+	to _10049B;
+	length 3057.74;
+	configuration Elermore_line_config_3;
+	status 1;
+};
+
+object meter {
+	name _10049B;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10049B_10014PJU1312;
+	phases ABC;
+	from _10049B;
+	to _10014PJU1312;
+	length 180.45;
+	configuration Elermore_line_config_4;
+	status 1;
+};
+
+object meter {
+	name _10014PJU1312;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10014PJU1312_10013PJU1194;
+	phases ABC;
+	from _10014PJU1312;
+	to _10013PJU1194;
+	length 593.83;
+	configuration Elermore_line_config_5;
+	status 1;
+};
+
+object meter {
+	name _10013PJU1194;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10013PJU1194_10003S55513R;
+	phases ABC;
+	from _10013PJU1194;
+	to _10003S55513R;
+	length 1561.68;
+	configuration Elermore_line_config_6;
+	status 1;
+};
+
+object meter {
+	name _10003S55513R;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00055513GSW00055513;
+	phases ABC;
+	from _10003S55513R;
+	to _10003S55513R_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10003S55513R_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10003S55513R_10020U55514R;
+	phases ABC;
+	from _10003S55513R_1;
+	to _10020U55514R;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10020U55514R;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00055514GSW00055514;
+	phases ABC;
+	from _10020U55514R;
+	to HS00055514GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00055514GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10020U55514R_10002S55512R;
+	phases ABC;
+	from _10020U55514R;
+	to _10002S55512R;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10002S55512R;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00055512GSW00055512;
+	phases ABC;
+	from _10002S55512R;
+	to _10002S55512R_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10002S55512R_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10002S55512R_10012U4880CL;
+	phases ABC;
+	from _10002S55512R_1;
+	to _10012U4880CL;
+	length 1830.71;
+	configuration Elermore_line_config_7;
+	status 1;
+};
+
+object meter {
+	name _10012U4880CL;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00004880GSW00004880;
+	phases ABC;
+	from _10012U4880CL;
+	to HP00004880GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00004880GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10012U4880CL_10011S8903CL;
+	phases ABC;
+	from _10012U4880CL;
+	to _10011S8903CL;
+	length 196.85;
+	configuration Elermore_line_config_8;
+	status 1;
+};
+
+object meter {
+	name _10011S8903CL;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00008903GSW00008903;
+	phases ABC;
+	from _10011S8903CL;
+	to _10011S8903CL_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10011S8903CL_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10011S8903CL_10010P715;
+	phases ABC;
+	from _10011S8903CL_1;
+	to _10010P715;
+	length 131.23;
+	configuration Elermore_line_config_9;
+	status 1;
+};
+
+object meter {
+	name _10010P715;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10010P715_10009PJU1048;
+	phases ABC;
+	from _10010P715;
+	to _10009PJU1048;
+	length 1056.43;
+	configuration Elermore_line_config_10;
+	status 1;
+};
+
+object meter {
+	name _10009PJU1048;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10009PJU1048_10001S49232M;
+	phases ABC;
+	from _10009PJU1048;
+	to _10001S49232M;
+	length 843.18;
+	configuration Elermore_line_config_11;
+	status 1;
+};
+
+object meter {
+	name _10001S49232M;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00049232GSW00049232;
+	phases ABC;
+	from _10001S49232M;
+	to _10001S49232M_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10001S49232M_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10001S49232M_10008PIU3050;
+	phases ABC;
+	from _10001S49232M_1;
+	to _10008PIU3050;
+	length 147.64;
+	configuration Elermore_line_config_12;
+	status 1;
+};
+
+object meter {
+	name _10008PIU3050;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10008PIU3050_10007S5662WA;
+	phases ABC;
+	from _10008PIU3050;
+	to _10007S5662WA;
+	length 1515.75;
+	configuration Elermore_line_config_13;
+	status 1;
+};
+
+object meter {
+	name _10007S5662WA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00005662GSW00005662;
+	phases ABC;
+	from _10007S5662WA;
+	to _10007S5662WA_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10007S5662WA_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10007S5662WA_10006U19403W;
+	phases ABC;
+	from _10007S5662WA_1;
+	to _10006U19403W;
+	length 708.66;
+	configuration Elermore_line_config_14;
+	status 1;
+};
+
+object meter {
+	name _10006U19403W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00019403GSW00019403;
+	phases ABC;
+	from _10006U19403W;
+	to HP00019403GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00019403GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10006U19403W_10005U19405U;
+	phases ABC;
+	from _10006U19403W;
+	to _10005U19405U;
+	length 1240.16;
+	configuration Elermore_line_config_15;
+	status 1;
+};
+
+object meter {
+	name _10005U19405U;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00019405GSW00019405;
+	phases ABC;
+	from _10005U19405U;
+	to HP00019405GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00019405GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10005U19405U_10056PIU3064;
+	phases ABC;
+	from _10005U19405U;
+	to _10056PIU3064;
+	length 357.61;
+	configuration Elermore_line_config_16;
+	status 1;
+};
+
+object meter {
+	name _10056PIU3064;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10056PIU3064_10004PIU3223;
+	phases ABC;
+	from _10056PIU3064;
+	to _10004PIU3223;
+	length 1719.16;
+	configuration Elermore_line_config_17;
+	status 1;
+};
+
+object meter {
+	name _10004PIU3223;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10056PIU3064_10057S48043C;
+	phases ABC;
+	from _10056PIU3064;
+	to _10057S48043C;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10057S48043C;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00048043GSW00048043;
+	phases ABC;
+	from _10057S48043C;
+	to _10057S48043C_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10057S48043C_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10057S48043C_10054PIU3154;
+	phases ABC;
+	from _10057S48043C_1;
+	to _10054PIU3154;
+	length 49.21;
+	configuration Elermore_line_config_18;
+	status 1;
+};
+
+object meter {
+	name _10054PIU3154;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10054PIU3154_10051S49981C;
+	phases ABC;
+	from _10054PIU3154;
+	to _10051S49981C;
+	length 265.75;
+	configuration Elermore_line_config_19;
+	status 1;
+};
+
+object meter {
+	name _10051S49981C;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10054PIU3154_10022U1431MA;
+	phases ABC;
+	from _10054PIU3154;
+	to _10022U1431MA;
+	length 456.04;
+	configuration Elermore_line_config_20;
+	status 1;
+};
+
+object meter {
+	name _10022U1431MA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00001431GSW00001431;
+	phases ABC;
+	from _10022U1431MA;
+	to HP00001431GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00001431GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10022U1431MA_10047S38583S;
+	phases ABC;
+	from _10022U1431MA;
+	to _10047S38583S;
+	length 702.10;
+	configuration Elermore_line_config_21;
+	status 1;
+};
+
+object meter {
+	name _10047S38583S;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00038583GSW00038583;
+	phases ABC;
+	from _10047S38583S;
+	to _10047S38583S_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10047S38583S_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10047S38583S_10048U38585S;
+	phases ABC;
+	from _10047S38583S_1;
+	to _10048U38585S;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10048U38585S;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00038585GSW00038585;
+	phases ABC;
+	from _10048U38585S;
+	to HS00038585GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00038585GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10048U38585S_10046S38584S;
+	phases ABC;
+	from _10048U38585S;
+	to _10046S38584S;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10046S38584S;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00038584GSW00038584;
+	phases ABC;
+	from _10046S38584S;
+	to _10046S38584S_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10046S38584S_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10046S38584S_10023PIU3078;
+	phases ABC;
+	from _10046S38584S_1;
+	to _10023PIU3078;
+	length 341.21;
+	configuration Elermore_line_config_22;
+	status 1;
+};
+
+object meter {
+	name _10023PIU3078;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10023PIU3078_10024S46075W;
+	phases ABC;
+	from _10023PIU3078;
+	to _10024S46075W;
+	length 784.12;
+	configuration Elermore_line_config_23;
+	status 1;
+};
+
+object meter {
+	name _10024S46075W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00046075GSW00046075;
+	phases ABC;
+	from _10024S46075W;
+	to _10024S46075W_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10024S46075W_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10024S46075W_10025PIU3347;
+	phases ABC;
+	from _10024S46075W_1;
+	to _10025PIU3347;
+	length 98.43;
+	configuration Elermore_line_config_24;
+	status 1;
+};
+
+object meter {
+	name _10025PIU3347;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10025PIU3347_10026S6453WA;
+	phases ABC;
+	from _10025PIU3347;
+	to _10026S6453WA;
+	length 528.22;
+	configuration Elermore_line_config_25;
+	status 1;
+};
+
+object meter {
+	name _10026S6453WA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00006453GSW00006453;
+	phases ABC;
+	from _10026S6453WA;
+	to _10026S6453WA_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10026S6453WA_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10026S6453WA_10027U2126WA;
+	phases ABC;
+	from _10026S6453WA_1;
+	to _10027U2126WA;
+	length 173.88;
+	configuration Elermore_line_config_26;
+	status 1;
+};
+
+object meter {
+	name _10027U2126WA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00002126GSW00002126;
+	phases ABC;
+	from _10027U2126WA;
+	to HP00002126GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00002126GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10027U2126WA_10028PIU3081;
+	phases ABC;
+	from _10027U2126WA;
+	to _10028PIU3081;
+	length 531.50;
+	configuration Elermore_line_config_27;
+	status 1;
+};
+
+object meter {
+	name _10028PIU3081;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10028PIU3081_10029PIU3081;
+	phases ABC;
+	from _10028PIU3081;
+	to _10029PIU3081;
+	length 652.89;
+	configuration Elermore_line_config_28;
+	status 1;
+};
+
+object meter {
+	name _10029PIU3081;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10029PIU3081_10030S8273CA;
+	phases ABC;
+	from _10029PIU3081;
+	to _10030S8273CA;
+	length 396.98;
+	configuration Elermore_line_config_29;
+	status 1;
+};
+
+object meter {
+	name _10030S8273CA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00008273GSW00008273;
+	phases ABC;
+	from _10030S8273CA;
+	to _10030S8273CA_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10030S8273CA_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10030S8273CA_10031U8250WA;
+	phases ABC;
+	from _10030S8273CA_1;
+	to _10031U8250WA;
+	length 269.03;
+	configuration Elermore_line_config_30;
+	status 1;
+};
+
+object meter {
+	name _10031U8250WA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00008250GSW00008250;
+	phases ABC;
+	from _10031U8250WA;
+	to HP00008250GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00008250GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10031U8250WA_10032U20473W;
+	phases ABC;
+	from _10031U8250WA;
+	to _10032U20473W;
+	length 1338.58;
+	configuration Elermore_line_config_31;
+	status 1;
+};
+
+object meter {
+	name _10032U20473W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00020473GSW00020473;
+	phases ABC;
+	from _10032U20473W;
+	to HP00020473GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00020473GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10032U20473W_10033S20165W;
+	phases ABC;
+	from _10032U20473W;
+	to _10033S20165W;
+	length 616.80;
+	configuration Elermore_line_config_32;
+	status 1;
+};
+
+object meter {
+	name _10033S20165W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00020165GSW00020165;
+	phases ABC;
+	from _10033S20165W;
+	to _10033S20165W_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10033S20165W_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10033S20165W_10034U2322RA;
+	phases ABC;
+	from _10033S20165W_1;
+	to _10034U2322RA;
+	length 774.28;
+	configuration Elermore_line_config_33;
+	status 1;
+};
+
+object meter {
+	name _10034U2322RA;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00002322GSW00002322;
+	phases ABC;
+	from _10034U2322RA;
+	to HP00002322GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00002322GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10034U2322RA_10021S301WAL;
+	phases ABC;
+	from _10034U2322RA;
+	to _10021S301WAL;
+	length 551.18;
+	configuration Elermore_line_config_34;
+	status 1;
+};
+
+object meter {
+	name _10021S301WAL;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10029PIU3081_10044PIU3076;
+	phases ABC;
+	from _10029PIU3081;
+	to _10044PIU3076;
+	length 882.55;
+	configuration Elermore_line_config_35;
+	status 1;
+};
+
+object meter {
+	name _10044PIU3076;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10044PIU3076_10055S58268W;
+	phases ABC;
+	from _10044PIU3076;
+	to _10055S58268W;
+	length 583.99;
+	configuration Elermore_line_config_36;
+	status 1;
+};
+
+object meter {
+	name _10055S58268W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00058268GSW00058268;
+	phases ABC;
+	from _10055S58268W;
+	to _10055S58268W_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10055S58268W_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10055S58268W_10058U58270W;
+	phases ABC;
+	from _10055S58268W_1;
+	to _10058U58270W;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10058U58270W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00058270GSW00058270;
+	phases ABC;
+	from _10058U58270W;
+	to HS00058270GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00058270GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10058U58270W_10059S58269W;
+	phases ABC;
+	from _10058U58270W;
+	to _10059S58269W;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10059S58269W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10044PIU3076_10045U23433M;
+	phases ABC;
+	from _10044PIU3076;
+	to _10045U23433M;
+	length 666.01;
+	configuration Elermore_line_config_37;
+	status 1;
+};
+
+object meter {
+	name _10045U23433M;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00023433GSW00023433;
+	phases ABC;
+	from _10045U23433M;
+	to HS00023433GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00023433GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10028PIU3081_10043U13420C;
+	phases ABC;
+	from _10028PIU3081;
+	to _10043U13420C;
+	length 462.60;
+	configuration Elermore_line_config_38;
+	status 1;
+};
+
+object meter {
+	name _10043U13420C;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00013420GSW00013420;
+	phases ABC;
+	from _10043U13420C;
+	to HP00013420GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00013420GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10025PIU3347_10039PIU3347;
+	phases ABC;
+	from _10025PIU3347;
+	to _10039PIU3347;
+	length 331.36;
+	configuration Elermore_line_config_39;
+	status 1;
+};
+
+object meter {
+	name _10039PIU3347;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10039PIU3347_10040U13491M;
+	phases ABC;
+	from _10039PIU3347;
+	to _10040U13491M;
+	length 790.68;
+	configuration Elermore_line_config_40;
+	status 1;
+};
+
+object meter {
+	name _10040U13491M;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00013491GSW00013491;
+	phases ABC;
+	from _10040U13491M;
+	to HP00013491GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00013491GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10039PIU3347_10041U10431K;
+	phases ABC;
+	from _10039PIU3347;
+	to _10041U10431K;
+	length 725.07;
+	configuration Elermore_line_config_41;
+	status 1;
+};
+
+object meter {
+	name _10041U10431K;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00010431GSW00010431;
+	phases ABC;
+	from _10041U10431K;
+	to HP00010431GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00010431GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10041U10431K_10042U21062M;
+	phases ABC;
+	from _10041U10431K;
+	to _10042U21062M;
+	length 725.07;
+	configuration Elermore_line_config_42;
+	status 1;
+};
+
+object meter {
+	name _10042U21062M;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00021062GSW00021062;
+	phases ABC;
+	from _10042U21062M;
+	to HS00021062GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00021062GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10023PIU3078_10035U16304T;
+	phases ABC;
+	from _10023PIU3078;
+	to _10035U16304T;
+	length 859.58;
+	configuration Elermore_line_config_43;
+	status 1;
+};
+
+object meter {
+	name _10035U16304T;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00016304GSW00016304;
+	phases ABC;
+	from _10035U16304T;
+	to HP00016304GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00016304GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10035U16304T_10036PIU3224;
+	phases ABC;
+	from _10035U16304T;
+	to _10036PIU3224;
+	length 232.94;
+	configuration Elermore_line_config_44;
+	status 1;
+};
+
+object meter {
+	name _10036PIU3224;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10036PIU3224_10037S16851G;
+	phases ABC;
+	from _10036PIU3224;
+	to _10037S16851G;
+	length 328.08;
+	configuration Elermore_line_config_45;
+	status 1;
+};
+
+object meter {
+	name _10037S16851G;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10036PIU3224_10038U18285A;
+	phases ABC;
+	from _10036PIU3224;
+	to _10038U18285A;
+	length 754.59;
+	configuration Elermore_line_config_46;
+	status 1;
+};
+
+object meter {
+	name _10038U18285A;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00018285GSW00018285;
+	phases ABC;
+	from _10038U18285A;
+	to HP00018285GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00018285GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10008PIU3050_10015U61210M;
+	phases ABC;
+	from _10008PIU3050;
+	to _10015U61210M;
+	length 131.23;
+	configuration Elermore_line_config_47;
+	status 1;
+};
+
+object meter {
+	name _10015U61210M;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00061210GSW00061210;
+	phases ABC;
+	from _10015U61210M;
+	to HP00061210GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00061210GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10009PJU1048_10016U16740P;
+	phases ABC;
+	from _10009PJU1048;
+	to _10016U16740P;
+	length 528.22;
+	configuration Elermore_line_config_48;
+	status 1;
+};
+
+object meter {
+	name _10016U16740P;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00016740GSW00016740;
+	phases ABC;
+	from _10016U16740P;
+	to HP00016740GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00016740GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10010P715_10017U12447I;
+	phases ABC;
+	from _10010P715;
+	to _10017U12447I;
+	length 754.59;
+	configuration Elermore_line_config_49;
+	status 1;
+};
+
+object meter {
+	name _10017U12447I;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00012447GSW00012447;
+	phases ABC;
+	from _10017U12447I;
+	to HP00012447GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00012447GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10013PJU1194_10018U7159AL;
+	phases ABC;
+	from _10013PJU1194;
+	to _10018U7159AL;
+	length 164.04;
+	configuration Elermore_line_config_50;
+	status 1;
+};
+
+object meter {
+	name _10018U7159AL;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00007159GSW00007159;
+	phases ABC;
+	from _10018U7159AL;
+	to HP00007159GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HP00007159GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10014PJU1312_10060S48006D;
+	phases ABC;
+	from _10014PJU1312;
+	to _10060S48006D;
+	length 252.62;
+	configuration Elermore_line_config_51;
+	status 1;
+};
+
+object meter {
+	name _10060S48006D;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10049B_10019S67602W;
+	phases ABC;
+	from _10049B;
+	to _10019S67602W;
+	length 311.68;
+	configuration Elermore_line_config_52;
+	status 1;
+};
+
+object meter {
+	name _10019S67602W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00067602GSW00067602;
+	phases ABC;
+	from _10019S67602W;
+	to _10019S67602W_1;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name _10019S67602W_1;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object overhead_line {
+	name __10019S67602W_10061U67603W;
+	phases ABC;
+	from _10019S67602W_1;
+	to _10061U67603W;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10061U67603W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+object switch {
+	name HC00067603GSW00067603;
+	phases ABC;
+	from _10061U67603W;
+	to HS00067603GTX00000001;
+	operating_mode BANKED;
+	phase_A_state CLOSED;
+	phase_B_state CLOSED;
+	phase_C_state CLOSED;
+	status CLOSED;
+};
+
+object meter {
+	name HS00067603GTX00000001;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+
+
+
+object overhead_line {
+	name __10061U67603W_10050S67601W;
+	phases ABC;
+	from _10061U67603W;
+	to _10050S67601W;
+	length 1.00;
+	configuration Elermore_line_config_2;
+	status 1;
+};
+
+object meter {
+	name _10050S67601W;
+	phases ABC;
+	nominal_voltage 6350.85;
+	bustype PQ;
+};
+

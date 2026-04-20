@@ -1,0 +1,81 @@
+object meter {
+	name Jesmond_132kV_Bus;
+	phases ABC;
+	nominal_voltage 80250;
+	voltage_A 80250;
+	voltage_B -40125-69498.5j;
+	voltage_C -40125+69498.5j;
+	bustype SWING;
+};
+object transformer {
+	name TXZoneSub;
+	phases ABC;
+	from Jesmond_132kV_Bus;
+	to BusZoneSubOLTC;
+	configuration conf_TXZoneSub;
+	status 1;
+};
+
+object transformer_configuration {
+	name conf_TXZoneSub;
+	connect_type DELTA_GWYE;
+	install_type VAULT;
+	primary_voltage 76210.23553 V;
+	secondary_voltage 6350.85296108588 V;
+	power_rating 50 MVA;
+	impedance 0.0075+0.3580j;
+};
+
+object meter {
+	name BusZoneSubOLTC;
+	phases ABC;
+	nominal_voltage 6350.85 V;
+	bustype PQ;
+};
+
+object regulator {
+	name TXZoneSubOLTC;
+	phases ABC;
+	from BusZoneSubOLTC;
+	to BusZoneSub11kV;
+	configuration conf_TXZoneSubOLTC;
+	status 1;
+};
+object regulator_configuration {
+	name conf_TXZoneSubOLTC;
+	connect_type WYE_WYE;
+	time_delay 3 s;
+	raise_taps 16;
+	lower_taps 10;
+	regulation 0.2;
+	band_center 6350.85;
+	band_width 128;
+	Control OUTPUT_VOLTAGE;
+};
+
+//Load drop compensation transforms
+object lookup_table
+{
+	name current_sign;
+	input_object "BusZoneSub11kV";
+	input_property "measured_real_power";
+	keys_string   "-1e-16 1e-16";
+	values_string "-1 1";
+	presync_on FALSE;
+	sync_on FALSE;
+	postsync_on TRUE;
+}
+object aggregate_transform
+{
+	parent current_sign;
+	name LDC;
+	operation PRODUCT;
+	properties_list "BusZoneSub11kV.measured_current_C current_sign.output";
+	gain_list "1 1.14229"; //slope of the LDC line
+	post_bias 6382.202; //voltage at zero current
+	result_object_name "conf_TXZoneSubOLTC";
+	result_property_name "band_center";
+	presync_on FALSE;
+	sync_on FALSE;
+	postsync_on TRUE;
+}

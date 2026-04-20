@@ -1,0 +1,222 @@
+class lookup_table
+{
+	//GLMtype vars
+	char256 input_schedule;
+	char256 input_object;
+	char256 input_property;
+	char1024 keys_string;
+	char1024 values_string;
+	double deadband;
+	double quantisation;
+	double output;
+	bool presync_on;
+	bool sync_on;
+	bool postsync_on;
+	double bias;
+	double gain;
+	
+	//C vars
+		//pointers for accessing external objects' properties
+	public OBJECT* object_ptr;
+	public PROPERTY* property_ptr;
+	public SCHEDULE* schedule_ptr;
+	public void *input_ptr;
+	public enum {DOUBLE=0, COMPLEX=1, INT16=2, SCHED=3} input_type;
+	public double input;
+	public double prev_input;
+	public double prev_output;
+		//
+	public double keys[512];
+	public double values[512];
+	public char substring[100];
+	public int i,j,k,num_of_pairs;
+	
+	public static double local_round(double input)
+	{
+		if(input >= 0.0)
+		{
+			return (double)(long)(input + 0.5);
+		}
+		else
+		{
+			return (double)(long)(input - 0.5);
+		}
+	};
+	
+	intrinsic create(object parent)
+	{
+		input_schedule[0] = NULL;
+		deadband = 0;
+		quantisation = 0;
+		presync_on = 1;
+		sync_on = 1;
+		postsync_on = 1;
+		bias = 0;
+		gain = 1;
+		return SUCCESS;
+	};
+	
+	intrinsic init(object parent)
+	{
+		if(input_schedule[0] == NULL)
+		{
+			//get pointer to the input object...
+			object_ptr = callback->get_object(input_object);
+			if(object_ptr == NULL)
+				gl_throw("NULL object pointer for %s",input_object);
+			//...and property
+			property_ptr = callback->properties.get_property(object_ptr,input_property);
+			if(property_ptr == NULL)
+				gl_throw("NULL property pointer for %s",input_property);
+			//store pointer to value
+			if(property_ptr->ptype == PT_double)
+			{
+				input_ptr = callback->objvar.double_var(object_ptr, property_ptr);
+				input_type = DOUBLE;
+			}
+			else if(property_ptr->ptype == PT_complex)
+			{
+				input_ptr = callback->objvar.complex_var(object_ptr, property_ptr);
+				input_type = COMPLEX;
+			}
+			else if(property_ptr->ptype == PT_int16)
+			{
+				input_ptr = callback->objvar.int16_var(object_ptr, property_ptr);
+				input_type = INT16;
+			}
+			else
+				gl_throw("property %s not double, complex, or int16 - can't use",input_property);
+		}
+		else
+		{
+			input_type = SCHED;
+			//get pointer to schedule
+			input_ptr = callback->schedule.find(input_schedule);
+			if(input_ptr == NULL)
+				gl_throw("NULL schedule pointer for %s",input_schedule);
+			//that's it for now - we have to look up the values on sync
+		}
+		
+		gl_verbose("Init a lookup table...");
+		//parse the string of keys
+		num_of_pairs = 0;
+		i = 0;
+		while(1)
+		{
+			//consume any whitespace
+			while(keys_string[i] < 33 && keys_string[i] != NULL)
+				i++;
+			//all done if we hit the end
+			if (keys_string[i] == NULL)
+				break;
+			
+			//Iterate through chars until whitespace, to get value string
+			j = 0;
+			while(keys_string[i] > 33)
+			{
+				substring[j++] = keys_string[i++];
+			}
+			substring[j] = NULL; //null terminate string
+			
+			//convert string to double
+			if(sscanf(substring,"%le",&keys[num_of_pairs])==EOF)
+				gl_throw("error parsing lookup keys string");
+			
+			num_of_pairs++;
+		}
+		//parse the string of values
+		i=0;
+		for(k=0;k<num_of_pairs;k++)
+		{
+			//consume any whitespace
+			while(values_string[i] < 33 && values_string[i] != NULL)
+				i++;
+				
+			//Iterate through chars until whitespace, to get value string
+			j = 0;
+			while(values_string[i] > 33)
+			{
+				substring[j++] = values_string[i++];
+			}
+			substring[j] = NULL; //null terminate string
+			
+			//convert string to double
+			if(sscanf(substring,"%le",&values[k])==EOF)
+				gl_throw("error parsing lookup values string");
+			
+			//gl_verbose("%e, %e",keys[k],values[k]);
+		}
+		gl_verbose("...%d key-value pairs", num_of_pairs);		
+		return SUCCESS;
+	};
+	
+	public TIMESTAMP sync_function(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		switch(input_type)
+		{
+		case SCHED:
+			input = gain*(bias + callback->schedule.value((SCHEDULE*)input_ptr, callback->schedule.index((SCHEDULE*)input_ptr, t1)));
+			break;
+		case DOUBLE:
+			input = gain*(bias + *(double*)input_ptr);
+			break;
+		case COMPLEX:
+			input = gain*(bias + ((complex*)input_ptr)->Mag());
+			break;
+		case INT16:
+			input = gain*(bias + *(int16*)input_ptr);
+			break;
+		default:
+			break;
+		}
+		i=0;
+		while(input > keys[i] && i < num_of_pairs)
+			i++;
+		if(i==0)
+			output = values[0];
+		else if(i >= num_of_pairs)
+			output = values[num_of_pairs-1];
+		else
+		{
+			output = values[i-1] + (values[i]-values[i-1])*((input-keys[i-1])/(keys[i]-keys[i-1]));
+			//gl_verbose("setting lookup output to %f + (%f - %f)*((%f - %f)/(%f - %f)) = %f",values[i-1],values[i],values[i-1],input,keys[i-1],keys[i],keys[i-1],output);
+		}
+			
+		if(deadband != 0 && t0 > 0) //don't deadband on first sync
+		{
+			
+			if(output-prev_output < deadband/2 && prev_output-output < deadband/2) //inside deadband
+			{
+				output = prev_output;
+			}
+		}
+		if(quantisation != 0)
+		{
+			output = local_round((output-values[0])/quantisation)*quantisation+values[0];
+		}
+		prev_input = input;
+		prev_output = output;
+		return TS_NEVER;
+	};
+	
+	intrinsic presync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(presync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic sync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(sync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic postsync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(postsync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+}

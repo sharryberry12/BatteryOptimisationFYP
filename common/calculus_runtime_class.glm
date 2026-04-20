@@ -1,0 +1,155 @@
+class calculus
+{
+	//GLMtype vars
+	enumeration {INTEGRAL=0, SQUARE_INTEGRAL=1, DIFFERENTIAL=2, NONZERO_DIFFERENTIAL=3} operation;
+	enumeration {PRESYNC=0, SYNC=1, POSTSYNC=2} sync_pass;
+	char256 input_schedule;
+	char256 input_object;
+	char256 input_property;
+	double bias;
+	double gain;
+	double output;
+	
+	//C vars
+		//pointers for accessing external objects' properties
+	public OBJECT* object_ptr;
+	public PROPERTY* property_ptr;
+	public SCHEDULE* schedule_ptr;
+	public void *input_ptr;
+	public enum {DOUBLE=0, COMPLEX=1, INT16=2, SCHED=3} input_type;
+	public double input;
+	
+	public double prev_input;
+	public int nochange_lag;
+	
+	intrinsic create(object parent)
+	{
+		input_schedule[0] = NULL;
+		operation = INTEGRAL;
+		sync_pass = SYNC;
+		output = 0;
+		bias = 0;
+		gain = 1;
+		return SUCCESS;
+	};
+	
+	intrinsic init(object parent)
+	{
+		if(input_schedule[0] == NULL)
+		{
+			//get pointer to the input object...
+			object_ptr = callback->get_object(input_object);
+			if(object_ptr == NULL)
+				gl_throw("NULL object pointer for %s",input_object);
+			//...and property
+			property_ptr = callback->properties.get_property(object_ptr,input_property);
+			if(property_ptr == NULL)
+				gl_throw("NULL property pointer for %s",input_property);
+			//store pointer to value
+			if(property_ptr->ptype == PT_double)
+			{
+				input_ptr = callback->objvar.double_var(object_ptr, property_ptr);
+				input_type = DOUBLE;
+			}
+			else if(property_ptr->ptype == PT_complex)
+			{
+				input_ptr = callback->objvar.complex_var(object_ptr, property_ptr);
+				input_type = COMPLEX;
+			}
+			else if(property_ptr->ptype == PT_int16)
+			{
+				input_ptr = callback->objvar.int16_var(object_ptr, property_ptr);
+				input_type = INT16;
+			}
+			else
+				gl_throw("property %s not double, complex, or int16 - can't use",input_property);
+		}
+		else
+		{
+			input_type = SCHED;
+			//get pointer to schedule
+			input_ptr = callback->schedule.find(input_schedule);
+			if(input_ptr == NULL)
+				gl_throw("NULL schedule pointer for %s",input_schedule);
+			//that's it for now - we have to look up the values on sync
+		}
+
+		nochange_lag = 0;
+		return SUCCESS;
+	};
+	
+	public TIMESTAMP sync_function(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		switch(input_type)
+		{
+		case SCHED:
+			input = callback->schedule.value((SCHEDULE*)input_ptr, callback->schedule.index((SCHEDULE*)input_ptr, t1));
+			break;
+		case DOUBLE:
+			input = *(double*)input_ptr;
+			break;
+		case COMPLEX:
+			input = ((complex*)input_ptr)->Mag();
+			break;
+		case INT16:
+			input = *(int16*)input_ptr;
+			break;
+		default:
+			break;
+		}
+		
+		if(t0 > 0) 
+		{
+			switch(operation)
+			{
+			case INTEGRAL:
+				output += (t1-t0)*(((input+bias)*gain)+prev_input)*0.5;
+				break;
+			case SQUARE_INTEGRAL:
+				output += (t1-t0)*prev_input;
+				break;
+			case DIFFERENTIAL:
+				if(t1==t0)
+					break;
+				output = (((input+bias)*gain)-prev_input)/(t1-t0);
+				break;
+			case NONZERO_DIFFERENTIAL:
+				if((t1-t0)+nochange_lag == 0 || (input+bias)*gain == prev_input)
+				{
+					nochange_lag += (t1-t0);
+					break;
+				}
+				output = (((input+bias)*gain)-prev_input)/((t1-t0)+nochange_lag);
+				nochange_lag = 0;
+				break;
+			default:
+				break;
+			}
+		}
+		//else, first sync - can't calculate
+		
+		prev_input = ((input+bias)*gain);
+		return TS_NEVER;
+	};
+	
+	intrinsic presync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(sync_pass == PRESYNC)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic sync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(sync_pass == SYNC)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic postsync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(sync_pass == POSTSYNC)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+}

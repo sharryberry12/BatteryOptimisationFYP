@@ -1,0 +1,18 @@
+object player {
+       name Bus_A_132_Player;
+       parent Jesmond_132kV_Bus;
+       property voltage_A;
+       file players/BulkPhaseA.player;
+   }
+object player {
+       name Bus_B_132_Player;
+       parent Jesmond_132kV_Bus;
+       property voltage_B;
+       file players/BulkPhaseB.player;
+}
+object player {
+       name Bus_C_132_Player;
+       parent Jesmond_132kV_Bus;
+       property voltage_C;
+       file players/BulkPhaseC.player;
+}

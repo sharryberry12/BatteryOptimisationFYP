@@ -1,0 +1,82 @@
+// Clock to control the simulation period and timezone
+
+clock
+{
+	timezone PST+8PDT;				//Local timezone for the simulation
+	starttime '2012-01-01 00:00:00'; 	//Start time in the local timezone
+	stoptime '2012-01-03 00:00:00';		//Stop time in the local timezone
+}
+
+#include "interval_dump_A33plus.glm"
+object interval_dump
+{
+	interval 1800; // sec to generate next xml dump
+}
+
+//Include the climate data
+#include "climate/ElermoreClimate.glm"
+
+// Includes for configuration of modules
+#include "../common/ModulePowerflow.glm"
+#include "../common/ModuleReliability.glm"
+#include "../common/ModuleTape.glm"
+#include "../common/ModuleResidential.glm"
+#include "../common/aggregate_transform_runtime_class.glm"
+#include "../common/calculus_runtime_class.glm"
+#include "../common/lookup_table_runtime_class.glm"
+#include "../common/time_delay_runtime_class.glm"
+#include "../common/Constants.glm"
+#include "../common/TariffSchedules.glm"
+#include "../common/Line Configs.glm"
+
+// load calculating files
+#include "load_coeffs/LoadCoeffs_Head80784.glm"
+#include "load_coeffs/LoadCoeffs_HS67603.glm"
+#include "load_coeffs/LoadCoeffs_HS38585.glm"
+#include "load_coeffs/LoadCoeffs_HS21062.glm"
+#include "LoadTempTransform.glm"
+
+
+// Players for the up stream data
+#include "players/Players132.glm"
+
+// generators manually added
+#include "generators/Generators.glm"
+
+
+
+
+//Include for recorders:
+//Putting all the recorders together should hopefully make merging simpler
+#include "recorders/Recorders.glm"
+
+//Include for all of the line/tx/equip configs
+
+#include "TransformerConfigs.glm"
+
+//Include the line data
+#include "elermorevaleZone132kV.glm"
+#include "elermorevale11kV.glm"
+#include "subs/HS00021062GTX00000001.glm"
+#include "subs/HP00012447GTX00000001.glm"
+#include "subs/HP00007159GTX00000001.glm"
+#include "subs/HP00001431GTX00000001.glm"
+#include "subs/HP00002126GTX00000001.glm"
+#include "subs/HP00002322GTX00000001.glm"
+#include "subs/HP00004880GTX00000001.glm"
+#include "subs/HP00008250GTX00000001.glm"
+#include "subs/HP00010431GTX00000001.glm"
+#include "subs/HP00013420GTX00000001.glm"
+#include "subs/HP00013491GTX00000001.glm"
+#include "subs/HP00016304GTX00000001.glm"
+#include "subs/HP00016740GTX00000001.glm"
+#include "subs/HP00018285GTX00000001.glm"
+#include "subs/HP00019403GTX00000001.glm"
+#include "subs/HP00019405GTX00000001.glm"
+#include "subs/HP00020473GTX00000001.glm"
+#include "subs/HP00061210GTX00000001.glm"
+#include "subs/HS00023433GTX00000001.glm"
+#include "subs/HS00038585GTX00000001.glm"
+#include "subs/HS00055514GTX00000001.glm"
+#include "subs/HS00058270GTX00000001.glm"
+#include "subs/HS00067603GTX00000001.glm"

@@ -1,0 +1,7 @@
+schedule minus_one{
+	* * * * * -1
+}
+
+schedule e{
+	* * * * * 2.71828182846
+}

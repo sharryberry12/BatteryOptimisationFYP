@@ -1,0 +1,244 @@
+
+
+
+object transformer {
+      name HS00055514GTX00000001_TX;
+      phases ABC;
+      from HS00055514GTX00000001;
+      to HS00055514GTX00000001_LV;
+      configuration HS00055514GTX00000001_config;
+      };
+
+
+
+object meter {
+      name HS00055514GTX00000001_LV;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514GTX00000001_LV-HS00055514LSW00055515_T1;
+      phases ABCN;
+      from HS00055514GTX00000001_LV;
+      to HS00055514LSW00055515_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514LSW00055515_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514LSW00055515;
+      phases ABCN;
+      from HS00055514LSW00055515_T1;
+      to HS00055514LSW00055515_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514LSW00055515_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514LSW00055515_T2-HS00055514_LV_BB_014;
+      phases ABCN;
+      from HS00055514LSW00055515_T2;
+      to HS00055514_LV_BB_014;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514_LV_BB_014;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514_LV_BB_014-HS00055514LDI00055517_T1;
+      phases ABCN;
+      from HS00055514_LV_BB_014;
+      to HS00055514LDI00055517_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055517_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HS00055514LDI00055517;
+      phases ABCN;
+      from HS00055514LDI00055517_T1;
+      to HS00055514LDI00055517_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055517_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514_LV_BB_014-HS00055514LDI00055516_T1;
+      phases ABCN;
+      from HS00055514_LV_BB_014;
+      to HS00055514LDI00055516_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055516_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HS00055514LDI00055516;
+      phases ABCN;
+      from HS00055514LDI00055516_T1;
+      to HS00055514LDI00055516_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055516_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00055514_LV_BB_014-HS00055514LDI00055518_T1;
+      phases ABCN;
+      from HS00055514_LV_BB_014;
+      to HS00055514LDI00055518_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055518_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HS00055514LDI00055518;
+      phases ABCN;
+      from HS00055514LDI00055518_T1;
+      to HS00055514LDI00055518_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HS00055514LDI00055518_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object underground_line {
+      name HS00055514LDI00055518_T2-FDR_55518_LV_SP_8798410;
+      phases ABCN;
+      from HS00055514LDI00055518_T2;
+      to FDR_55518_LV_SP_8798410;
+      length 11.0 m;
+      configuration conf_UGLine_2257;
+      };
+
+
+
+object meter {
+      name FDR_55518_LV_SP_8798410;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8573001;
+      parent FDR_55518_LV_SP_8798410;
+      phases ABCN;
+      nominal_voltage  240;
+      base_power_A Load_55514.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      base_power_B Load_55514.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      base_power_C Load_55514.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123335;
+      ausgrid_annual_consumption 522217.97;
+      ausgrid_annual_consumption_with_control_load 522217.97;
+      ausgrid_simple_cell 52;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 4;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };

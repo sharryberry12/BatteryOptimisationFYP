@@ -1,0 +1,335 @@
+class aggregate_transform
+{
+	//GLMtype vars
+	enumeration {PRODUCT=0, SUM=1, POWER=2} operation;
+	bool resync_until_nochange;
+	bool presync_on;
+	bool sync_on;
+	bool postsync_on;
+	char1024 properties_list;
+	char1024 bias_list;
+	char1024 gain_list;
+	double post_bias;
+	double post_gain;
+	double result;
+	char256 result_object_name;
+	char256 result_property_name;
+	
+	//C vars
+	public unsigned int i,j,name_i,num_of_props;
+	public char temp_object_name[100];
+	public char temp_property_name[100];
+	public double prev_result;
+	
+		//pointers for accessing external objects' properties
+	public OBJECT* object_ptr;
+	public PROPERTY* property_ptr;
+	public GLOBALVAR* gl_var_ptr;
+	
+		//pointers for access to values
+	public enum {DOUBLE=0, COMPLEX=1, INT16=2, SCHED=3} value_type[100];
+	public bool result_int;
+	
+	public double* value_ptrs[100];
+	public double* result_value_ptr;
+	public double bias_values[100];
+	public double gain_values[100];
+	
+	intrinsic create(object parent)
+	{
+		operation = PRODUCT;
+		result_object_name[0] = NULL;
+		result_property_name[0] = NULL;
+		result_value_ptr = NULL;
+		properties_list[0] = NULL;
+		bias_list[0] = NULL;
+		gain_list[0] = NULL;
+		result = 0;
+		post_bias = 0;
+		post_gain = 1;
+		resync_until_nochange = 0;
+		presync_on = 1;
+		sync_on = 1;
+		postsync_on = 1;
+		return SUCCESS;
+	};
+
+	intrinsic init(object parent)
+	{
+		gl_verbose("Init an aggregate transform...");
+		//parse the list of properties and store pointers to them
+		num_of_props = 0;
+		i = 0;
+		while(1)
+		{
+			//consume any whitespace
+			while(properties_list[i] < 33 && properties_list[i] != NULL)
+				i++;
+			//all done if we hit the end
+			if (properties_list[i] == NULL)
+				break;
+			
+			//Iterate through chars until '.', to get object name
+			name_i = 0;
+			while(properties_list[i] != 46 && properties_list[i] > 33)
+			{
+				temp_object_name[name_i++] = properties_list[i++];
+			}
+			temp_object_name[name_i] = NULL; //null terminate string
+			if (properties_list[i] == 46)//'.' implies normal object (not schedule)
+			{	
+				i++;//skip over '.'
+				
+				//Iterate through chars until whitespace, to get property name
+				name_i = 0;
+				while(properties_list[i] > 33)
+				{
+					temp_property_name[name_i++] = properties_list[i++];
+				}
+				temp_property_name[name_i] = NULL; //null terminate string
+				
+				//get pointer to the object...
+				object_ptr = callback->get_object(temp_object_name);
+				if(object_ptr == NULL)
+					gl_throw("NULL object pointer for %s",temp_object_name);
+				//...and property
+				property_ptr = callback->properties.get_property(object_ptr,temp_property_name);
+				if(property_ptr == NULL)
+					gl_throw("NULL property pointer for %s",temp_property_name);
+				
+				//store pointer to value
+				if(property_ptr->ptype == PT_double)
+				{
+					value_ptrs[num_of_props] = callback->objvar.double_var(object_ptr, property_ptr);
+					value_type[num_of_props] = DOUBLE;
+				}
+				else if(property_ptr->ptype == PT_complex)
+				{
+					value_ptrs[num_of_props] = (double*)callback->objvar.complex_var(object_ptr, property_ptr);
+					value_type[num_of_props] = COMPLEX;
+				}
+				else if(property_ptr->ptype == PT_int16)
+				{
+					value_ptrs[num_of_props] = (double*)callback->objvar.int16_var(object_ptr, property_ptr);
+					value_type[num_of_props] = INT16;
+				}
+				else
+					gl_throw("property %s not double, complex, or int16 - can't aggregate",temp_property_name);
+			}
+			else //name without '.' implies schedule
+			{
+				value_type[num_of_props] = SCHED;
+				//get pointer to schedule
+				value_ptrs[num_of_props] = (double*)callback->schedule.find(temp_object_name);
+				if(value_ptrs[num_of_props] == NULL)
+					gl_throw("schedule %s could not be found",temp_object_name);
+				//that's it for now - we have to look up the values on sync
+			}
+			
+			num_of_props++;
+		}
+		//look for optional bias for each property
+		i=0;
+		for(j=0;j<num_of_props;j++)
+		{
+			//consume any whitespace
+			while(bias_list[i] < 33 && bias_list[i] != NULL)
+				i++;
+			
+			//Iterate through chars until whitespace, to get bias string
+			name_i = 0;
+			while(bias_list[i] > 33)
+			{
+				temp_property_name[name_i++] = bias_list[i++];
+			}
+			temp_property_name[name_i] = NULL; //null terminate string
+			
+			//convert string to double
+			if(sscanf(temp_property_name,"%le",&bias_values[j])==EOF)
+				bias_values[j] = 0; //default no bias
+		}
+		//look for optional gain for each property
+		i=0;
+		for(j=0;j<num_of_props;j++)
+		{
+			//consume any whitespace
+			while(gain_list[i] < 33 && gain_list[i] != NULL)
+				i++;
+			
+			//Iterate through chars until whitespace, to get gain string
+			name_i = 0;
+			while(gain_list[i] > 33)
+			{
+				temp_property_name[name_i++] = gain_list[i++];
+			}
+			temp_property_name[name_i] = NULL; //null terminate string
+			
+			//convert string to double
+			if(sscanf(temp_property_name,"%le",&gain_values[j])==EOF)
+				gain_values[j] = 1; //default no gain
+		}
+		
+		//check if there's a property to put the result directly into
+		if(result_object_name[0] != NULL && result_property_name[0] != NULL)
+		{
+			//get pointer to the object...
+			object_ptr = callback->get_object(result_object_name);
+			if(object_ptr == NULL)
+				gl_throw("NULL object pointer for %s",result_object_name);
+			//...and property
+			property_ptr = callback->properties.get_property(object_ptr,result_property_name);
+			if(property_ptr == NULL)
+				gl_throw("NULL property pointer for %s",result_property_name);
+			//store pointer to value
+			if(property_ptr->ptype == PT_double)
+			{
+				result_value_ptr = callback->objvar.double_var(object_ptr, property_ptr);
+				result_int = 0;
+			}
+			else if(property_ptr->ptype == PT_int16)
+			{
+				result_value_ptr = (double*)callback->objvar.int16_var(object_ptr, property_ptr);
+				result_int = 1;
+			}
+			else
+				gl_throw("result property %s not double or int16 - can't use",result_property_name);
+		}
+		
+		gl_verbose("...aggregating %d properties", num_of_props);
+		
+		if(operation == POWER && num_of_props != 2)
+		{
+			gl_throw("exactly two properties required for POWER operation - aborting");
+		}
+		
+		return SUCCESS;
+	};
+	
+	public TIMESTAMP sync_function(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		switch(operation)
+		{
+		case PRODUCT:
+			result = 1;
+			for(i=0; i<num_of_props; i++)
+			{
+				switch (value_type[i])
+				{
+				case SCHED:
+					result *= (callback->schedule.value((SCHEDULE*)value_ptrs[i],callback->schedule.index((SCHEDULE*)value_ptrs[i],t1))+bias_values[i])*gain_values[i];
+					break;
+				case COMPLEX:
+					result *= (((complex*)value_ptrs[i])->Mag()+bias_values[i])*gain_values[i];
+					break;
+				case DOUBLE:
+					result *= (*value_ptrs[i]+bias_values[i])*gain_values[i];
+					break;
+				case INT16:
+					result *= (*(int16*)value_ptrs[i]+bias_values[i])*gain_values[i];
+					break;
+				default:
+					break;
+				}
+			}
+			break;
+		case SUM:
+			result = 0;
+			for(i=0; i<num_of_props; i++)
+			{
+				switch (value_type[i])
+				{
+				case SCHED:
+					result += (callback->schedule.value((SCHEDULE*)value_ptrs[i],callback->schedule.index((SCHEDULE*)value_ptrs[i],t1))+bias_values[i])*gain_values[i];
+					break;
+				case COMPLEX:
+					result += (((complex*)value_ptrs[i])->Mag()+bias_values[i])*gain_values[i];
+					break;
+				case DOUBLE:
+					result += (*value_ptrs[i]+bias_values[i])*gain_values[i];
+					break;
+				case INT16:
+					result += (*(int16*)value_ptrs[i]+bias_values[i])*gain_values[i];
+					break;
+				default:
+					break;
+				}
+			}
+			break;
+		case POWER:
+			switch (value_type[0])
+			{
+			case SCHED:
+				result = (callback->schedule.value((SCHEDULE*)value_ptrs[0],callback->schedule.index((SCHEDULE*)value_ptrs[0],t1))+bias_values[0])*gain_values[0];
+				break;
+			case COMPLEX:
+				result = (((complex*)value_ptrs[0])->Mag()+bias_values[0])*gain_values[0];
+				break;
+			case DOUBLE:
+				result = (*value_ptrs[0]+bias_values[0])*gain_values[0];
+				break;
+			case INT16:
+				result = (*(int16*)value_ptrs[0]+bias_values[0])*gain_values[0];
+				break;
+			default:
+				break;
+			}
+			switch (value_type[1])
+			{
+			case SCHED:
+				result = pow(result,(double)(callback->schedule.value((SCHEDULE*)value_ptrs[1],callback->schedule.index((SCHEDULE*)value_ptrs[1],t1))+bias_values[1])*gain_values[1]);
+				break;
+			case COMPLEX:
+				result = pow(result,(double)(((complex*)value_ptrs[1])->Mag()+bias_values[1])*gain_values[1]);
+				break;
+			case DOUBLE:
+				result = pow(result,(double)(*value_ptrs[1]+bias_values[1])*gain_values[1]);
+				break;
+			case INT16:
+				result = pow(result,(double)(*(int16*)value_ptrs[1]+bias_values[1])*gain_values[1]);
+				break;
+			default:
+				break;
+			}
+			break;
+		default:
+			break;
+		}
+		result = (result+post_bias)*post_gain;
+		if(result_value_ptr != NULL)
+		{
+			if(result_int)
+				*(int16*)result_value_ptr = (int16)result;
+			else
+				*result_value_ptr = result;
+		}
+		if(resync_until_nochange && result != prev_result)
+		{
+			gl_verbose("agg transform not steady - reitterating");
+			prev_result = result;
+			return t1;
+		}
+		prev_result = result;
+		return TS_NEVER;
+	};
+	
+	intrinsic presync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(presync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic sync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(sync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+	
+	intrinsic postsync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(postsync_on)
+			return sync_function(t0, t1);
+		return TS_NEVER;
+	};
+}

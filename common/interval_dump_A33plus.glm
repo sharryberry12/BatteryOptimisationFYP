@@ -1,0 +1,52 @@
+//USAGE eg: put this in your main file to have your simulation save a file every (simulated) hour
+
+// #include "interval_dump_A33plus.glm"
+// object interval_dump
+// {
+	// interval 3600;
+// }
+
+class interval_dump
+{
+	//GLMtype vars
+	int32 interval;
+	
+	//C vars
+	public unsigned int dt;
+	public DATETIME date;
+	public char date_string[1024];
+	public TIMESTAMP tlast;
+	public TIMESTAMP t2;
+	
+	intrinsic create(object parent)
+	{
+		interval = 0;
+		dt = 0;
+		tlast = 0;
+		return SUCCESS;
+	};
+	
+	intrinsic init(object parent)
+	{
+		dt = 0;
+		tlast = 0;
+		return SUCCESS;
+	};
+	
+	intrinsic postsync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		if(t0 > 0 && t1 > tlast)			//avoid doing stuff on resyncs, and the first sync
+		{
+			dt += t1 - tlast;				//accumulate time elapsed
+			if(dt>=interval)				//if enough time has elapsed...
+			{
+				callback->time.local_datetime(t1,&date);  //get the date and time
+				sprintf(date_string,"gridlabd-%04d-%02d-%02d-%02d-%02d-%02d.xml",date.year,date.month,date.day,date.hour,date.minute,date.second);
+				gl_syncsaveall(date_string); //flag the file to be dumped at the end of the iteration
+				dt = dt - interval;			//update elapsed time
+			}
+		}
+		tlast = t1;						//remember tlast
+		return -(t1+(interval - dt));		//ask for a soft resync when the interval will be up
+	};
+}

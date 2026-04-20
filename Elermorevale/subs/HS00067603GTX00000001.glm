@@ -1,0 +1,212 @@
+
+
+
+object transformer {
+      name HS00067603GTX00000001_TX;
+      phases ABC;
+      from HS00067603GTX00000001;
+      to HS00067603GTX00000001_LV;
+      configuration HS00067603GTX00000001_config;
+      };
+
+
+
+object meter {
+      name HS00067603GTX00000001_LV;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00067603GTX00000001_LV-HS00067603LSW00067604_T1;
+      phases ABCN;
+      from HS00067603GTX00000001_LV;
+      to HS00067603LSW00067604_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00067603LSW00067604_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00067603LSW00067604;
+      phases ABCN;
+      from HS00067603LSW00067604_T1;
+      to HS00067603LSW00067604_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00067603LSW00067604_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00067603LSW00067604_T2-HS00067603_LV_BB_012;
+      phases ABCN;
+      from HS00067603LSW00067604_T2;
+      to HS00067603_LV_BB_012;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00067603_LV_BB_012;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00067603_LV_BB_012-HS00067603LDI00067605_T1;
+      phases ABCN;
+      from HS00067603_LV_BB_012;
+      to HS00067603LDI00067605_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00067603LDI00067605_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HS00067603LDI00067605;
+      phases ABCN;
+      from HS00067603LDI00067605_T1;
+      to HS00067603LDI00067605_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HS00067603LDI00067605_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HS00067603LDI00067605_T2-FDR_67605_LV_NODE_014;
+      phases ABCN;
+      from HS00067603LDI00067605_T2;
+      to FDR_67605_LV_NODE_014;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_67605_LV_NODE_014;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object underground_line {
+      name FDR_67605_LV_NODE_014-FDR_67605_LV_SP_12152029;
+      phases ABCN;
+      from FDR_67605_LV_NODE_014;
+      to FDR_67605_LV_SP_12152029;
+      length 31.4 m;
+      configuration conf_UGLine_752;
+      };
+
+
+
+object meter {
+      name FDR_67605_LV_SP_12152029;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_11453409;
+      parent FDR_67605_LV_SP_12152029;
+      phases ABCN;
+      nominal_voltage  240;
+      base_power_A Load_67603.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      base_power_B Load_67603.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      base_power_C Load_67603.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      // No NMI Data
+      };
+
+
+object switch {
+      name HS00067603_LV_BB_012-HS00067603LDI00067606_T1;
+      phases ABCN;
+      from HS00067603_LV_BB_012;
+      to HS00067603LDI00067606_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HS00067603LDI00067606_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HS00067603LDI00067606;
+      phases ABCN;
+      from HS00067603LDI00067606_T1;
+      to HS00067603LDI00067606_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HS00067603LDI00067606_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };

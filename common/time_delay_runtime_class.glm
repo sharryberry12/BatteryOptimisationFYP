@@ -1,0 +1,240 @@
+class time_delay
+{
+	//GLMtype vars
+	char256 input_schedule;
+	char256 input_object;
+	char256 input_property;
+	int32 delay;
+	double bias;
+	double gain;
+	double output;
+	double integral;
+	double average;
+	
+	//C vars
+		//pointers for accessing external objects' properties
+	public OBJECT* object_ptr;
+	public PROPERTY* property_ptr;
+	public SCHEDULE* schedule_ptr;
+	public void *input_ptr;
+	public enum {DOUBLE=0, COMPLEX=1, INT16=2, SCHED=3} input_type;
+	public double input;
+	
+	public double prev_input; //for checking if input changes
+	public TIMESTAMP prev_t; //for keeping track of time advancements
+	public TIMESTAMP first_t; //for keeping track of absolute time progress
+	
+	public typedef struct linked_list_double
+	//This struct is for storing a buffer of values along with timing info
+	{
+		double value;		//the value
+		unsigned int lag;	//the time lag between this buffer entry and the next
+		linked_list_double *next; //pointer to the next buffer entry
+	};
+		
+	public linked_list_double *start, *end; //pointers for keeping track of the start (oldest) and end (newest) of the buffer
+	public int total_lag; //time difference between start of buffer and t1
+	public int nochange_lag; //accumulator for timesteps when input doesn't change
+	
+	intrinsic create(object parent)
+	{
+		integral = 0;
+		input_schedule[0] = NULL;
+		start = NULL;
+		end = NULL;
+		bias = 0;
+		gain = 1;
+		output = -0.0012345; //attemp to show invalidness of output before delay kicks in
+		return SUCCESS;
+	};
+	
+	intrinsic init(object parent)
+	{
+		if(input_schedule[0] == NULL)
+		{
+			//get pointer to the input object...
+			object_ptr = callback->get_object(input_object);
+			if(object_ptr == NULL)
+				gl_throw("NULL object pointer for %s",input_object);
+			//...and property
+			property_ptr = callback->properties.get_property(object_ptr,input_property);
+			if(property_ptr == NULL)
+				gl_throw("NULL property pointer for %s",input_property);
+			//store pointer to value
+			if(property_ptr->ptype == PT_double)
+			{
+				input_ptr = callback->objvar.double_var(object_ptr, property_ptr);
+				input_type = DOUBLE;
+			}
+			else if(property_ptr->ptype == PT_complex)
+			{
+				input_ptr = callback->objvar.complex_var(object_ptr, property_ptr);
+				input_type = COMPLEX;
+			}
+			else if(property_ptr->ptype == PT_int16)
+			{
+				input_ptr = callback->objvar.int16_var(object_ptr, property_ptr);
+				input_type = INT16;
+			}
+			else
+				gl_throw("property %s not double, complex, or int16 - can't use",input_property);
+		}
+		else
+		{
+			input_type = SCHED;
+			//get pointer to schedule
+			schedule_ptr = callback->schedule.find(input_schedule);
+			if(input_ptr == NULL)
+				gl_throw("NULL schedule pointer for %s",input_schedule);
+			//that's it for now - we have to look up the values on sync
+		}
+		switch(input_type)
+		{
+		case SCHED:
+			input = callback->schedule.value((SCHEDULE*)input_ptr, callback->schedule.index((SCHEDULE*)input_ptr, 0));
+			break;
+		case DOUBLE:
+			input = *(double*)input_ptr;
+			break;
+		case COMPLEX:
+			input = ((complex*)input_ptr)->Mag();
+			break;
+		case INT16:
+			input = *(int16*)input_ptr;
+			break;
+		default:
+			break;
+		}
+		
+		//initialise a buffer linked list with a single entry
+		start = new linked_list_double;
+		end = start;
+		end->next = start; //circular buffer to save memory re-allocation
+		
+		//accumulators start at zero
+		total_lag = 0;
+		nochange_lag = 0;
+
+		return SUCCESS;
+	};
+	
+	intrinsic sync(TIMESTAMP t0, TIMESTAMP t1)
+	{
+		TIMESTAMP t2; //the return timestamp - to be set to the next required sync time, if nothing else requires a sync first.
+		int sync_lag; //time elapsed since last sync
+		
+		switch(input_type)
+		{
+		case SCHED:
+			input = callback->schedule.value((SCHEDULE*)input_ptr, callback->schedule.index((SCHEDULE*)input_ptr, t1));
+			break;
+		case DOUBLE:
+			input = *(double*)input_ptr;
+			break;
+		case COMPLEX:
+			input = ((complex*)input_ptr)->Mag();
+			break;
+		case INT16:
+			input = *(int16*)input_ptr;
+			break;
+		default:
+			break;
+		}
+		
+		//t0 > 0 unless it's the first sync call
+		//gl_verbose("\nt0 = %lld, t1 = %lld\n",t0,t1);
+		if(t0 > 0)
+			sync_lag = (t1-prev_t);
+		else
+		{//no timesteps have happened yet
+			output = (input+bias)*gain;
+			start->value = (input+bias)*gain;
+			start->lag = 0;
+			prev_input = input;
+			prev_t = t1;
+			first_t = t1;
+			return TS_NEVER;
+		}
+		//gl_verbose("\nsync_lag = %lld\n",sync_lag);
+		
+		//update time elapsed since start of buffer
+		total_lag += sync_lag;
+		
+		//accumulate the integral
+		integral += sync_lag*(prev_input+bias)*gain;
+		//deccumulate the integral
+		integral -= sync_lag*output;
+		//update average
+		average = integral/total_lag;
+		
+		if(input != prev_input) //input changed - need to add to the buffer
+		{
+			if(sync_lag != 0)
+			{
+				if(end->next != start)//move along
+					end = end->next; //reusing the memory between end and start
+				else
+				{
+					//insert new end
+					end->next = new linked_list_double;
+					end = end->next;
+					end->next = start;
+				}
+				//store lag between previous buffer end and new end
+				end->lag = sync_lag + nochange_lag;
+				nochange_lag = 0;
+			}
+			end->value = input;
+		}
+		else //accumulate lag
+			nochange_lag += sync_lag;
+
+		if(total_lag >= delay) //start of buffer has reached t minus delay
+		{
+			//set output
+			output = (start->value+bias)*gain;
+			
+			if(start != end)
+			{
+				//move along start, effectively shortening the buffer
+				start = start->next;
+				//decrement lag we just shifted start by
+				total_lag -= start->lag;
+				//make sure we get synced again when the new start reaches t-delay
+				t2 = t1 + (delay - total_lag);
+			}
+			else //only one value in the buffer, and lag >= delay
+			{
+				t2 = TS_NEVER;
+			}
+		}
+		else if((t1 - first_t) < delay)//the simulation hasn't been running for delay time yet
+		{
+			//set output to current input
+			output = (input+bias)*gain;
+			t2 = t1 + (delay-total_lag);
+		}
+		else //still some time between start of buffer and t minus delay
+			t2 = t1 + (delay-total_lag);
+			
+		prev_input = input;
+		prev_t = t1;
+		
+		// gl_verbose("\n\n\n\n");
+		// for(linked_list_double* temp = start; temp->next != end; temp = temp->next)
+		// {
+			// gl_verbose("%lf-----%d----->",temp->value,temp->next->lag);
+			// if(temp->next->next == end)
+				// gl_verbose("%lf",end->value);
+		// }
+		// if(start->next == end)
+		// {
+			// if(start != end)
+				// gl_verbose("%lf-----%d----->",start->value,end->lag);
+			// gl_verbose("%lf",end->value);
+		// }
+		// gl_verbose("\n\n\n\n");
+		
+		return t2;
+	};
+}

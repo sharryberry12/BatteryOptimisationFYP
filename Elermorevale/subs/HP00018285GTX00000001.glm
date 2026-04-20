@@ -1,0 +1,6195 @@
+
+
+
+object transformer {
+      name HP00018285GTX00000001_TX;
+      phases ABC;
+      from HP00018285GTX00000001;
+      to HP00018285GTX00000001_LV;
+      configuration HP00018285GTX00000001_config;
+      };
+
+
+
+object meter {
+      name HP00018285GTX00000001_LV;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HP00018285GTX00000001_LV-HP00018285LDI00018285_T1;
+      phases ABCN;
+      from HP00018285GTX00000001_LV;
+      to HP00018285LDI00018285_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name HP00018285LDI00018285_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object fuse {
+      name HP00018285LDI00018285;
+      phases ABCN;
+      from HP00018285LDI00018285_T1;
+      to HP00018285LDI00018285_T2;
+      phase_A_status GOOD;
+      phase_B_status GOOD;
+      phase_C_status GOOD;
+      current_limit  10000 A;
+      mean_replacement_time 3600;
+      };
+
+
+
+object meter {
+      name HP00018285LDI00018285_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name HP00018285LDI00018285_T2-FDR_18285_LV_NODE_040;
+      phases ABCN;
+      from HP00018285LDI00018285_T2;
+      to FDR_18285_LV_NODE_040;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_040;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_NODE_041;
+      phases ABCN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_NODE_041;
+      length 35.4 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_041;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041-FDR_18285_LV_SP_5334888;
+      phases BN;
+      from FDR_18285_LV_NODE_041;
+      to FDR_18285_LV_SP_5334888;
+      length 38.2 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334888;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271818;
+      parent FDR_18285_LV_SP_5334888;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 12371.626539;
+      ausgrid_annual_consumption_with_control_load 12371.626539;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041-FDR_18285_LV_SP_5335102;
+      phases BN;
+      from FDR_18285_LV_NODE_041;
+      to FDR_18285_LV_SP_5335102;
+      length 15.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335102;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271816;
+      parent FDR_18285_LV_SP_5335102;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5666.7070707;
+      ausgrid_annual_consumption_with_control_load 5666.7070707;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041-FDR_18285_LV_SP_5213414;
+      phases BN;
+      from FDR_18285_LV_NODE_041;
+      to FDR_18285_LV_SP_5213414;
+      length 34.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213414;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271814;
+      parent FDR_18285_LV_SP_5213414;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3473.4646465;
+      ausgrid_annual_consumption_with_control_load 3473.4646465;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041-FDR_18285_LV_SP_5335103;
+      phases BN;
+      from FDR_18285_LV_NODE_041;
+      to FDR_18285_LV_SP_5335103;
+      length 15.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335103;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271812;
+      parent FDR_18285_LV_SP_5335103;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 9154.049899;
+      ausgrid_annual_consumption_with_control_load 9154.049899;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271812;
+      parent FDR_18285_LV_SP_5335103;
+      phases BN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271812;
+      parent DG_8271812;
+      phases BN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 20.862 m^2;
+      tilt_angle 24;
+      efficiency 0.14;
+      orientation_azimuth 300;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041-FDR_18285_LV_NODE_042;
+      phases ABCN;
+      from FDR_18285_LV_NODE_041;
+      to FDR_18285_LV_NODE_042;
+      length 36.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_042;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name FDR_18285_LV_NODE_042-FDR_18285_LV_SW_043_1_T1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_042;
+      to FDR_18285_LV_SW_043_1_T1;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_043_1_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name FDR_18285_LV_SW_043_1;
+      phases ABCN;
+      from FDR_18285_LV_SW_043_1_T1;
+      to FDR_18285_LV_SW_043_1_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_043_1_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042-FDR_18285_LV_SP_5335100;
+      phases BN;
+      from FDR_18285_LV_NODE_042;
+      to FDR_18285_LV_SP_5335100;
+      length 24.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335100;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271822;
+      parent FDR_18285_LV_SP_5335100;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3029.5555556;
+      ausgrid_annual_consumption_with_control_load 6087.1313131;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042-FDR_18285_LV_SP_5335101;
+      phases BN;
+      from FDR_18285_LV_NODE_042;
+      to FDR_18285_LV_SP_5335101;
+      length 14.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335101;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271820;
+      parent FDR_18285_LV_SP_5335101;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3558.1304348;
+      ausgrid_annual_consumption_with_control_load 3558.1304348;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042-FDR_18285_LV_NODE_043_3;
+      phases ABCN;
+      from FDR_18285_LV_NODE_042;
+      to FDR_18285_LV_NODE_043_3;
+      length 38.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_043_3;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_3-FDR_18285_LV_SP_5213415;
+      phases CN;
+      from FDR_18285_LV_NODE_043_3;
+      to FDR_18285_LV_SP_5213415;
+      length 30.5 m;
+      configuration conf_OHLine_57018;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213415;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271824;
+      parent FDR_18285_LV_SP_5213415;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5284.300678;
+      ausgrid_annual_consumption_with_control_load 7140.8461326;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_3-FDR_18285_LV_NODE_044_2;
+      phases ABCN;
+      from FDR_18285_LV_NODE_043_3;
+      to FDR_18285_LV_NODE_044_2;
+      length 41.8 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_044_2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_2-FDR_18285_LV_SP_5335095;
+      phases CN;
+      from FDR_18285_LV_NODE_044_2;
+      to FDR_18285_LV_SP_5335095;
+      length 16.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335095;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271840;
+      parent FDR_18285_LV_SP_5335095;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3363.4242424;
+      ausgrid_annual_consumption_with_control_load 6809.1919192;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_2-FDR_18285_LV_NODE_045_4;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044_2;
+      to FDR_18285_LV_NODE_045_4;
+      length 48.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_045_4;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_4-FDR_18285_LV_NODE_046_4;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045_4;
+      to FDR_18285_LV_NODE_046_4;
+      length 31.1 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_046_4;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_4-FDR_18285_LV_SP_5334733;
+      phases AN;
+      from FDR_18285_LV_NODE_046_4;
+      to FDR_18285_LV_SP_5334733;
+      length 34.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334733;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271774;
+      parent FDR_18285_LV_SP_5334733;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 5500.4812434;
+      ausgrid_annual_consumption_with_control_load 8634.8515731;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271924;
+      parent FDR_18285_LV_SP_5334733;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 28391.589792;
+      ausgrid_annual_consumption_with_control_load 28391.589792;
+      ausgrid_simple_cell 50;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 2;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_4-FDR_18285_LV_SP_12362573;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_4;
+      to FDR_18285_LV_SP_12362573;
+      length 31.1 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_12362573;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271934;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 867.70360825;
+      ausgrid_annual_consumption_with_control_load 867.70360825;
+      ausgrid_simple_cell 49;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 1;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271938;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3663.51625;
+      ausgrid_annual_consumption_with_control_load 3663.51625;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271958;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2461.6501031;
+      ausgrid_annual_consumption_with_control_load 2461.6501031;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271966;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3354.7097938;
+      ausgrid_annual_consumption_with_control_load 3354.7097938;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271972;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3348.6971134;
+      ausgrid_annual_consumption_with_control_load 3348.6971134;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271978;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2292.5124742;
+      ausgrid_annual_consumption_with_control_load 2292.5124742;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271984;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4655.7985567;
+      ausgrid_annual_consumption_with_control_load 4655.7985567;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271988;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3789.6636082;
+      ausgrid_annual_consumption_with_control_load 3789.6636082;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271990;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2611.2769231;
+      ausgrid_annual_consumption_with_control_load 2611.2769231;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271992;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2628.5785714;
+      ausgrid_annual_consumption_with_control_load 2628.5785714;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271944;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 1785.0005155;
+      ausgrid_annual_consumption_with_control_load 1785.0005155;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271946;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 1796.0416495;
+      ausgrid_annual_consumption_with_control_load 1796.0416495;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271948;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4056.7894845;
+      ausgrid_annual_consumption_with_control_load 4056.7894845;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271950;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2880.7031959;
+      ausgrid_annual_consumption_with_control_load 2880.7031959;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271952;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3901.1816495;
+      ausgrid_annual_consumption_with_control_load 3901.1816495;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271954;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3985.2948352;
+      ausgrid_annual_consumption_with_control_load 3985.2948352;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271956;
+      parent FDR_18285_LV_SP_12362573;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4740.3866667;
+      ausgrid_annual_consumption_with_control_load 4740.3866667;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271962;
+      parent FDR_18285_LV_SP_12362573;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3506.2284615;
+      ausgrid_annual_consumption_with_control_load 3506.2284615;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271964;
+      parent FDR_18285_LV_SP_12362573;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 1548.4930909;
+      ausgrid_annual_consumption_with_control_load 1548.4930909;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_4-FDR_18285_LV_NODE_047;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_4;
+      to FDR_18285_LV_NODE_047;
+      length 42.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_047;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047-UNK_LV_SW_048_T1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_047;
+      to UNK_LV_SW_048_T1;
+      length 5.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name UNK_LV_SW_048_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name UNK_LV_SW_048;
+      phases ABCN;
+      from UNK_LV_SW_048_T1;
+      to UNK_LV_SW_048_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name UNK_LV_SW_048_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047-FDR_18285_LV_SP_5334736;
+      phases CN;
+      from FDR_18285_LV_NODE_047;
+      to FDR_18285_LV_SP_5334736;
+      length 34.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334736;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271754;
+      parent FDR_18285_LV_SP_5334736;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 1976.0407216;
+      ausgrid_annual_consumption_with_control_load 3068.4386598;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047-FDR_18285_LV_SP_5334735;
+      phases CN;
+      from FDR_18285_LV_NODE_047;
+      to FDR_18285_LV_SP_5334735;
+      length 29.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334735;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271760;
+      parent FDR_18285_LV_SP_5334735;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4800.607732;
+      ausgrid_annual_consumption_with_control_load 7783.6153608;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047-FDR_18285_LV_SP_7810982;
+      phases CN;
+      from FDR_18285_LV_NODE_047;
+      to FDR_18285_LV_SP_7810982;
+      length 21.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_7810982;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_4-FDR_18285_LV_NODE_046_3;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045_4;
+      to FDR_18285_LV_NODE_046_3;
+      length 15.8 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_046_3;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_3-FDR_18285_LV_SP_5334732;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_3;
+      to FDR_18285_LV_SP_5334732;
+      length 19.0 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334732;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271940;
+      parent FDR_18285_LV_SP_5334732;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4020.6;
+      ausgrid_annual_consumption_with_control_load 6921.8;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271836;
+      parent FDR_18285_LV_SP_5334732;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4304.210989;
+      ausgrid_annual_consumption_with_control_load 5249.2;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271968;
+      parent FDR_18285_LV_SP_5334732;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2355.9516484;
+      ausgrid_annual_consumption_with_control_load 4130.4274725;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271974;
+      parent FDR_18285_LV_SP_5334732;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 3561.4;
+      ausgrid_annual_consumption_with_control_load 5378.1934066;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271980;
+      parent FDR_18285_LV_SP_5334732;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 1593.3373626;
+      ausgrid_annual_consumption_with_control_load 2908.1659341;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271986;
+      parent FDR_18285_LV_SP_5334732;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2960.7538462;
+      ausgrid_annual_consumption_with_control_load 4950.5021978;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_3-FDR_18285_LV_SP_5334731;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_3;
+      to FDR_18285_LV_SP_5334731;
+      length 14.1 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334731;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271942;
+      parent FDR_18285_LV_SP_5334731;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 8344.6558483;
+      ausgrid_annual_consumption_with_control_load 10976.138266;
+      ausgrid_simple_cell 38;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271928;
+      parent FDR_18285_LV_SP_5334731;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 17515.854167;
+      ausgrid_annual_consumption_with_control_load 17515.854167;
+      ausgrid_simple_cell 50;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 2;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271926;
+      parent FDR_18285_LV_SP_5334731;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 14322.1875;
+      ausgrid_annual_consumption_with_control_load 14322.1875;
+      ausgrid_simple_cell 49;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 1;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271982;
+      parent FDR_18285_LV_SP_5334731;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 5373.1538462;
+      ausgrid_annual_consumption_with_control_load 5373.1538462;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271976;
+      parent FDR_18285_LV_SP_5334731;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2528.5824176;
+      ausgrid_annual_consumption_with_control_load 2528.5824176;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271970;
+      parent FDR_18285_LV_SP_5334731;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2509.8351648;
+      ausgrid_annual_consumption_with_control_load 2509.8351648;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271960;
+      parent FDR_18285_LV_SP_5334731;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2825.4725275;
+      ausgrid_annual_consumption_with_control_load 2825.4725275;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_3-FDR_18285_LV_SP_5334730;
+      phases BN;
+      from FDR_18285_LV_NODE_046_3;
+      to FDR_18285_LV_SP_5334730;
+      length 22.7 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334730;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271848;
+      parent FDR_18285_LV_SP_5334730;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 4606.8681319;
+      ausgrid_annual_consumption_with_control_load 6242.967033;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_4-FDR_18285_LV_NODE_046;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045_4;
+      to FDR_18285_LV_NODE_046;
+      length 51.1 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_046;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_SP_5334749;
+      phases CN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_SP_5334749;
+      length 15.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334749;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271860;
+      parent FDR_18285_LV_SP_5334749;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7890.0099353;
+      ausgrid_annual_consumption_with_control_load 10420.603342;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_NODE_047_2;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_NODE_047_2;
+      length 14.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_047_2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_2-FDR_18285_LV_SP_5334729;
+      phases BN;
+      from FDR_18285_LV_NODE_047_2;
+      to FDR_18285_LV_SP_5334729;
+      length 27.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334729;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271850;
+      parent FDR_18285_LV_SP_5334729;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 8049.0830928;
+      ausgrid_annual_consumption_with_control_load 10133.046598;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_2-FDR_18285_LV_SP_5309973;
+      phases ABCN;
+      from FDR_18285_LV_NODE_047_2;
+      to FDR_18285_LV_SP_5309973;
+      length 15.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5309973;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271936;
+      parent FDR_18285_LV_SP_5309973;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 19716.916667;
+      ausgrid_annual_consumption_with_control_load 19716.916667;
+      ausgrid_simple_cell 50;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 2;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271856;
+      parent FDR_18285_LV_SP_5309973;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 21340.101761;
+      ausgrid_annual_consumption_with_control_load 23705.717146;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271932;
+      parent FDR_18285_LV_SP_5309973;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 16818;
+      ausgrid_annual_consumption_with_control_load 16818;
+      ausgrid_simple_cell 50;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 2;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_2-FDR_18285_LV_SP_13427840;
+      phases BN;
+      from FDR_18285_LV_NODE_047_2;
+      to FDR_18285_LV_SP_13427840;
+      length 15.1 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_13427840;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271862;
+      parent FDR_18285_LV_SP_13427840;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 815.43;
+      ausgrid_annual_consumption_with_control_load 815.43;
+      ausgrid_simple_cell 37;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_SP_5334750;
+      phases AN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_SP_5334750;
+      length 15.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334750;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271866;
+      parent FDR_18285_LV_SP_5334750;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3883.7032967;
+      ausgrid_annual_consumption_with_control_load 5090.7802198;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_NODE_047_4;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_NODE_047_4;
+      length 62.0 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_047_4;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334726;
+      phases CN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334726;
+      length 33.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334726;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271880;
+      parent FDR_18285_LV_SP_5334726;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2306.032967;
+      ausgrid_annual_consumption_with_control_load 4149.6153846;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334753;
+      phases CN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334753;
+      length 14.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334753;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271892;
+      parent FDR_18285_LV_SP_5334753;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 8326.8407216;
+      ausgrid_annual_consumption_with_control_load 10717.510619;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334755;
+      phases BN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334755;
+      length 26.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334755;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271900;
+      parent FDR_18285_LV_SP_5334755;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2543.9967033;
+      ausgrid_annual_consumption_with_control_load 2543.9967033;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334725;
+      phases CN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334725;
+      length 27.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334725;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271888;
+      parent FDR_18285_LV_SP_5334725;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 2763.8791209;
+      ausgrid_annual_consumption_with_control_load 4045.1318681;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_NODE_048;
+      phases ABCN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_NODE_048;
+      length 46.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_048;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_048-FDR_18285_LV_NODE_049;
+      phases ABCN;
+      from FDR_18285_LV_NODE_048;
+      to FDR_18285_LV_NODE_049;
+      length 19.3 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_049;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object underground_line {
+      name FDR_18285_LV_NODE_049-FDR_18285_LV_SP_13728064;
+      phases CN;
+      from FDR_18285_LV_NODE_049;
+      to FDR_18285_LV_SP_13728064;
+      length 7.9 m;
+      configuration conf_UGLine_2259;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_13728064;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_11445539;
+      parent FDR_18285_LV_SP_13728064;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 654.82;
+      ausgrid_annual_consumption_with_control_load 654.82;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334754;
+      phases BN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334754;
+      length 15.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334754;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271898;
+      parent FDR_18285_LV_SP_5334754;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 9861.9849466;
+      ausgrid_annual_consumption_with_control_load 12524.017914;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_4-FDR_18285_LV_SP_5334752;
+      phases AN;
+      from FDR_18285_LV_NODE_047_4;
+      to FDR_18285_LV_SP_5334752;
+      length 28.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334752;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271886;
+      parent FDR_18285_LV_SP_5334752;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7509.3928866;
+      ausgrid_annual_consumption_with_control_load 7509.3928866;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_SP_5334727;
+      phases AN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_SP_5334727;
+      length 38.5 m;
+      configuration conf_OHLine_2312;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334727;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271874;
+      parent FDR_18285_LV_SP_5334727;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123337;
+      ausgrid_annual_consumption 6113.7571429;
+      ausgrid_annual_consumption_with_control_load 6113.7571429;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_SP_5334748;
+      phases AN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_SP_5334748;
+      length 28.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334748;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271854;
+      parent FDR_18285_LV_SP_5334748;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5240.043956;
+      ausgrid_annual_consumption_with_control_load 7075.8681319;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object load {
+      name LOAD_8271930;
+      parent FDR_18285_LV_SP_5334748;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 9073.4375;
+      ausgrid_annual_consumption_with_control_load 9073.4375;
+      ausgrid_simple_cell 49;
+      ausgrid_elec_band_residential 0;
+      ausgrid_elec_band_business 1;
+      ausgrid_unit 1;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046-FDR_18285_LV_SP_5334751;
+      phases BN;
+      from FDR_18285_LV_NODE_046;
+      to FDR_18285_LV_SP_5334751;
+      length 27.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334751;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271878;
+      parent FDR_18285_LV_SP_5334751;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 1931.0714286;
+      ausgrid_annual_consumption_with_control_load 1931.0714286;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_4-FDR_18285_LV_SP_5334747;
+      phases AN;
+      from FDR_18285_LV_NODE_045_4;
+      to FDR_18285_LV_SP_5334747;
+      length 20.2 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334747;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271842;
+      parent FDR_18285_LV_SP_5334747;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 15123.342742;
+      ausgrid_annual_consumption_with_control_load 15123.342742;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object switch {
+      name FDR_18285_LV_NODE_044_2-FDR_18285_LV_NODE_045_2;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044_2;
+      to FDR_18285_LV_NODE_045_2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_045_2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object underground_line {
+      name FDR_18285_LV_NODE_045_2-FDR_18285_LV_SP_5335096;
+      phases BN;
+      from FDR_18285_LV_NODE_045_2;
+      to FDR_18285_LV_SP_5335096;
+      length 13.4 m;
+      configuration conf_UGLine_500;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335096;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271838;
+      parent FDR_18285_LV_SP_5335096;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4510.6046769;
+      ausgrid_annual_consumption_with_control_load 4510.6046769;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_2-FDR_18285_LV_SP_5335097;
+      phases AN;
+      from FDR_18285_LV_NODE_044_2;
+      to FDR_18285_LV_SP_5335097;
+      length 25.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335097;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271830;
+      parent FDR_18285_LV_SP_5335097;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 10235.053826;
+      ausgrid_annual_consumption_with_control_load 13167.801301;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_3-FDR_18285_LV_SP_5335098;
+      phases CN;
+      from FDR_18285_LV_NODE_043_3;
+      to FDR_18285_LV_SP_5335098;
+      length 28.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335098;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271828;
+      parent FDR_18285_LV_SP_5335098;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3219.5050505;
+      ausgrid_annual_consumption_with_control_load 5989.8181818;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_3-FDR_18285_LV_SP_5335099;
+      phases AN;
+      from FDR_18285_LV_NODE_043_3;
+      to FDR_18285_LV_SP_5335099;
+      length 12.7 m;
+      configuration conf_OHLine_57018;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335099;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271826;
+      parent FDR_18285_LV_SP_5335099;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 9624.4376643;
+      ausgrid_annual_consumption_with_control_load 9624.4376643;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042-FDR_18285_LV_NODE_043_2;
+      phases ABCN;
+      from FDR_18285_LV_NODE_042;
+      to FDR_18285_LV_NODE_043_2;
+      length 42.6 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_043_2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_SP_5335086;
+      phases BN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_SP_5335086;
+      length 20.2 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335086;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271834;
+      parent FDR_18285_LV_SP_5335086;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 620.55555556;
+      ausgrid_annual_consumption_with_control_load 1317.4343434;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_SP_5335084;
+      phases BN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_SP_5335084;
+      length 27.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335084;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271882;
+      parent FDR_18285_LV_SP_5335084;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 12946.451919;
+      ausgrid_annual_consumption_with_control_load 18270.064141;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271882;
+      parent FDR_18285_LV_SP_5335084;
+      phases BN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271882;
+      parent DG_8271882;
+      phases BN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 17.08 m^2;
+      tilt_angle 20;
+      efficiency 0.14;
+      orientation_azimuth 280;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_SP_3701482;
+      phases AN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_SP_3701482;
+      length 27.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_3701482;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271890;
+      parent FDR_18285_LV_SP_3701482;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7271.2622942;
+      ausgrid_annual_consumption_with_control_load 10405.704718;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_SP_5335083;
+      phases AN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_SP_5335083;
+      length 33.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335083;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271876;
+      parent FDR_18285_LV_SP_5335083;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 10199.634011;
+      ausgrid_annual_consumption_with_control_load 13551.078456;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_SP_5335085;
+      phases CN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_SP_5335085;
+      length 34.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335085;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271894;
+      parent FDR_18285_LV_SP_5335085;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5112.4212121;
+      ausgrid_annual_consumption_with_control_load 5112.4212121;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_2-FDR_18285_LV_NODE_044_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_043_2;
+      to FDR_18285_LV_NODE_044_1;
+      length 43.1 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_044_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_NODE_045;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_NODE_045;
+      length 37.2 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_045;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045-FDR_18285_LV_SP_5335078;
+      phases BN;
+      from FDR_18285_LV_NODE_045;
+      to FDR_18285_LV_SP_5335078;
+      length 27.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335078;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271844;
+      parent FDR_18285_LV_SP_5335078;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6426.439899;
+      ausgrid_annual_consumption_with_control_load 6426.439899;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271844;
+      parent FDR_18285_LV_SP_5335078;
+      phases BN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271844;
+      parent DG_8271844;
+      phases BN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 12.2 m^2;
+      tilt_angle 30;
+      efficiency 0.14;
+      orientation_azimuth 330;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045-FDR_18285_LV_SP_5335089;
+      phases CN;
+      from FDR_18285_LV_NODE_045;
+      to FDR_18285_LV_SP_5335089;
+      length 14.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335089;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271766;
+      parent FDR_18285_LV_SP_5335089;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7366.4141414;
+      ausgrid_annual_consumption_with_control_load 12294.151515;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045-FDR_18285_LV_SP_5335079;
+      phases AN;
+      from FDR_18285_LV_NODE_045;
+      to FDR_18285_LV_SP_5335079;
+      length 28.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335079;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271846;
+      parent FDR_18285_LV_SP_5335079;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6691.223855;
+      ausgrid_annual_consumption_with_control_load 6691.223855;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045-FDR_18285_LV_SP_5335076;
+      phases AN;
+      from FDR_18285_LV_NODE_045;
+      to FDR_18285_LV_SP_5335076;
+      length 31.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335076;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271780;
+      parent FDR_18285_LV_SP_5335076;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 8825.7281818;
+      ausgrid_annual_consumption_with_control_load 12824.741818;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271780;
+      parent FDR_18285_LV_SP_5335076;
+      phases AN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271780;
+      parent DG_8271780;
+      phases AN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 13.42 m^2;
+      tilt_angle 28;
+      efficiency 0.14;
+      orientation_azimuth 330;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045-FDR_18285_LV_NODE_046_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045;
+      to FDR_18285_LV_NODE_046_1;
+      length 29.8 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_046_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_1-FDR_18285_LV_SP_5335075;
+      phases BN;
+      from FDR_18285_LV_NODE_046_1;
+      to FDR_18285_LV_SP_5335075;
+      length 29.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335075;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271768;
+      parent FDR_18285_LV_SP_5335075;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6387.1158586;
+      ausgrid_annual_consumption_with_control_load 6387.1158586;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271768;
+      parent FDR_18285_LV_SP_5335075;
+      phases BN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271768;
+      parent DG_8271768;
+      phases BN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 9.15 m^2;
+      tilt_angle 27;
+      efficiency 0.14;
+      orientation_azimuth 30;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_1-FDR_18285_LV_SP_5335074;
+      phases CN;
+      from FDR_18285_LV_NODE_046_1;
+      to FDR_18285_LV_SP_5335074;
+      length 27.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335074;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271762;
+      parent FDR_18285_LV_SP_5335074;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3371.4160606;
+      ausgrid_annual_consumption_with_control_load 3371.4160606;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271762;
+      parent FDR_18285_LV_SP_5335074;
+      phases CN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271762;
+      parent DG_8271762;
+      phases CN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 12.2 m^2;
+      tilt_angle 26;
+      efficiency 0.14;
+      orientation_azimuth 300;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_1-FDR_18285_LV_SP_5335090;
+      phases CN;
+      from FDR_18285_LV_NODE_046_1;
+      to FDR_18285_LV_SP_5335090;
+      length 18.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335090;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271758;
+      parent FDR_18285_LV_SP_5335090;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4867.8585859;
+      ausgrid_annual_consumption_with_control_load 4867.8585859;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_SP_5335087;
+      phases CN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_SP_5335087;
+      length 13.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335087;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271796;
+      parent FDR_18285_LV_SP_5335087;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4382.0505051;
+      ausgrid_annual_consumption_with_control_load 4382.0505051;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_SP_5335082;
+      phases BN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_SP_5335082;
+      length 28.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335082;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271864;
+      parent FDR_18285_LV_SP_5335082;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 10386.973609;
+      ausgrid_annual_consumption_with_control_load 14940.997548;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_SP_5335081;
+      phases BN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_SP_5335081;
+      length 28.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335081;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271858;
+      parent FDR_18285_LV_SP_5335081;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3771.4747475;
+      ausgrid_annual_consumption_with_control_load 6677.4383838;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_SP_5335088;
+      phases CN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_SP_5335088;
+      length 17.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335088;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271772;
+      parent FDR_18285_LV_SP_5335088;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4920.0808081;
+      ausgrid_annual_consumption_with_control_load 6626.9191919;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_1-FDR_18285_LV_SP_5335080;
+      phases BN;
+      from FDR_18285_LV_NODE_044_1;
+      to FDR_18285_LV_SP_5335080;
+      length 37.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335080;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271852;
+      parent FDR_18285_LV_SP_5335080;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6222.5140404;
+      ausgrid_annual_consumption_with_control_load 7608.8068687;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_SP_5213413;
+      phases AN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_SP_5213413;
+      length 34.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213413;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271806;
+      parent FDR_18285_LV_SP_5213413;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7021.1571883;
+      ausgrid_annual_consumption_with_control_load 7021.1571883;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_NODE_041_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_NODE_041_1;
+      length 35.3 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_041_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041_1-FDR_18285_LV_SP_5334885;
+      phases BN;
+      from FDR_18285_LV_NODE_041_1;
+      to FDR_18285_LV_SP_5334885;
+      length 40.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334885;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271832;
+      parent FDR_18285_LV_SP_5334885;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2186.7171717;
+      ausgrid_annual_consumption_with_control_load 2186.7171717;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041_1-FDR_18285_LV_SP_5335107;
+      phases CN;
+      from FDR_18285_LV_NODE_041_1;
+      to FDR_18285_LV_SP_5335107;
+      length 15.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335107;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271794;
+      parent FDR_18285_LV_SP_5335107;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 10058.073336;
+      ausgrid_annual_consumption_with_control_load 10058.073336;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041_1-FDR_18285_LV_NODE_042_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_041_1;
+      to FDR_18285_LV_NODE_042_1;
+      length 35.4 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_042_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042_1-FDR_18285_LV_SP_5335109;
+      phases CN;
+      from FDR_18285_LV_NODE_042_1;
+      to FDR_18285_LV_SP_5335109;
+      length 15.4 m;
+      configuration conf_OHLine_57018;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335109;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271788;
+      parent FDR_18285_LV_SP_5335109;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7747.3915871;
+      ausgrid_annual_consumption_with_control_load 7747.3915871;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042_1-FDR_18285_LV_SP_5335108;
+      phases BN;
+      from FDR_18285_LV_NODE_042_1;
+      to FDR_18285_LV_SP_5335108;
+      length 19.3 m;
+      configuration conf_OHLine_57018;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335108;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271792;
+      parent FDR_18285_LV_SP_5335108;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4284.010101;
+      ausgrid_annual_consumption_with_control_load 4284.010101;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042_1-FDR_18285_LV_NODE_043_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_042_1;
+      to FDR_18285_LV_NODE_043_1;
+      length 41.7 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_043_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_1-FDR_18285_LV_SP_5335110;
+      phases AN;
+      from FDR_18285_LV_NODE_043_1;
+      to FDR_18285_LV_SP_5335110;
+      length 16.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335110;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271784;
+      parent FDR_18285_LV_SP_5335110;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5844.9240404;
+      ausgrid_annual_consumption_with_control_load 5844.9240404;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_1-FDR_18285_LV_SP_5334884;
+      phases CN;
+      from FDR_18285_LV_NODE_043_1;
+      to FDR_18285_LV_SP_5334884;
+      length 36.2 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334884;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271786;
+      parent FDR_18285_LV_SP_5334884;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6800.4925972;
+      ausgrid_annual_consumption_with_control_load 6800.4925972;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_1-FDR_18285_LV_NODE_044_3;
+      phases ABCN;
+      from FDR_18285_LV_NODE_043_1;
+      to FDR_18285_LV_NODE_044_3;
+      length 37.3 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_044_3;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_3-FDR_18285_LV_SP_5213410;
+      phases CN;
+      from FDR_18285_LV_NODE_044_3;
+      to FDR_18285_LV_SP_5213410;
+      length 16.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213410;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271782;
+      parent FDR_18285_LV_SP_5213410;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3728.3737374;
+      ausgrid_annual_consumption_with_control_load 3728.3737374;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_3-FDR_18285_LV_SP_5213408;
+      phases CN;
+      from FDR_18285_LV_NODE_044_3;
+      to FDR_18285_LV_SP_5213408;
+      length 38.5 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213408;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271776;
+      parent FDR_18285_LV_SP_5213408;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3526.8686869;
+      ausgrid_annual_consumption_with_control_load 3526.8686869;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_3-FDR_18285_LV_SP_5213409;
+      phases BN;
+      from FDR_18285_LV_NODE_044_3;
+      to FDR_18285_LV_SP_5213409;
+      length 22.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213409;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271778;
+      parent FDR_18285_LV_SP_5213409;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4672.020202;
+      ausgrid_annual_consumption_with_control_load 7152.1616162;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044_3-FDR_18285_LV_SW_045_T1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044_3;
+      to FDR_18285_LV_SW_045_T1;
+      length 5.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_045_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name FDR_18285_LV_SW_045;
+      phases ABCN;
+      from FDR_18285_LV_SW_045_T1;
+      to FDR_18285_LV_SW_045_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_045_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043_1-FDR_18285_LV_SP_5213411;
+      phases BN;
+      from FDR_18285_LV_NODE_043_1;
+      to FDR_18285_LV_SP_5213411;
+      length 34.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213411;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271790;
+      parent FDR_18285_LV_SP_5213411;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6533.040274;
+      ausgrid_annual_consumption_with_control_load 6533.040274;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271790;
+      parent FDR_18285_LV_SP_5213411;
+      phases BN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271790;
+      parent DG_8271790;
+      phases BN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 18.544 m^2;
+      tilt_angle 24;
+      efficiency 0.14;
+      orientation_azimuth 300;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_042_1-FDR_18285_LV_NODE_043;
+      phases ABCN;
+      from FDR_18285_LV_NODE_042_1;
+      to FDR_18285_LV_NODE_043;
+      length 54.0 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_043;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043-FDR_18285_LV_NODE_044;
+      phases ABCN;
+      from FDR_18285_LV_NODE_043;
+      to FDR_18285_LV_NODE_044;
+      length 50.0 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_044;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044-FDR_18285_LV_NODE_045_3;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044;
+      to FDR_18285_LV_NODE_045_3;
+      length 45.5 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_045_3;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335060;
+      phases CN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335060;
+      length 36.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335060;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271904;
+      parent FDR_18285_LV_SP_5335060;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 1515.4343434;
+      ausgrid_annual_consumption_with_control_load 2957.2828283;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335058;
+      phases CN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335058;
+      length 23.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335058;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271920;
+      parent FDR_18285_LV_SP_5335058;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4470.7171717;
+      ausgrid_annual_consumption_with_control_load 4470.7171717;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335059;
+      phases BN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335059;
+      length 31.5 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335059;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271912;
+      parent FDR_18285_LV_SP_5335059;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2459.1111111;
+      ausgrid_annual_consumption_with_control_load 2459.1111111;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335056;
+      phases CN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335056;
+      length 13.1 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335056;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271908;
+      parent FDR_18285_LV_SP_5335056;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2974.6767677;
+      ausgrid_annual_consumption_with_control_load 2974.6767677;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335055;
+      phases AN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335055;
+      length 19.1 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335055;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271870;
+      parent FDR_18285_LV_SP_5335055;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 9182.6224242;
+      ausgrid_annual_consumption_with_control_load 9182.6224242;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271870;
+      parent FDR_18285_LV_SP_5335055;
+      phases AN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271870;
+      parent DG_8271870;
+      phases AN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 10.675 m^2;
+      tilt_angle 23;
+      efficiency 0.14;
+      orientation_azimuth 40;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_3-FDR_18285_LV_SP_5335057;
+      phases BN;
+      from FDR_18285_LV_NODE_045_3;
+      to FDR_18285_LV_SP_5335057;
+      length 14.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335057;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271916;
+      parent FDR_18285_LV_SP_5335057;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5638.6161616;
+      ausgrid_annual_consumption_with_control_load 7863.1919192;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044-FDR_18285_LV_SP_5335061;
+      phases AN;
+      from FDR_18285_LV_NODE_044;
+      to FDR_18285_LV_SP_5335061;
+      length 16.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335061;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271906;
+      parent FDR_18285_LV_SP_5335061;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3106.7575758;
+      ausgrid_annual_consumption_with_control_load 3106.7575758;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044-FDR_18285_LV_SP_5335093;
+      phases AN;
+      from FDR_18285_LV_NODE_044;
+      to FDR_18285_LV_SP_5335093;
+      length 35.5 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335093;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271910;
+      parent FDR_18285_LV_SP_5335093;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2386.5;
+      ausgrid_annual_consumption_with_control_load 2386.5;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044-FDR_18285_LV_SP_5335062;
+      phases AN;
+      from FDR_18285_LV_NODE_044;
+      to FDR_18285_LV_SP_5335062;
+      length 35.7 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335062;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271914;
+      parent FDR_18285_LV_SP_5335062;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5272.4343434;
+      ausgrid_annual_consumption_with_control_load 5272.4343434;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_044-FDR_18285_LV_NODE_045_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_044;
+      to FDR_18285_LV_NODE_045_1;
+      length 53.9 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_045_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_NODE_046_2;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_NODE_046_2;
+      length 41.9 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_046_2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_2-FDR_18285_LV_NODE_047_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_2;
+      to FDR_18285_LV_NODE_047_1;
+      length 18.2 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_047_1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_1-FDR_18285_LV_SP_5335068;
+      phases CN;
+      from FDR_18285_LV_NODE_047_1;
+      to FDR_18285_LV_SP_5335068;
+      length 16.5 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335068;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271764;
+      parent FDR_18285_LV_SP_5335068;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3780.3333333;
+      ausgrid_annual_consumption_with_control_load 3780.3333333;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_1-FDR_18285_LV_SP_5335069;
+      phases AN;
+      from FDR_18285_LV_NODE_047_1;
+      to FDR_18285_LV_SP_5335069;
+      length 13.8 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335069;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271770;
+      parent FDR_18285_LV_SP_5335069;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 8126.095752;
+      ausgrid_annual_consumption_with_control_load 8126.095752;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_1-FDR_18285_LV_SW_048_T1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_047_1;
+      to FDR_18285_LV_SW_048_T1;
+      length 2.2 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_048_T1;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object switch {
+      name FDR_18285_LV_SW_048;
+      phases ABCN;
+      from FDR_18285_LV_SW_048_T1;
+      to FDR_18285_LV_SW_048_T2;
+      status CLOSED;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SW_048_T2;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_046_2-FDR_18285_LV_NODE_047_3;
+      phases ABCN;
+      from FDR_18285_LV_NODE_046_2;
+      to FDR_18285_LV_NODE_047_3;
+      length 28.3 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_NODE_047_3;
+      phases ABCN;
+      nominal_voltage  240;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_3-FDR_18285_LV_SP_5335070;
+      phases CN;
+      from FDR_18285_LV_NODE_047_3;
+      to FDR_18285_LV_SP_5335070;
+      length 13.5 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335070;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271750;
+      parent FDR_18285_LV_SP_5335070;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4569.6868687;
+      ausgrid_annual_consumption_with_control_load 4569.6868687;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_047_3-FDR_18285_LV_SP_5335071;
+      phases CN;
+      from FDR_18285_LV_NODE_047_3;
+      to FDR_18285_LV_SP_5335071;
+      length 19.4 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335071;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271872;
+      parent FDR_18285_LV_SP_5335071;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5438.959596;
+      ausgrid_annual_consumption_with_control_load 5438.959596;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_SP_5335091;
+      phases CN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_SP_5335091;
+      length 14.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335091;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271752;
+      parent FDR_18285_LV_SP_5335091;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2868.4242424;
+      ausgrid_annual_consumption_with_control_load 2868.4242424;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_SP_5335063;
+      phases BN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_SP_5335063;
+      length 30.9 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335063;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271922;
+      parent FDR_18285_LV_SP_5335063;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 6789.7834509;
+      ausgrid_annual_consumption_with_control_load 6789.7834509;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_NODE_046_1;
+      phases ABCN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_NODE_046_1;
+      length 40.2 m;
+      configuration conf_OHLine_51101;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_SP_5335092;
+      phases CN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_SP_5335092;
+      length 21.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335092;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271918;
+      parent FDR_18285_LV_SP_5335092;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 7599.7834509;
+      ausgrid_annual_consumption_with_control_load 7599.7834509;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_045_1-FDR_18285_LV_SP_5335073;
+      phases CN;
+      from FDR_18285_LV_NODE_045_1;
+      to FDR_18285_LV_SP_5335073;
+      length 30.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335073;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271756;
+      parent FDR_18285_LV_SP_5335073;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3424.7191011;
+      ausgrid_annual_consumption_with_control_load 6334.2022472;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 1;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043-FDR_18285_LV_SP_5213412;
+      phases CN;
+      from FDR_18285_LV_NODE_043;
+      to FDR_18285_LV_SP_5213412;
+      length 19.1 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5213412;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271748;
+      parent FDR_18285_LV_SP_5213412;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 4471.6351515;
+      ausgrid_annual_consumption_with_control_load 4471.6351515;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271748;
+      parent FDR_18285_LV_SP_5213412;
+      phases CN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271748;
+      parent DG_8271748;
+      phases CN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 9.15 m^2;
+      tilt_angle 25;
+      efficiency 0.14;
+      orientation_azimuth 30;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043-FDR_18285_LV_SP_5335094;
+      phases BN;
+      from FDR_18285_LV_NODE_043;
+      to FDR_18285_LV_SP_5335094;
+      length 29.0 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335094;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271902;
+      parent FDR_18285_LV_SP_5335094;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 8347.2581984;
+      ausgrid_annual_consumption_with_control_load 8347.2581984;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_043-FDR_18285_LV_SP_5335054;
+      phases AN;
+      from FDR_18285_LV_NODE_043;
+      to FDR_18285_LV_SP_5335054;
+      length 20.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335054;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271868;
+      parent FDR_18285_LV_SP_5335054;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 2179.2884848;
+      ausgrid_annual_consumption_with_control_load 2179.2884848;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271868;
+      parent FDR_18285_LV_SP_5335054;
+      phases AN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271868;
+      parent DG_8271868;
+      phases AN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 9.272 m^2;
+      tilt_angle 22;
+      efficiency 0.14;
+      orientation_azimuth 280;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041_1-FDR_18285_LV_SP_5335106;
+      phases CN;
+      from FDR_18285_LV_NODE_041_1;
+      to FDR_18285_LV_SP_5335106;
+      length 15.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335106;
+      phases CN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271800;
+      parent FDR_18285_LV_SP_5335106;
+      phases CN;
+      nominal_voltage  240;
+      base_power_C Load_18285.result;
+      power_fraction_C 1;
+      current_fraction_C 0;
+      impedance_fraction_C 0;
+      power_pf_C L_pf_Head80784.output;
+      current_pf_C 1;
+      impedance_pf_C 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 8956.4029058;
+      ausgrid_annual_consumption_with_control_load 8956.4029058;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_041_1-FDR_18285_LV_SP_5334886;
+      phases AN;
+      from FDR_18285_LV_NODE_041_1;
+      to FDR_18285_LV_SP_5334886;
+      length 35.3 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334886;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271802;
+      parent FDR_18285_LV_SP_5334886;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 5582.8989899;
+      ausgrid_annual_consumption_with_control_load 5582.8989899;
+      ausgrid_simple_cell 26;
+      ausgrid_elec_band_residential 2;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_SP_5334887;
+      phases AN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_SP_5334887;
+      length 35.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5334887;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271810;
+      parent FDR_18285_LV_SP_5334887;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 10570.508371;
+      ausgrid_annual_consumption_with_control_load 10570.508371;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_SP_5335105;
+      phases AN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_SP_5335105;
+      length 15.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335105;
+      phases AN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271804;
+      parent FDR_18285_LV_SP_5335105;
+      phases AN;
+      nominal_voltage  240;
+      base_power_A Load_18285.result;
+      power_fraction_A 1;
+      current_fraction_A 0;
+      impedance_fraction_A 0;
+      power_pf_A L_pf_Head80784.output;
+      current_pf_A 1;
+      impedance_pf_A 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 3262.0110101;
+      ausgrid_annual_consumption_with_control_load 3262.0110101;
+      ausgrid_simple_cell 25;
+      ausgrid_elec_band_residential 1;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 1;
+      };
+
+
+object inverter {
+      name DG_8271804;
+      parent FDR_18285_LV_SP_5335105;
+      phases AN;
+      generator_mode CONSTANT_PF;
+      generator_status ONLINE;
+      inverter_type PWM;
+      power_factor 0.9;
+      rated_power 10000;
+      inverter_efficiency 0.95;
+      };
+
+
+object solar {
+      name SOLAR_8271804;
+      parent DG_8271804;
+      phases AN;
+      generator_status ONLINE;
+      weather ElermoreClimate;
+      panel_type SINGLE_CRYSTAL_SILICON;
+      generator_mode CONSTANT_PF;
+      area 11.59 m^2;
+      tilt_angle 26;
+      efficiency 0.14;
+      orientation_azimuth 330;
+      orientation  FIXED_AXIS;
+      SOLAR_TILT_MODEL  SOLPOS;
+      SOLAR_POWER_MODEL  DEFAULT;
+      };
+
+
+object overhead_line {
+      name FDR_18285_LV_NODE_040-FDR_18285_LV_SP_5335104;
+      phases BN;
+      from FDR_18285_LV_NODE_040;
+      to FDR_18285_LV_SP_5335104;
+      length 15.6 m;
+      configuration conf_OHLine_600;
+      };
+
+
+
+object meter {
+      name FDR_18285_LV_SP_5335104;
+      phases BN;
+      nominal_voltage  240;
+      };
+
+
+object load {
+      name LOAD_8271808;
+      parent FDR_18285_LV_SP_5335104;
+      phases BN;
+      nominal_voltage  240;
+      base_power_B Load_18285.result;
+      power_fraction_B 1;
+      current_fraction_B 0;
+      impedance_fraction_B 0;
+      power_pf_B L_pf_Head80784.output;
+      current_pf_B 1;
+      impedance_pf_B 1;
+      
+      // Customer Trial Appended Data //
+      ausgrid_sa1 11103123316;
+      ausgrid_annual_consumption 11197.585625;
+      ausgrid_annual_consumption_with_control_load 11197.585625;
+      ausgrid_simple_cell 27;
+      ausgrid_elec_band_residential 3;
+      ausgrid_elec_band_business 0;
+      ausgrid_unit 0;
+      ausgrid_income_band 1;
+      ausgrid_gas_band 1;
+      ausgrid_climate_zone 5;
+      ausgrid_controlled_load 0;
+      ausgrid_generation 0;
+      };

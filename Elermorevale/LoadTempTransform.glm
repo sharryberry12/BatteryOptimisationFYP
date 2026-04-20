@@ -1,0 +1,805 @@
+//Calculate apparent temp with wind speed = 0
+//AT = Ta + 0.33×e + 0.70×ws - 4.00
+//e = rh / 100 × 6.105 × exp ( 17.27 × Ta / ( 237.7 + Ta ) )
+
+//Convert to degrees Celcius
+object aggregate_transform
+{
+	name T;
+	operation SUM;
+	properties_list "ElermoreClimate.temperature";
+	bias_list "-32";
+	gain_list "0.5555555555";
+	rank 0;
+}
+
+object aggregate_transform
+{
+	name e_denom_inverse;
+	operation POWER;
+	properties_list "T.result minus_one";
+	bias_list "237.7 0";
+	rank 1;
+}
+
+object aggregate_transform
+{
+	name e_power_e;
+	operation PRODUCT;
+	properties_list "T.result e_denom_inverse.result";
+	gain_list "17.27 1";
+	rank 2;
+}
+
+object aggregate_transform
+{
+	name e_power;
+	operation POWER;
+	properties_list "e e_power_e.result";
+	rank 3;
+}
+
+object aggregate_transform
+{
+	name e_calc;
+	operation PRODUCT;
+	properties_list "ElermoreClimate.humidity e_power.result";
+	gain_list "0.06105 1";
+	rank 4;
+}
+
+object aggregate_transform
+{
+	name Ta;
+	operation SUM;
+	properties_list "T.result e_calc.result minus_one";
+	gain_list "1 0.33 4";
+	rank 5;
+}	
+
+//**************HS38585 Transforms*****************///
+//Convert temperature to celcius and subtract nominal: T(t)-a(t)
+object aggregate_transform
+{
+	name T_HS38585;
+	operation SUM;
+	properties_list "Ta.result a_HS38585";
+	gain_list "1 -1";
+	rank 6;
+}
+
+//T(t-24h)
+object time_delay
+{
+	name T24_HS38585;
+	input_object "Ta";
+	input_property "result";
+	delay 86400; //24hrs
+	rank 6;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+
+//alpha(t).[T(t)-a(t)]^2 term
+object aggregate_transform
+{
+	name alphaT2_HS38585;
+	properties_list "T_HS38585.result T_HS38585.result alpha_HS38585";
+	rank 7;
+}
+
+//beta(t).[T(t)-a(t)] term
+object aggregate_transform
+{
+	name betaT_HS38585;
+	properties_list "T_HS38585.result beta_HS38585";
+	rank 7;
+}
+	
+//[T(t-24h) - a]
+object aggregate_transform
+{
+	name Tma24_HS38585;
+	operation SUM;
+	properties_list "T24_HS38585.output a_HS38585";
+	gain_list "1 -1";
+	rank 7;
+}
+
+//gamma(t).[T(t-24h)-a(t)] term
+object aggregate_transform
+{
+	name gammaT24_HS38585;
+	properties_list "Tma24_HS38585.result gamma_HS38585";
+	rank 8;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_Temp_HS38585;
+	operation SUM;
+	properties_list "alphaT2_HS38585.result betaT_HS38585.result gammaT24_HS38585.result";
+	rank 9;
+}
+
+object lookup_table
+{
+	rank 10;
+	//Constrain temperature only load component to be between 0 - 1
+	name L_Temp_Lookup_HS38585;
+	input_object "L_Temp_HS38585";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+}
+
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_HS38585;
+	operation SUM;
+	properties_list "L_Temp_Lookup_HS38585.output b_HS38585";
+	rank 11;
+}
+
+object aggregate_transform
+{
+	name L_Squared_HS38585;
+	properties_list "L_HS38585.result L_HS38585.result pf_c_HS38585";
+	rank 12;
+}
+
+object aggregate_transform
+{
+	name e_power_HS38585;
+	operation POWER;
+	properties_list "e L_Squared_HS38585.result";
+	rank 13;
+}
+
+object aggregate_transform
+{
+	name pf_denom_HS38585;
+	operation SUM;
+	properties_list "pf_b_HS38585 e_power_HS38585.result";
+	rank 14;
+}
+
+object aggregate_transform
+{
+	name pf_denom_inverse_HS38585;
+	operation POWER;
+	properties_list "pf_denom_HS38585.result minus_one";
+	rank 15;
+	resync_until_nochange FALSE;
+}
+
+object aggregate_transform
+{
+	name L_pf_eval_HS38585;
+	properties_list "pf_denom_inverse_HS38585.result pf_a_HS38585";
+	rank 16;
+}
+
+object lookup_table
+{
+	rank 17;
+	name L_pf_HS38585;
+	input_object "L_pf_eval_HS38585";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+
+}
+
+
+
+//**************Head80784 Transforms*****************///
+//Convert temperature to celcius and subtract nominal: T(t)-a(t)
+object aggregate_transform
+{
+	name T_Head80784;
+	operation SUM;
+	properties_list "Ta.result a_Head80784";
+	gain_list "1 -1";
+	rank 6;
+}
+
+//T(t-24h)
+object time_delay
+{
+	name T24_Head80784;
+	input_object "Ta";
+	input_property "result";
+	delay 86400; //24hrs
+	rank 6;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+
+//alpha(t).[T(t)-a(t)]^2 term
+object aggregate_transform
+{
+	name alphaT2_Head80784;
+	properties_list "T_Head80784.result T_Head80784.result alpha_Head80784";
+	rank 7;
+}
+
+//beta(t).[T(t)-a(t)] term
+object aggregate_transform
+{
+	name betaT_Head80784;
+	properties_list "T_Head80784.result beta_Head80784";
+	rank 7;
+}
+	
+//[T(t-24h) - a]
+object aggregate_transform
+{
+	name Tma24_Head80784;
+	operation SUM;
+	properties_list "T24_Head80784.output a_Head80784";
+	gain_list "1 -1";
+	rank 7;
+}
+
+//gamma(t).[T(t-24h)-a(t)] term
+object aggregate_transform
+{
+	name gammaT24_Head80784;
+	properties_list "Tma24_Head80784.result gamma_Head80784";
+	rank 8;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_Temp_Head80784;
+	operation SUM;
+	properties_list "alphaT2_Head80784.result betaT_Head80784.result gammaT24_Head80784.result";
+	rank 9;
+}
+
+object lookup_table
+{
+	rank 10;
+	//Constrain temperature only load component to be between 0 - 1
+	name L_Temp_Lookup_Head80784;
+	input_object "L_Temp_Head80784";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+}
+
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_Head80784;
+	operation SUM;
+	properties_list "L_Temp_Lookup_Head80784.output b_Head80784";
+	rank 11;
+}
+
+object aggregate_transform
+{
+	name L_Squared_Head80784;
+	properties_list "L_Head80784.result L_Head80784.result pf_c_Head80784";
+	rank 12;
+}
+
+object aggregate_transform
+{
+	name e_power_Head80784;
+	operation POWER;
+	properties_list "e L_Squared_Head80784.result";
+	rank 13;
+}
+
+object aggregate_transform
+{
+	name pf_denom_Head80784;
+	operation SUM;
+	properties_list "pf_b_Head80784 e_power_Head80784.result";
+	rank 14;
+}
+
+object aggregate_transform
+{
+	name pf_denom_inverse_Head80784;
+	operation POWER;
+	properties_list "pf_denom_Head80784.result minus_one";
+	rank 15;
+	resync_until_nochange FALSE;
+}
+
+object aggregate_transform
+{
+	name L_pf_eval_Head80784;
+	properties_list "pf_denom_inverse_Head80784.result pf_a_Head80784";
+	rank 16;
+}
+
+object lookup_table
+{
+	rank 17;
+	name L_pf_Head80784;
+	input_object "L_pf_eval_Head80784";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+
+}
+
+
+
+//**************HS67603 Transforms*****************///
+//Convert temperature to celcius and subtract nominal: T(t)-a(t)
+object aggregate_transform
+{
+	name T_HS67603;
+	operation SUM;
+	properties_list "Ta.result a_HS67603";
+	gain_list "1 -1";
+	rank 6;
+}
+
+//T(t-24h)
+object time_delay
+{
+	name T24_HS67603;
+	input_object "Ta";
+	input_property "result";
+	delay 86400; //24hrs
+	rank 6;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+
+//alpha(t).[T(t)-a(t)]^2 term
+object aggregate_transform
+{
+	name alphaT2_HS67603;
+	properties_list "T_HS67603.result T_HS67603.result alpha_HS67603";
+	rank 7;
+}
+
+//beta(t).[T(t)-a(t)] term
+object aggregate_transform
+{
+	name betaT_HS67603;
+	properties_list "T_HS67603.result beta_HS67603";
+	rank 7;
+}
+	
+//[T(t-24h) - a]
+object aggregate_transform
+{
+	name Tma24_HS67603;
+	operation SUM;
+	properties_list "T24_HS67603.output a_HS67603";
+	gain_list "1 -1";
+	rank 7;
+}
+
+//gamma(t).[T(t-24h)-a(t)] term
+object aggregate_transform
+{
+	name gammaT24_HS67603;
+	properties_list "Tma24_HS67603.result gamma_HS67603";
+	rank 8;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_Temp_HS67603;
+	operation SUM;
+	properties_list "alphaT2_HS67603.result betaT_HS67603.result gammaT24_HS67603.result";
+	rank 9;
+}
+
+object lookup_table
+{
+	rank 10;
+	//Constrain temperature only load component to be between 0 - 1
+	name L_Temp_Lookup_HS67603;
+	input_object "L_Temp_HS67603";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+}
+
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_HS67603;
+	operation SUM;
+	properties_list "L_Temp_Lookup_HS67603.output b_HS67603";
+	rank 11;
+}
+
+object aggregate_transform
+{
+	name L_Squared_HS67603;
+	properties_list "L_HS67603.result L_HS67603.result pf_c_HS67603";
+	rank 12;
+}
+
+object aggregate_transform
+{
+	name e_power_HS67603;
+	operation POWER;
+	properties_list "e L_Squared_HS67603.result";
+	rank 13;
+}
+
+object aggregate_transform
+{
+	name pf_denom_HS67603;
+	operation SUM;
+	properties_list "pf_b_HS67603 e_power_HS67603.result";
+	rank 14;
+}
+
+object aggregate_transform
+{
+	name pf_denom_inverse_HS67603;
+	operation POWER;
+	properties_list "pf_denom_HS67603.result minus_one";
+	rank 15;
+	resync_until_nochange FALSE;
+}
+
+object aggregate_transform
+{
+	name L_pf_eval_HS67603;
+	properties_list "pf_denom_inverse_HS67603.result pf_a_HS67603";
+	rank 16;
+}
+
+object lookup_table
+{
+	rank 17;
+	name L_pf_HS67603;
+	input_object "L_pf_eval_HS67603";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+
+}
+
+
+//**************HS21062 Transforms*****************///
+//Convert temperature to celcius and subtract nominal: T(t)-a(t)
+object aggregate_transform
+{
+	name T_HS21062;
+	operation SUM;
+	properties_list "Ta.result a_HS21062";
+	gain_list "1 -1";
+	rank 6;
+}
+
+//T(t-24h)
+object time_delay
+{
+	name T24_HS21062;
+	input_object "Ta";
+	input_property "result";
+	delay 86400; //24hrs
+	rank 6;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+
+//alpha(t).[T(t)-a(t)]^2 term
+object aggregate_transform
+{
+	name alphaT2_HS21062;
+	properties_list "T_HS21062.result T_HS21062.result alpha_HS21062";
+	rank 7;
+}
+
+//beta(t).[T(t)-a(t)] term
+object aggregate_transform
+{
+	name betaT_HS21062;
+	properties_list "T_HS21062.result beta_HS21062";
+	rank 7;
+}
+	
+//[T(t-24h) - a]
+object aggregate_transform
+{
+	name Tma24_HS21062;
+	operation SUM;
+	properties_list "T24_HS21062.output a_HS21062";
+	gain_list "1 -1";
+	rank 7;
+}
+
+//gamma(t).[T(t-24h)-a(t)] term
+object aggregate_transform
+{
+	name gammaT24_HS21062;
+	properties_list "Tma24_HS21062.result gamma_HS21062";
+	rank 8;
+}
+
+//L(t,T) = alpha(t).[T(t)-a(t)]^2 + beta(t).[T(t)-a(t)] + gamma(t).[T(t-24h)-a(t)]
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_Temp_HS21062;
+	operation SUM;
+	properties_list "alphaT2_HS21062.result betaT_HS21062.result gammaT24_HS21062.result";
+	rank 9;
+}
+
+object lookup_table
+{
+	rank 10;
+	//Constrain temperature only load component to be between 0 - 1
+	name L_Temp_Lookup_HS21062;
+	input_object "L_Temp_HS21062";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+}
+
+//Terms added to get L(t)
+object aggregate_transform
+{
+	name L_HS21062;
+	operation SUM;
+	properties_list "L_Temp_Lookup_HS21062.output b_HS21062";
+	rank 11;
+}
+
+object aggregate_transform
+{
+	name L_Squared_HS21062;
+	properties_list "L_HS21062.result L_HS21062.result pf_c_HS21062";
+	rank 12;
+}
+
+object aggregate_transform
+{
+	name e_power_HS21062;
+	operation POWER;
+	properties_list "e L_Squared_HS21062.result";
+	rank 13;
+}
+
+object aggregate_transform
+{
+	name pf_denom_HS21062;
+	operation SUM;
+	properties_list "pf_b_HS21062 e_power_HS21062.result";
+	rank 14;
+}
+
+object aggregate_transform
+{
+	name pf_denom_inverse_HS21062;
+	operation POWER;
+	properties_list "pf_denom_HS21062.result minus_one";
+	rank 15;
+	resync_until_nochange FALSE;
+}
+
+object aggregate_transform
+{
+	name L_pf_eval_HS21062;
+	properties_list "pf_denom_inverse_HS21062.result pf_a_HS21062";
+	rank 16;
+}
+
+object lookup_table
+{
+	rank 17;
+	name L_pf_HS21062;
+	input_object "L_pf_eval_HS21062";
+	input_property "result";
+	keys_string "0 1";
+	values_string "0 1";
+
+}
+
+//***********************Load Transforms***************//
+object aggregate_transform	
+{	
+	name Load_38585;
+	properties_list "L_HS38585.result";
+	post_gain 2585.05;   //211974
+	rank 16;
+	resync_until_nochange FALSE;
+}
+
+object aggregate_transform	
+{	
+	name Load_21062;
+	properties_list "L_HS21062.result";
+	post_gain 3011.6;   //180696
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+
+object aggregate_transform	
+{	
+	name Load_67603;
+	properties_list "L_HS67603.result";
+	post_gain 318916;   //956748/3
+	rank 16;
+	resync_until_nochange FALSE;
+}
+
+
+
+object aggregate_transform
+{	
+	name Load_1431;
+	properties_list "L_Head80784.result";
+	post_gain 3501.37;   //355*240*3/73 ----> MDI*Vnom*3/NumCust
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_2126;
+	properties_list "L_Head80784.result";
+	post_gain 2889.47;   //305*240*3/76
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_2322;
+	properties_list "L_Head80784.result";
+	post_gain 3675.79;   //194*240*3/38
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_4880;
+	properties_list "L_Head80784.result";
+	post_gain 2211.96;   //298*240*3/97
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_7159;
+	properties_list "L_Head80784.result";
+	post_gain 1993.04;   //382*240*3/138
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_8250;
+	properties_list "L_Head80784.result";
+	post_gain 2206.75;   //236*240*3/77
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_10431;
+	properties_list "L_Head80784.result";
+	post_gain 2562.35;   //242*240*3/68
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_12447;
+	properties_list "L_Head80784.result";
+	post_gain 1875.79;   //297*240*3/114
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_13420;
+	properties_list "L_Head80784.result";
+	post_gain 2226.67;   //167*240*3/54
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_13491;
+	properties_list "L_Head80784.result";
+	post_gain 2945.45;   //135*240*3/33
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_16304;
+	properties_list "L_Head80784.result";
+	post_gain 2760.;   //46*240*3/12
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_16740;
+	properties_list "L_Head80784.result";
+	post_gain 1612.39;   //159*240*3/71
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_18285;
+	properties_list "L_Head80784.result";
+	post_gain 1953.39;   //312*240*3/115
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_19403;
+	properties_list "L_Head80784.result";
+	post_gain 1525.09;   //233*240*3/110
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_19405;
+	properties_list "L_Head80784.result";
+	post_gain 3240.;   //540*240*3/120
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_20473;
+	properties_list "L_Head80784.result";
+	post_gain 3049.41;   //288*240*3/68
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_61210;
+	properties_list "L_Head80784.result";
+	post_gain 1395.28;   //312*240*3/161
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+
+object aggregate_transform	
+{	
+	name Load_23433;
+	properties_list "L_Head80784.result";
+	post_gain 2126.9;   //257*240*3/87
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+
+object aggregate_transform	
+{	
+	name Load_55514;
+	properties_list "L_Head80784.result";
+	post_gain 69120.1;   //288*240*3/3
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+object aggregate_transform	
+{	
+	name Load_58270;
+	properties_list "L_Head80784.result";
+	post_gain 3673.47;   //250*240*3/49
+	rank 16;
+	resync_until_nochange FALSE;
+}	
+
