@@ -600,7 +600,7 @@ def export_dss_summary(path="elermorevale_summary.txt"):
 # --- Validation constants (AS 60038) ---
 T = 48                  # half-hourly intervals per day
 DT = 0.5                # hours per interval
-V_NOM = 230.0           # Australian nominal phase-to-neutral voltage (V)
+V_NOM = 240.0           # GLM loads declare nominal_voltage=240 V; match that base
 V_UPPER_PU = 1.10       # statutory upper limit: +10 %
 V_LOWER_PU = 0.94       # statutory lower limit: −6 %
 
@@ -717,6 +717,25 @@ def add_monitors(monitored_loads):
 # LOADSHAPE ATTACHMENT
 # ==================================================================
 
+def _zero_unprofiled_loads(profiled_names):
+    """
+    Set kw=0 on every Load element NOT in profiled_names so the ~1,760
+    unmapped static loads don't swamp the ±kW signal from the profiled
+    population. Called by both attach_* helpers before attaching shapes.
+    """
+    cmd = dss.Text
+    profiled = {n.lower() for n in profiled_names}
+    i = dss.ActiveCircuit.Loads.First
+    n_zeroed = 0
+    while i:
+        name = dss.ActiveCircuit.Loads.Name
+        if name.lower() not in profiled:
+            cmd.Command = f"Load.{name}.kw=0"
+            n_zeroed += 1
+        i = dss.ActiveCircuit.Loads.Next
+    logger.info("Zeroed %d unprofiled background loads", n_zeroed)
+
+
 def attach_loadshapes(load_customer_map, profiles, day_idx=0):
     """
     Create a LoadShape for each profiled load using the QP-dispatched
@@ -730,6 +749,8 @@ def attach_loadshapes(load_customer_map, profiles, day_idx=0):
     """
     cmd = dss.Text
     date_str = None
+
+    _zero_unprofiled_loads(load_customer_map.keys())
 
     for lname, cid in load_customer_map.items():
         days = profiles.get(cid, [])
@@ -761,6 +782,8 @@ def attach_baseline_shapes(load_customer_map, profiles, day_idx=0):
     """
     cmd = dss.Text
     date_str = None
+
+    _zero_unprofiled_loads(load_customer_map.keys())
 
     for lname, cid in load_customer_map.items():
         days = profiles.get(cid, [])
