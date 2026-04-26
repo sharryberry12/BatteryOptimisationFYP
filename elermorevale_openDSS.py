@@ -1,5 +1,5 @@
 """
-elermorevale_DSS.py
+elermorevale_openDSS.py
 ===================
 
 Port of the Elermore Vale (Wallsend, NSW) GridLAB-D network model to
@@ -31,9 +31,9 @@ baseline (no battery) vs QP-dispatched scenarios with:
     * Voltage violation counts per AS 60038
 
 Usage:
-    python elermorevale_DSS.py                              # build + snapshot (original)
-    python elermorevale_DSS.py --profiles profiles/fit_profiles.csv   # daily sim
-    python elermorevale_DSS.py --profiles ... --full --save           # full sweep
+    python elermorevale_openDSS.py                                        # build + snapshot (original)
+    python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv   # daily sim
+    python elermorevale_openDSS.py --profiles ... --full --save           # full sweep
 
 Prerequisites:
     pip install dss-python numpy pandas matplotlib
@@ -211,10 +211,16 @@ def gfloat(value, default=0.0):
 # NETWORK BUILDER
 # ==================================================================
 
-def build_elermorevale(glm_dir, common_dir):
+def build_elermorevale(glm_dir, common_dir, skip_generators=False):
     """
     Parse all Elermorevale GLM files + common/Line Configs.glm,
     then build the complete OpenDSS model.
+
+    skip_generators : if True, omit PV generators, batteries, and
+        RegControl. Use this for profile-driven simulation where
+        LoadShapes already carry the net grid profile p = l − g − b,
+        so adding separate Generator/Storage elements would double-count.
+
     Returns a dict of element counts.
     """
     cmd = dss.Text
@@ -236,6 +242,35 @@ def build_elermorevale(glm_dir, common_dir):
     by_type = {}
     for src, otype, props in all_objs:
         by_type.setdefault(otype, []).append((src, props))
+
+    # ----------------------------------------------------------------
+    # BUILD PARENT CHAIN RESOLVER
+    # ----------------------------------------------------------------
+    # In GridLAB-D the object hierarchy is:
+    #   load → parent=triplex_meter → parent=triplex_node → connected by lines
+    # We need to follow this chain so loads connect to actual network buses.
+    # Build a universal lookup: object_name → parent_name for every object
+    # that declares a parent, then resolve recursively.
+    parent_of = {}
+    for otype_list in by_type.values():
+        for _, p in otype_list:
+            obj_name = p.get("name", "")
+            obj_parent = p.get("parent", "")
+            if obj_name and obj_parent:
+                parent_of[obj_name] = obj_parent
+
+    def resolve_bus(name, max_depth=10):
+        """Follow the parent chain to find the ultimate network bus."""
+        visited = set()
+        current = name
+        for _ in range(max_depth):
+            if current not in parent_of or current in visited:
+                return current
+            visited.add(current)
+            current = parent_of[current]
+        return current
+
+    logger.info("Built parent chain resolver with %d entries", len(parent_of))
 
     # Element counters
     n_lines = n_sw = n_tx = n_loads = n_pv = n_batt = 0
@@ -263,16 +298,16 @@ def build_elermorevale(glm_dir, common_dir):
             f"New Linecode.{safe_name(lc_name)} nphases={nph} "
             f"r1={r1} x1={x1} "              # positive-sequence impedance
             f"r0={r1*3} x0={x1*3} "           # zero-sequence ~ 3x positive
-            f"units=m normamps={amps}"        # units in metres, rating in amps
+            f"units=km normamps={amps}"       # Ohm/km (converted from Ohm/mile)
         )
     # Fallbacks for any config not found in the common files
     cmd.Command = (
         "New Linecode.fallback_3ph nphases=3 "
-        "r1=0.4 x1=0.25 r0=1.2 x0=0.75 units=m normamps=200"
+        "r1=0.4 x1=0.25 r0=1.2 x0=0.75 units=km normamps=200"
     )
     cmd.Command = (
         "New Linecode.fallback_1ph nphases=1 "
-        "r1=1.2 x1=0.3 r0=3.6 x0=0.9 units=m normamps=80"
+        "r1=1.2 x1=0.3 r0=3.6 x0=0.9 units=km normamps=80"
     )
 
     # ================================================================
@@ -303,21 +338,23 @@ def build_elermorevale(glm_dir, common_dir):
         "%Rs=[0.001, 0.001] xhl=0.01 "        # near-zero impedance
         "taps=[1.0, 1.0]"
     )
-    cmd.Command = (
-        "New RegControl.OLTC_ctrl "
-        "transformer=OLTC winding=2 "
-        "vreg=110 band=2 "                    # target voltage on 120V base
-        "ptratio=100 "                        # PT ratio for 11 kV
-        "delay=3 "                            # tap-change delay in seconds
-        "maxtapchange=1 tapnum=0"
-    )
+    if not skip_generators:
+        cmd.Command = (
+            "New RegControl.OLTC_ctrl "
+            "transformer=OLTC winding=2 "
+            "vreg=110 band=2 "                    # target voltage on 120V base
+            "ptratio=100 "                        # PT ratio for 11 kV
+            "delay=3 "                            # tap-change delay in seconds
+            "maxtapchange=1 tapnum=0"
+        )
 
     # ================================================================
     # 4. ALL LINES (11 kV + LV overhead + LV underground)
     # ================================================================
     logger.info("Building lines ...")
     for src, p in (by_type.get("overhead_line", []) +
-                   by_type.get("underground_line", [])):
+                   by_type.get("underground_line", []) +
+                   by_type.get("triplex_line", [])):
         name = p.get("name", f"line_{n_lines}")
         from_b = p.get("from", "")
         to_b = p.get("to", "")
@@ -415,14 +452,20 @@ def build_elermorevale(glm_dir, common_dir):
     # 7. RESIDENTIAL LOADS
     # ================================================================
     logger.info("Building %d loads ...", len(by_type.get("load", [])))
+    n_resolved = 0
     for src, p in by_type.get("load", []):
         name = p.get("name", f"load_{n_loads}")
-        parent = p.get("parent", "")      # service-point bus
+        parent = p.get("parent", "")      # may be a meter, not a bus
         phases = p.get("phases", "AN")
         nom_v = gfloat(p.get("nominal_voltage", "240"), 240.0)
 
+        # Resolve parent chain: load → meter → node (the actual bus)
+        resolved = resolve_bus(parent) if parent else parent
+        if resolved != parent and parent:
+            n_resolved += 1
+
         suffix, nph = glm_phases_to_dss(phases)
-        bus = (parent + suffix) if parent else (name + suffix)
+        bus = (resolved + suffix) if resolved else (name + suffix)
         kv_ph = nom_v / 1000.0            # 240 V -> 0.240 kV
 
         # Default load: 3 kW at 0.95 pf, constant-P model.
@@ -438,57 +481,70 @@ def build_elermorevale(glm_dir, common_dir):
         )
         n_loads += 1
 
-    # ================================================================
-    # 8. PV GENERATORS
-    # ================================================================
-    logger.info("Building %d PV systems ...", len(by_type.get("solar", [])))
-
-    # Build inverter -> parent bus lookup
-    inv_parents = {}
-    for _, p in by_type.get("inverter", []):
-        inv_parents[p.get("name", "")] = p.get("parent", "")
-
-    for src, p in by_type.get("solar", []):
-        name = p.get("name", f"pv_{n_pv}")
-        parent_inv = p.get("parent", "")  # parent is the inverter object
-        area = gfloat(p.get("area", "25"), 25.0)
-        rated_kw = area * 0.20            # ~200 W/m^2 at STC
-
-        # Resolve chain: solar -> inverter -> service-point bus
-        bus = inv_parents.get(parent_inv, parent_inv)
-
-        cmd.Command = (
-            f"New Generator.{safe_name(name)} "
-            f"bus1={bus}.1 phases=1 "         # single-phase at the service point
-            f"kv=0.240 kw={rated_kw:.1f} "
-            f"pf=1 model=1"
-        )
-        n_pv += 1
+    if n_resolved > 0:
+        logger.info("Resolved %d load parents through meter/node chain",
+                    n_resolved)
 
     # ================================================================
-    # 9. BATTERY STORAGE (Redflow units from Generators2.glm)
+    # 8. PV GENERATORS + BATTERIES (skip in profile mode)
     # ================================================================
-    logger.info("Building %d batteries ...", len(by_type.get("battery", [])))
-    for src, p in by_type.get("battery", []):
-        name = p.get("name", f"batt_{n_batt}")
-        parent = p.get("parent", "")      # LV service-point bus
-        p_max = gfloat(p.get("P_Max", "5000"), 5000.0) / 1000.0   # W -> kW
-        e_max = gfloat(p.get("E_Max", "10000"), 10000.0) / 1000.0  # Wh -> kWh
-        eff = gfloat(p.get("base_efficiency", "0.86"), 0.86) * 100.0
+    # In profile-driven mode, LoadShapes already contain the net grid
+    # profile p = l − g − b. Adding Generator/Storage elements on top
+    # would double-count PV generation and battery dispatch.
+    if skip_generators:
+        logger.info("Skipping PV/batteries/RegControl (profile mode — "
+                    "net load already includes PV and battery effects)")
+    else:
+        logger.info("Building %d PV systems ...", len(by_type.get("solar", [])))
 
-        cmd.Command = (
-            f"New Storage.{safe_name(name)} "
-            f"bus1={parent}.1 phases=1 "
-            f"kv=0.240 "
-            f"kwrated={p_max:.1f} "           # max charge/discharge power
-            f"kwhrated={e_max:.1f} "          # energy capacity
-            f"kwhstored={e_max * 0.5:.1f} "   # initial SOC at 50%
-            f"%EffCharge={eff:.1f} "
-            f"%EffDischarge={eff:.1f} "
-            f"%IdlingkW=0.18 "                # 180 W parasitic (from GLM)
-            f"model=1 state=IDLING"           # start idle, dispatch externally
-        )
-        n_batt += 1
+        # Build inverter -> parent bus lookup
+        inv_parents = {}
+        for _, p in by_type.get("inverter", []):
+            inv_parents[p.get("name", "")] = p.get("parent", "")
+
+        for src, p in by_type.get("solar", []):
+            name = p.get("name", f"pv_{n_pv}")
+            parent_inv = p.get("parent", "")  # parent is the inverter object
+            area = gfloat(p.get("area", "25"), 25.0)
+            rated_kw = area * 0.20            # ~200 W/m^2 at STC
+
+            # Resolve chain: solar -> inverter -> meter -> node (actual bus)
+            bus = inv_parents.get(parent_inv, parent_inv)
+            bus = resolve_bus(bus)
+
+            cmd.Command = (
+                f"New Generator.{safe_name(name)} "
+                f"bus1={bus}.1 phases=1 "         # single-phase at the service point
+                f"kv=0.240 kw={rated_kw:.1f} "
+                f"pf=1 model=1"
+            )
+            n_pv += 1
+
+        # ================================================================
+        # 9. BATTERY STORAGE (Redflow units from Generators2.glm)
+        # ================================================================
+        logger.info("Building %d batteries ...", len(by_type.get("battery", [])))
+        for src, p in by_type.get("battery", []):
+            name = p.get("name", f"batt_{n_batt}")
+            parent = p.get("parent", "")      # LV service-point bus
+            parent = resolve_bus(parent) if parent else parent
+            p_max = gfloat(p.get("P_Max", "5000"), 5000.0) / 1000.0   # W -> kW
+            e_max = gfloat(p.get("E_Max", "10000"), 10000.0) / 1000.0  # Wh -> kWh
+            eff = gfloat(p.get("base_efficiency", "0.86"), 0.86) * 100.0
+
+            cmd.Command = (
+                f"New Storage.{safe_name(name)} "
+                f"bus1={parent}.1 phases=1 "
+                f"kv=0.240 "
+                f"kwrated={p_max:.1f} "           # max charge/discharge power
+                f"kwhrated={e_max:.1f} "          # energy capacity
+                f"kwhstored={e_max * 0.5:.1f} "   # initial SOC at 50%
+                f"%EffCharge={eff:.1f} "
+                f"%EffDischarge={eff:.1f} "
+                f"%IdlingkW=0.18 "                # 180 W parasitic (from GLM)
+                f"model=1 state=IDLING"           # start idle, dispatch externally
+            )
+            n_batt += 1
 
     # ================================================================
     # 10. VOLTAGE BASES + FINALISE
@@ -510,6 +566,7 @@ def build_elermorevale(glm_dir, common_dir):
         "batteries": n_batt,
         "linecodes_from_real_data": len(linecodes),
         "unmapped_line_configs": len(unmapped),
+        "parent_chain_entries": len(parent_of),
     }
     logger.info("Network built: %s", stats)
     return stats
@@ -523,9 +580,12 @@ def solve_snapshot():
     """Run a single snapshot power flow and report key metrics."""
     cmd = dss.Text
     cmd.Command = "Set mode=snapshot"
-    cmd.Command = "Set controlmode=off"      # disable Storage/regulator hunting
+    cmd.Command = "Set controlmode=off"
     cmd.Command = "Set maxcontroliter=50"
     cmd.Command = "Set maxiterations=100"
+    # Re-initialise voltage vector from voltage bases so Newton-Raphson
+    # starts from a reasonable flat-start, not a stale zero-voltage state.
+    cmd.Command = "Calcvoltagebases"
     try:
         dss.ActiveCircuit.Solution.Solve()
     except Exception as exc:
@@ -579,28 +639,30 @@ def export_dss_summary(path="elermorevale_summary.txt"):
 # PROFILE-DRIVEN SIMULATION
 # ==================================================================
 #
-# Everything below this line is new functionality that makes the
-# Elermore Vale model accept the same QP-dispatched profile inputs
-# as openDSS_LV_feeder_model.py, and produce the same comparison
-# plots (baseline vs QP-dispatched).
+# Everything below this line makes the Elermore Vale model accept
+# the same QP-dispatched profile inputs as openDSS_LV_feeder_model.py.
 #
 # The workflow is:
-#   1. Build the full Elermore Vale network (all ~1,785 loads at 3 kW)
-#   2. Enumerate load elements and pick a subset to drive with profiles
-#   3. Map the 55 OSQP customers onto those loads (round-robin reuse
-#      if fewer loads available, even spacing if more)
-#   4. Override the selected loads to kw=1 with LoadShape multipliers
-#   5. Attach monitors to the selected loads and the zone substation TX
+#   1. Build the full Elermore Vale network (all ~1,785 loads)
+#   2. Enumerate load elements in the DSS circuit
+#   3. Map ALL loads to the 55 OSQP customers via round-robin recycling
+#      (each of the 55 profiles is reused ~32 times, analogous to the
+#      paper's approach of duplicating 291 clean Ausgrid customers to
+#      fill 845 slots). This gives realistic aggregate loading.
+#   4. Override every load to kw=1 with a half-hourly LoadShape
+#   5. Attach voltage monitors to an evenly-spaced SUBSET of loads
+#      (monitoring all ~1,785 would be excessive) + substation TX
 #   6. Run 48-step daily simulation, collect results, and plot
 #
-# The remaining ~1,730 loads stay at their static 3 kW, providing
-# realistic background loading for the rest of the feeder.
+# This replaces the previous approach that zeroed all non-profiled
+# loads, which left the 50 MVA network at <0.06% utilisation and
+# produced flat, uninformative results.
 # ==================================================================
 
 # --- Validation constants (AS 60038) ---
 T = 48                  # half-hourly intervals per day
 DT = 0.5                # hours per interval
-V_NOM = 240.0           # GLM loads declare nominal_voltage=240 V; match that base
+V_NOM = 230.0           # AS 60038 nominal phase-to-neutral voltage
 V_UPPER_PU = 1.10       # statutory upper limit: +10 %
 V_LOWER_PU = 0.94       # statutory lower limit: −6 %
 
@@ -659,12 +721,18 @@ def get_network_load_names():
 
 def map_customers_to_network_loads(customer_ids, load_names):
     """
-    Map OSQP customer IDs to specific Load elements in the Elermore Vale
-    network. Customers are distributed evenly across the sorted load list
-    so that the monitored loads span the full feeder topology.
+    Map EVERY Load element in the Elermore Vale network to one of the
+    55 OSQP customer profiles, cycling round-robin. This mirrors the
+    paper's approach of duplicating 291 clean Ausgrid customers to fill
+    845 aggregate-member slots.
+
+    With 55 customers and ~1,785 loads, each customer profile is reused
+    about 32 times. The result is realistic aggregate loading: peak
+    aggregate demand will be ~32× what the 55 customers alone produce.
 
     Returns:
         load_customer_map : {load_element_name: customer_id}
+            — maps EVERY load to one of the 55 customer IDs
     """
     sorted_loads = sorted(load_names)
     sorted_customers = sorted(customer_ids)
@@ -675,14 +743,35 @@ def map_customers_to_network_loads(customer_ids, load_names):
         return {}
 
     mapping = {}
-    step = max(1, n_loads // n_cust)        # even spacing through load list
-    for i, cid in enumerate(sorted_customers):
-        load_idx = (i * step) % n_loads
-        mapping[sorted_loads[load_idx]] = cid
+    for i, lname in enumerate(sorted_loads):
+        cid = sorted_customers[i % n_cust]   # round-robin reuse
+        mapping[lname] = cid
 
-    logger.info("Mapped %d OSQP customers to %d network loads (of %d total)",
-                n_cust, len(mapping), n_loads)
+    logger.info("Mapped ALL %d network loads to %d OSQP customers "
+                "(each profile reused ~%d times)",
+                n_loads, n_cust, n_loads // n_cust)
     return mapping
+
+
+def select_monitored_loads(load_customer_map, n_monitors=100):
+    """
+    Pick an evenly-spaced subset of loads for voltage monitoring.
+    Monitoring all ~1,785 loads would create excessive monitor overhead.
+    The subset is spread across the sorted load list so it spans the
+    full feeder topology.
+
+    Returns:
+        monitored_loads : list of load element names (subset of keys)
+    """
+    all_loads = sorted(load_customer_map.keys())
+    n = len(all_loads)
+    if n <= n_monitors:
+        return all_loads                     # monitor everything if small
+    step = n // n_monitors
+    selected = [all_loads[i * step] for i in range(n_monitors)]
+    logger.info("Selected %d monitored loads out of %d (every %d-th)",
+                len(selected), n, step)
+    return selected
 
 
 # ==================================================================
@@ -717,31 +806,13 @@ def add_monitors(monitored_loads):
 # LOADSHAPE ATTACHMENT
 # ==================================================================
 
-def _zero_unprofiled_loads(profiled_names):
-    """
-    Set kw=0 on every Load element NOT in profiled_names so the ~1,760
-    unmapped static loads don't swamp the ±kW signal from the profiled
-    population. Called by both attach_* helpers before attaching shapes.
-    """
-    cmd = dss.Text
-    profiled = {n.lower() for n in profiled_names}
-    i = dss.ActiveCircuit.Loads.First
-    n_zeroed = 0
-    while i:
-        name = dss.ActiveCircuit.Loads.Name
-        if name.lower() not in profiled:
-            cmd.Command = f"Load.{name}.kw=0"
-            n_zeroed += 1
-        i = dss.ActiveCircuit.Loads.Next
-    logger.info("Zeroed %d unprofiled background loads", n_zeroed)
-
-
 def attach_loadshapes(load_customer_map, profiles, day_idx=0):
     """
-    Create a LoadShape for each profiled load using the QP-dispatched
-    grid profile p_k = l_k − g_k − b_k, then bind it to the Load
-    element via the daily= property.
+    Create a LoadShape object for each load in the network using the
+    QP-dispatched grid profile p_k = l_k − g_k − b_k, then bind it
+    to the Load element via the daily= property.
 
+    Every load in load_customer_map gets a profile (all ~1,785 loads).
     The load's kw is overridden to 1 (base multiplier) and pf to 1,
     so the LoadShape mult values carry the actual signed kW directly.
 
@@ -749,8 +820,6 @@ def attach_loadshapes(load_customer_map, profiles, day_idx=0):
     """
     cmd = dss.Text
     date_str = None
-
-    _zero_unprofiled_loads(load_customer_map.keys())
 
     for lname, cid in load_customer_map.items():
         days = profiles.get(cid, [])
@@ -779,11 +848,10 @@ def attach_baseline_shapes(load_customer_map, profiles, day_idx=0):
     """
     Same as attach_loadshapes but uses the no-battery baseline:
         p_baseline_k = l_k − g_k    (i.e. b_k = 0 for all k)
+    Every load in load_customer_map gets a baseline profile.
     """
     cmd = dss.Text
     date_str = None
-
-    _zero_unprofiled_loads(load_customer_map.keys())
 
     for lname, cid in load_customer_map.items():
         days = profiles.get(cid, [])
@@ -818,6 +886,9 @@ def run_daily():
     cmd.Command = "Set controlmode=off"
     cmd.Command = "Set maxcontroliter=50"
     cmd.Command = "Set maxiterations=100"
+    # Re-initialise voltage vector so Newton-Raphson starts from
+    # flat-start (1.0 p.u.), not a stale zero-voltage state.
+    cmd.Command = "Calcvoltagebases"
     try:
         dss.ActiveCircuit.Solution.Solve()
     except Exception as exc:
@@ -825,21 +896,51 @@ def run_daily():
             logger.warning("Daily run: control loop didn't settle (#485); using last solution.")
         else:
             raise
+    # Flush monitor sample buffers so Channel() returns recorded data.
+    # Without this, some dss-python versions return empty/zero arrays.
+    dss.ActiveCircuit.Monitors.SaveAll()
 
 
 def collect_voltages(monitored_loads):
     """
-    Read the voltage monitor for each profiled load.
+    Read the voltage monitor for each monitored load.
     Returns dict {load_name: numpy array of shape (T,) in per-unit}.
 
     The monitor records absolute voltage in volts (mode=0, channel 1).
     We convert to per-unit relative to V_NOM (230 V, AS 60038 nominal).
     """
     voltages = {}
+    n_empty = 0
     for lname in monitored_loads:
-        dss.ActiveCircuit.Monitors.Name = f"v_{lname}"
-        v_mag = np.array(dss.ActiveCircuit.Monitors.Channel(1))
+        try:
+            dss.ActiveCircuit.Monitors.Name = f"v_{lname}"
+            v_mag = np.array(dss.ActiveCircuit.Monitors.Channel(1))
+        except Exception:
+            v_mag = np.zeros(T)
+
+        if len(v_mag) == 0:
+            v_mag = np.zeros(T)
+            n_empty += 1
+        elif len(v_mag) != T:
+            # Pad or truncate to exactly T points
+            padded = np.zeros(T)
+            n = min(len(v_mag), T)
+            padded[:n] = v_mag[:n]
+            v_mag = padded
+
         voltages[lname] = v_mag / V_NOM
+
+    if n_empty > 0:
+        logger.warning("%d of %d voltage monitors returned empty data",
+                       n_empty, len(monitored_loads))
+
+    # Debug: log first monitor's raw values to help diagnose V_NOM issues
+    if monitored_loads:
+        first = monitored_loads[0]
+        raw = voltages[first] * V_NOM       # undo the division
+        logger.info("Monitor debug — %s raw volts: min=%.1f mean=%.1f max=%.1f",
+                    first, raw.min(), raw.mean(), raw.max())
+
     return voltages
 
 
@@ -866,17 +967,20 @@ def collect_losses():
     return losses[0] / 1000.0, losses[1] / 1000.0
 
 
-def simulate_scenario(glm_dir, common_dir, load_customer_map, profiles,
+def simulate_scenario(glm_dir, common_dir, load_customer_map,
+                      monitored_loads, profiles,
                       day_idx, use_baseline=False):
     """
     End-to-end pipeline for one day under one scenario:
         build network → add monitors → attach load shapes → solve → collect.
 
+    load_customer_map : {load_name: customer_id} for ALL loads (~1,785)
+    monitored_loads   : list of load names for voltage monitoring (subset)
+
     The network is rebuilt from scratch each call to avoid stale state.
     """
-    build_elermorevale(glm_dir, common_dir)
+    build_elermorevale(glm_dir, common_dir, skip_generators=True)
 
-    monitored_loads = sorted(load_customer_map.keys())
     add_monitors(monitored_loads)
 
     if use_baseline:
@@ -910,14 +1014,16 @@ def simulate_scenario(glm_dir, common_dir, load_customer_map, profiles,
 
 
 def simulate_day_comparison(glm_dir, common_dir, load_customer_map,
-                            profiles, day_idx):
+                            monitored_loads, profiles, day_idx):
     """Run baseline and QP scenarios for one day and return both."""
     logger.info("Simulating day index %d — baseline ...", day_idx)
     base = simulate_scenario(glm_dir, common_dir, load_customer_map,
-                             profiles, day_idx, use_baseline=True)
+                             monitored_loads, profiles, day_idx,
+                             use_baseline=True)
     logger.info("Simulating day index %d — QP dispatched ...", day_idx)
     qp = simulate_scenario(glm_dir, common_dir, load_customer_map,
-                           profiles, day_idx, use_baseline=False)
+                           monitored_loads, profiles, day_idx,
+                           use_baseline=False)
     return base, qp
 
 
@@ -1151,7 +1257,8 @@ def plot_daily_summary_table(base, qp, date_str=None):
 # FULL-YEAR SWEEP
 # ==================================================================
 
-def run_full_sweep(glm_dir, common_dir, load_customer_map, profiles,
+def run_full_sweep(glm_dir, common_dir, load_customer_map,
+                   monitored_loads, profiles,
                    max_days=None, per_day_plots=False):
     """
     Loop over every day in the dataset (optionally capped), run baseline
@@ -1168,7 +1275,8 @@ def run_full_sweep(glm_dir, common_dir, load_customer_map, profiles,
     for d in range(n_days):
         try:
             base, qp = simulate_day_comparison(
-                glm_dir, common_dir, load_customer_map, profiles, d)
+                glm_dir, common_dir, load_customer_map,
+                monitored_loads, profiles, d)
         except Exception as e:
             logger.warning("Day %d failed: %s", d, e)
             continue
@@ -1350,19 +1458,24 @@ def main():
 
     # --- Build network once to discover load element names ---
     logger.info("Building network to enumerate loads ...")
-    build_elermorevale(args.glm_dir, args.common_dir)
+    build_elermorevale(args.glm_dir, args.common_dir, skip_generators=True)
     load_names = get_network_load_names()
     logger.info("Found %d load elements in the network", len(load_names))
 
     # --- Map OSQP customers to network loads ---
     load_customer_map = map_customers_to_network_loads(customer_ids, load_names)
 
+    # --- Select a representative subset for voltage monitoring ---
+    monitored_loads = select_monitored_loads(load_customer_map, n_monitors=100)
+    logger.info("Voltage monitors on %d loads (of %d total)",
+                len(monitored_loads), len(load_customer_map))
+
     if args.full:
         # --- Full sweep ---
         import pandas as pd
         sweep_df = run_full_sweep(
             args.glm_dir, args.common_dir,
-            load_customer_map, profiles,
+            load_customer_map, monitored_loads, profiles,
             max_days=args.max_days,
             per_day_plots=args.per_day_plots)
 
@@ -1382,7 +1495,7 @@ def main():
             logger.info("=== %s day (index %d) ===", label, day_idx)
             base, qp = simulate_day_comparison(
                 args.glm_dir, args.common_dir,
-                load_customer_map, profiles, day_idx)
+                load_customer_map, monitored_loads, profiles, day_idx)
             date_str = base["date"] or f"day_{day_idx}"
 
             plot_daily_summary_table(base, qp, date_str)

@@ -527,12 +527,11 @@ Reads the long-format CSV produced by `osqp_daily_v2.save_profiles()` and recons
 
 Parses command-line arguments, loads the profile CSV, builds the customer-to-bus mapping, initialises the DSS engine, and runs either representative days (default: one summer and one winter day) or a full-year sweep (`--full` flag). The default day indices assume the dataset starts on 1 July 2010 ([R17] Section 2), so day index 0 ≈ winter (July) and day index 190 ≈ summer (early January).
 
----
 
 ## Overall Data Flow
 
 ```
-data.csv (Ausgrid raw)
+cleaned_data.csv (Ausgrid raw)
     │
     ▼
 osqp_daily_v2.py
@@ -547,13 +546,175 @@ osqp_daily_v2.py
     ├── run_all()          ← parallel across customers
     └── save_profiles()    ── writes profiles/fit_profiles.csv
                                         │
-                                        ▼
-                              opendss_daily.py
-                                  ├── load_profiles_from_csv()
-                                  ├── build_network()     ← synthetic Ausgrid LV feeder
-                                  ├── attach_loadshapes() ← baseline p⁰ or QP p^C
-                                  ├── run_daily()         ← 48-step power flow via OpenDSS
-                                  ├── collect_voltages()  ← per-node V(t) in p.u.
-                                  ├── collect_tx_power()  ← substation P(t) in kW
-                                  └── compare & plot      ← voltage compliance, losses
+              ┌─────────────────────────┼──────────────────────────┐
+              ▼                         ▼                          ▼
+  openDSS_LV_feeder_model.py   elermorevale_openDSS.py   ieee13_bus_feeder_model.py
+  (synthetic 10-node LV)       (real Ausgrid feeder)      (IEEE 13 Bus standard)
+              │                         │                          │
+              │                    ┌────┘                          │
+              │                    ▼                               │
+              │           elermorevale_gui.py                      │
+              │           (interactive HTML dashboard)             │
+              ▼                    ▼                               ▼
+        figures/              elermorevale_dashboard.html     figures/
+        (PNG plots)           (animated power flow)           (PNG plots)
 ```
+
+---
+
+# Part 3: `elermorevale_openDSS.py` — Real Ausgrid Feeder Model
+
+This file ports the Elermore Vale GridLAB-D model (from the Ausgrid Smart Grid Smart City program) to OpenDSS via dss-python. It replaces the synthetic LV feeder from Part 2 with a real Australian distribution network: 132/11 kV zone substation, 23 distribution transformers, ~2,100 LV line segments, and 1,810 residential loads.
+
+**Reference:** Ratnam & Weller, *"Receding horizon optimization-based approaches to managing supply voltages and power flows in a distribution grid with battery storage co-located with solar PV,"* Applied Energy 210, 2018, pp. 1017–1026.
+
+---
+
+## 3.1 GLM Parser
+
+The `parse_glm()` and `parse_all_glm()` functions use regex to extract GridLAB-D objects from `.glm` files. The parser handles the flat object syntax used in the Ausgrid models (`object type { property value; ... }`), stripping `//` comments. A universal parent chain resolver is built from all objects that declare a `parent` property, used to follow the GridLAB-D hierarchy `load → meter → node` so that loads connect to actual network buses rather than orphaned meter names.
+
+---
+
+## 3.2 Impedance Extraction
+
+`extract_impedances()` builds a unified linecode table from `common/Line Configs.glm`. Two formats are handled:
+
+- **Z-matrix format** (11 kV configs named `Elermore_line_config_*`): extracts the z11 diagonal entry from the 3×3 impedance matrix, converting from Ohm/mile to Ohm/km.
+- **Conductor-reference format** (LV configs named `conf_OHLine_*` / `conf_UGLine_*`): looks up the conductor resistance from named conductor objects and estimates reactance (0.08 Ω/km for underground, 0.25 Ω/km for overhead).
+
+All linecodes are declared with `units=km` and line lengths with `units=m`. This is critical — using `units=m` on the linecodes (as in early versions) caused a 1000× impedance scaling error that collapsed all LV bus voltages to zero.
+
+---
+
+## 3.3 Network Builder: `build_elermorevale()`
+
+Builds the full OpenDSS model programmatically:
+
+1. **Circuit + source** — 132 kV, 3-phase, stiff infinite bus.
+2. **Linecodes** — 3,834 configurations from real conductor data. Zero fallback linecodes needed.
+3. **Zone substation** — 50 MVA Dyn transformer (132/11 kV) with OLTC regulator (simplified from GridLAB-D's LDC lookup_table to OpenDSS RegControl with fixed vreg target).
+4. **Lines** — 2,165 overhead, underground, and triplex lines plus 286 switches/fuses.
+5. **Distribution transformers** — 23 units (11 kV / 433 V, 200–1000 kVA, Dyn connection).
+6. **Loads** — 1,810 residential loads with parent chain resolution to actual network buses.
+7. **PV and batteries** — 155 rooftop PV generators and 40 Redflow batteries (skipped in profile mode via `skip_generators=True` to avoid double-counting since LoadShapes already carry the net grid profile p = l − g − b).
+
+The `skip_generators` parameter is essential: in profile-driven mode, the LoadShapes contain the complete net effect of PV and battery dispatch. Adding Generator/Storage elements on top would double-count PV generation and produce unrealistic voltages. The PV and battery elements are only instantiated in snapshot mode (no `--profiles`) where loads are at their static 3 kW default.
+
+---
+
+## 3.4 Customer Mapping: Round-Robin Recycling
+
+`map_customers_to_network_loads()` assigns ALL 1,810 network loads to the 55 OSQP customer profiles via round-robin cycling (`sorted_customers[i % 55]`). Each profile is reused ~32 times, producing realistic aggregate loading on the 50 MVA feeder. This mirrors the paper's approach of duplicating 291 clean Ausgrid customers to fill 845 aggregate-member slots.
+
+`select_monitored_loads()` picks an evenly-spaced subset of 100 loads for voltage monitoring, spanning the full feeder topology without the overhead of 1,810 monitors.
+
+---
+
+## 3.5 Solver Configuration
+
+Both `solve_snapshot()` and `run_daily()` call `Calcvoltagebases` before solving. This reinitialises the Newton-Raphson voltage vector to a flat 1.0 p.u. start, preventing convergence to the trivial V=0 solution from stale state. `Monitors.SaveAll()` is called after daily solves to flush monitor sample buffers before reading channel data.
+
+---
+
+## 3.6 CLI Usage
+
+```bash
+# Snapshot power flow (no profiles, static 3 kW loads + PV + batteries):
+python elermorevale_openDSS.py
+
+# Profile-driven daily simulation (baseline vs QP comparison):
+python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv
+
+# Full-year sweep with saved plots:
+python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv --full --save
+```
+
+---
+
+# Part 4: `ieee13_bus_feeder_model.py` — IEEE 13 Bus Test Feeder
+
+This file builds the standard IEEE 13 Node Test Feeder in OpenDSS — a 4.16 kV unbalanced radial distribution network — augmented with LV distribution transformers for customer integration. It follows the same interface as `openDSS_LV_feeder_model.py` and `elermorevale_openDSS.py`.
+
+---
+
+## 4.1 Network Topology
+
+The MV backbone follows the IEEE PES specification exactly:
+
+- **115 kV source** → 5 MVA substation transformer → **4.16 kV** with 3 single-phase voltage regulators at bus 650.
+- **12 line segments** using 7 line configurations (601–607), including full 3×3 impedance matrices in Ω/mile for overhead lines and underground cables.
+- **Inline transformer XFM-1** (4.16/0.48 kV) at bus 633→634.
+- **Standard spot loads** (PQ, Z, and I models), distributed load at bus 670, capacitor banks at buses 675 and 611, switch between buses 671–692.
+
+Five **LV distribution transformers** (4.16 kV → 0.4 kV, 200 kVA Dyn11) are added at buses 632, 671, 675, 652, and 634. The 55 customers are distributed round-robin across these zones and 3 phases, with 15 m single-phase service drops to each meter.
+
+---
+
+## 4.2 Key Differences from the Synthetic LV Model
+
+The IEEE 13 model is two-level (MV backbone with voltage regulators and unbalanced loading → LV distribution transformers → customers), versus the synthetic model's single-level LV feeder. This means voltage regulators interact with PV-driven reverse power flow, and unbalanced MV loading creates different voltage conditions across phases.
+
+---
+
+# Part 5: `elermorevale_gui.py` — Interactive Power Flow Dashboard
+
+Generates a standalone HTML dashboard for visualising the Elermore Vale feeder topology and simulation results. The dashboard uses HTML5 Canvas for the network graph (60 fps rendering with pan/zoom) and Plotly.js for the bottom charts.
+
+---
+
+## 5.1 Dual View Mode
+
+Two views are switchable via header tabs:
+
+- **STATIC TOPOLOGY** — nodes coloured by voltage level (red = 132 kV, orange = 11 kV, green = LV load, grey = LV junction). No animation. Useful for explaining network structure.
+- **LIVE FLOW** — animated yellow-gold particles streaming along edges from source toward loads, showing power flow direction. Nodes coloured by voltage magnitude (blue = low, white = nominal, red = high). Violation nodes pulse with a glow ring at ~1 Hz. Playback controls and scenario toggle become visible.
+
+---
+
+## 5.2 Simulation Integration
+
+When run with `--simulate`, the script executes both baseline and QP scenarios via `elermorevale_openDSS.py`, embeds all 48-timestep voltage data into the HTML, and enables:
+
+- **Baseline ↔ QP toggle** — click between scenarios and watch node colours shift instantly.
+- **Time scrubber + Play/Pause** — animate through the day at 1×, 2×, or 4× speed.
+- **Synced charts** — substation power curve (both scenarios overlaid, yellow cursor tracks time), voltage histogram with AS 60038 violation limits.
+- **Live statistics panel** — V min, V max, violation count, TX power — all update every frame.
+
+---
+
+## 5.3 Visual Design
+
+- **Particle colour:** bright yellow-gold (`#ffd600`) with glow effect — contrasts against all node types.
+- **LV junction colour:** grey (`#7f8fa6`) — distinct from particles (yellow) and load buses (green).
+- **Edge lines:** bright enough to show network structure at all zoom levels (`#2a4570` static / `#1e3858` dynamic for regular lines; `#4080c0` / `#2a5a90` for transformer/regulator edges).
+- **Layout:** spring layout via NetworkX (`k=2.0, iterations=80`), which produces a natural force-directed arrangement showing the radial feeder structure.
+
+---
+
+## 5.4 CLI Usage
+
+```bash
+# Topology only (no simulation, instant):
+python elermorevale_gui.py --open
+
+# With live simulation data (full experience):
+python elermorevale_gui.py --simulate --day 190 --open
+
+# Custom output path:
+python elermorevale_gui.py --simulate --output my_dashboard.html
+```
+
+Prerequisites: `pip install networkx numpy` (topology only) or `pip install networkx numpy dss-python pandas` (with simulation).
+
+---
+
+## File Summary
+
+| File | Purpose | Inputs | Outputs |
+|------|---------|--------|---------|
+| `osqp_daily_v2.py` | QP battery dispatch optimisation | `cleaned_data.csv` | `profiles/fit_profiles.csv`, Figures 2/5/6/7/8 |
+| `openDSS_LV_feeder_model.py` | Synthetic 10-node LV feeder validation | `profiles/fit_profiles.csv` | Voltage/power plots, sweep CSV |
+| `elermorevale_openDSS.py` | Real Ausgrid feeder validation | `profiles/fit_profiles.csv`, `Elermorevale/*.glm`, `common/Line Configs.glm` | Voltage/power plots, sweep CSV |
+| `ieee13_bus_feeder_model.py` | IEEE 13 Bus standard feeder validation | `profiles/fit_profiles.csv` | Voltage/power plots, sweep CSV |
+| `elermorevale_gui.py` | Interactive HTML dashboard generator | `Elermorevale/*.glm` (+ optional simulation) | `elermorevale_dashboard.html` |

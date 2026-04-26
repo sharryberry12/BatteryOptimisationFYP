@@ -7,3 +7,4 @@ scipy
 dss-python
 py-dss-interface
 py-dss-toolkit
+networkx
