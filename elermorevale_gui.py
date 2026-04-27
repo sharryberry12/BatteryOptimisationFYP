@@ -159,13 +159,21 @@ def generate_dashboard(G,sim_data=None,output_path="elermorevale_dashboard.html"
             et.append(0 if e in ("transformer","regulator") else 1)
     has_sim=sim_data is not None; sim_js="{}"
     if has_sim:
-        lbm=sim_data.get("load_bus_map",{})
-        for sc in ["baseline","qp"]:
-            sd=sim_data[sc]; nv={}
-            for lname,vs in sd["voltages"].items():
-                bus=lbm.get(lname,"").lower()
-                if bus in ni: nv[str(ni[bus])]=vs
-            sd["nv"]=nv
+        lbm = sim_data.get("load_bus_map", {})
+        ni_lower = {n.lower(): i for i, n in enumerate(nl)}   
+        for sc in ["baseline", "qp"]:
+            sd = sim_data[sc]
+            nv = {}
+            unmatched = 0
+            for lname, vs in sd["voltages"].items():
+                bus = lbm.get(lname, "").lower()
+                idx = ni_lower.get(bus)                       
+                if idx is not None:
+                    nv[str(idx)] = vs
+                else:
+                    unmatched += 1
+            sd["nv"] = nv
+            logger.info("Mapped %d voltages to nodes for %s (%d unmatched)", len(nv), sc, unmatched)
         sim_js=json.dumps({"baseline":{"nv":sim_data["baseline"]["nv"],"tp":sim_data["baseline"]["tx_p"],
             "dt":sim_data["baseline"].get("date",""),"lk":sim_data["baseline"]["loss_kw"]},
             "qp":{"nv":sim_data["qp"]["nv"],"tp":sim_data["qp"]["tx_p"],
@@ -297,8 +305,8 @@ if(hoverNode>=0){{const[sx,sy]=w2s(NX[hoverNode],NY[hoverNode]);ctx.strokeStyle=
 let lf=performance.now();function loop(now){{const dt=(now-lf)/1000;lf=now;gt+=dt;if(view==='dynamic')for(let p of parts){{p.t+=p.sp*dt*60;if(p.t>=1){{p.t=0;p.ei=Math.random()*EA.length|0;p.sp=.002+Math.random()*.008}}}};render();if(playing&&view==='dynamic'&&now-lt>=500/spd){{lt=now;ct=(ct+1)%48;setTime(ct)}};requestAnimationFrame(loop)}}
 requestAnimationFrame(loop);
 function setView(v){{view=v;document.querySelectorAll('.VB').forEach(b=>b.classList.toggle('on',b.dataset.v===v));const pbx=document.getElementById('pbx');if(pbx)pbx.style.display=(v==='dynamic'&&hasSim)?'flex':'none';const mt=document.getElementById('mt');if(mt)mt.style.display=(v==='dynamic'&&hasSim)?'flex':'none';if(v==='static'){{playing=false;document.getElementById('pb').innerHTML='&#9654;'}}}}
-function setTime(t){{ct=t;document.getElementById('ts').value=t;document.getElementById('td').textContent=hrs[t];if(!hasSim||view!=='dynamic')return;const sc=S[mode],nv=sc.nv;const aV=Object.values(nv).map(a=>a[t]).filter(v=>v>.01);if(aV.length){{const mn=Math.min(...aV),mx=Math.max(...aV),vi=aV.filter(v=>v<.94||v>1.10).length;document.getElementById('sn').textContent=mn.toFixed(3);document.getElementById('sx').textContent=mx.toFixed(3);document.getElementById('sv').textContent=vi;document.getElementById('sn').className='V'+(mn<.94?' d':mn<.97?' w':' g');document.getElementById('sx').className='V'+(mx>1.10?' d':mx>1.07?' w':' g');document.getElementById('sv').className='V'+(vi>0?' d':' g')}}const p=sc.tp[t];if(p!==undefined)document.getElementById('sp').textContent=Math.round(p)+' kW';if(typeof Plotly!=='undefined'&&document.getElementById('pc')){{try{{Plotly.restyle('pc',{{x:[[t*.5,t*.5]]}},[2])}}catch(e){{}}try{{Plotly.restyle('hc',{{x:[Object.values(nv).map(a=>a[t]).filter(v=>v>.01)]}},[0])}}catch(e){{}}}}}}
-function setMode(m){{mode=m;document.querySelectorAll('.MB').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(hasSim&&view==='dynamic')setTime(ct)}}
+function setTime(t){{ct=t;document.getElementById('ts').value=t;document.getElementById('td').textContent=hrs[t];if(!hasSim)return;const sc=S[mode],nv=sc.nv;const aV=Object.values(nv).map(a=>a[t]).filter(v=>v>.01);if(typeof Plotly!=='undefined'&&document.getElementById('hc')){{try{{Plotly.restyle('hc',{{x:[aV]}},[0])}}catch(e){{}}}}if(typeof Plotly!=='undefined'&&document.getElementById('pc')){{try{{Plotly.restyle('pc',{{x:[[t*.5,t*.5]]}},[2])}}catch(e){{}}}}if(view!=='dynamic')return;if(aV.length){{const mn=Math.min(...aV),mx=Math.max(...aV),vi=aV.filter(v=>v<.94||v>1.10).length;document.getElementById('sn').textContent=mn.toFixed(3);document.getElementById('sx').textContent=mx.toFixed(3);document.getElementById('sv').textContent=vi;document.getElementById('sn').className='V'+(mn<.94?' d':mn<.97?' w':' g');document.getElementById('sx').className='V'+(mx>1.10?' d':mx>1.07?' w':' g');document.getElementById('sv').className='V'+(vi>0?' d':' g')}}const p=sc.tp[t];if(p!==undefined)document.getElementById('sp').textContent=Math.round(p)+' kW'}}
+function setMode(m){{mode=m;document.querySelectorAll('.MB').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(hasSim)setTime(ct)}}
 function togglePlay(){{playing=!playing;document.getElementById('pb').innerHTML=playing?'&#9646;&#9646;':'&#9654;';if(playing)lt=performance.now()}}
 function setSpd(s){{spd=s;document.querySelectorAll('.SBn').forEach(b=>b.classList.toggle('on',+b.dataset.s===s))}}
 if(hasSim){{const bP=S.baseline.tp,qP=S.qp.tp,xH=hrs.map((_,i)=>i*.5);

@@ -1,5 +1,5 @@
 """
-osqp_daily_v2.py
+osqp_daily_openDSS.py
 ================
 
 Faithful re-implementation of the QP-based residential battery scheduling
