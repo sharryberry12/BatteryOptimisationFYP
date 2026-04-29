@@ -30,7 +30,7 @@ Usage:
     # Interactive backend (any day, any scenario, on demand)
     python elermorevale_gui_v2.py --serve --port 8765
 
-    # --layout spring (for organic layout)
+    # --layout spring (for organic look)
 
 The static path stays compatible with the original CLI, so existing
 workflows keep working.
@@ -102,10 +102,14 @@ def build_topology(glm_dir):
         name = p.get("name", "")
         if f and t:
             G.add_edge(f, t, element="transformer", name=name)
-            if "132" in f or "Jesmond" in f:
+            # Zone substation: from-bus is the 132 kV side (stricter:
+            # require the literal "132kV" substring, not just "132")
+            if "132kV" in f:
                 bus_vl[f] = "HV"
                 bus_vl[t] = "MV"
             elif "TXZoneSub" not in name:
+                # Distribution transformer: from-bus is MV (11 kV),
+                # to-bus is LV (433 V)
                 bus_vl.setdefault(f, "MV")
                 bus_vl[t] = "LV"
                 parent_tx[t] = name
@@ -128,15 +132,12 @@ def build_topology(glm_dir):
             if f and t:
                 G.add_edge(f, t, element=ot, length=0.001)
 
-    for n in G.nodes():
-        if n not in bus_vl:
-            if "132" in n or "Jesmond" in n:
-                bus_vl[n] = "HV"
-            elif n.startswith("_100") or "BusZone" in n:
-                bus_vl[n] = "MV"
-            else:
-                bus_vl[n] = "LV"
-    nx.set_node_attributes(G, bus_vl, "vl")
+    # Defer voltage-level classification until after BFS.
+    # bus_vl currently holds only what we could derive from transformer
+    # edges (Jesmond_132kV_Bus = HV; from-buses of dist TXs = MV;
+    # to-buses of dist TXs = LV). Everything else gets classified below
+    # via BFS reachability through transformer edges, which is the
+    # physically correct way to do it.
 
     parent_of = {}
     for pl in by_type.values():
@@ -160,12 +161,19 @@ def build_topology(glm_dir):
     nx.set_node_attributes(G, {n: n in lc for n in G.nodes()}, "hl")
     nx.set_node_attributes(G, dict(lc), "nl")
 
-    # BFS depth + electrical distance for #6
+    # Find the source: stricter than v1's "any node containing 132".
+    # We look for the literal "132kV" substring and prefer it; only fall
+    # back to broader matching if nothing matches.
     source = None
     for n in G.nodes():
-        if "Jesmond" in n or "132" in n:
+        if "132kV" in n:
             source = n
             break
+    if source is None:
+        for n in G.nodes():
+            if "Jesmond" in n:
+                source = n
+                break
 
     depth, dist_m = {}, {}
     if source:
@@ -183,6 +191,49 @@ def build_topology(glm_dir):
 
     nx.set_node_attributes(G, depth, "depth")
     nx.set_node_attributes(G, dist_m, "dist_m")
+
+    # Voltage-level classification via BFS through transformer edges.
+    # Walk the network from the source. At each step we know which
+    # voltage level we're on; we transition only when crossing a
+    # distribution transformer (or the zone substation TX). This is
+    # robust against arbitrary bus naming conventions.
+    if source:
+        vl_walk = {source: "HV"}
+        q = deque([source])
+        while q:
+            c = q.popleft()
+            cur_vl = vl_walk[c]
+            for nb in G.neighbors(c):
+                if nb in vl_walk:
+                    continue
+                edge = G.edges[c, nb]
+                if edge.get("element") == "transformer":
+                    txname = edge.get("name", "")
+                    if cur_vl == "HV":
+                        # Crossing the zone substation: HV → MV
+                        nb_vl = "MV"
+                    elif "TXZoneSub" in txname or "OLTC" in txname:
+                        # Still inside the zone-sub stage (e.g. OLTC
+                        # autotransformer downstream of TXZoneSub):
+                        # stay on MV.
+                        nb_vl = cur_vl
+                    else:
+                        # Distribution transformer: MV → LV
+                        nb_vl = "LV"
+                else:
+                    # Line / switch / fuse: voltage level doesn't change
+                    nb_vl = cur_vl
+                vl_walk[nb] = nb_vl
+                q.append(nb)
+        bus_vl.update(vl_walk)
+
+    # Final fallback for any node not reached by BFS (shouldn't happen
+    # on this network — everything is one connected component — but be
+    # defensive):
+    for n in G.nodes():
+        if n not in bus_vl:
+            bus_vl[n] = "LV"
+    nx.set_node_attributes(G, bus_vl, "vl")
 
     # propagate parent_tx down LV trees
     full_parent_tx = {}
