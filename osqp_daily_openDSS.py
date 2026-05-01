@@ -4,52 +4,43 @@ osqp_daily_openDSS.py
 
 Faithful re-implementation of the QP-based residential battery scheduling
 algorithm of Ratnam, Weller & Kellett (Renewable Energy 75, 2015), applied
-to the Ausgrid "Solar home electricity data" (2010-2013).
+to the Ausgrid "Solar home electricity data".
 
-Relative to osqp_daily.py this file:
+Changes from the previous revision
+----------------------------------
 
-  * Matches the paper's heuristic for the weighting matrix H (Section 5)
-    more faithfully: base-line H0 is built from the saturated ratio
-    h_tilde_k / h_plus, and the greedy search doubles the currently-largest
-    tier of weights (not just the max-tariff indices) until no further
-    improvement is obtained, with weights capped at h_bar = 1000.
+1.  Cleaning is now applied IN-CODE using the rules from the companion
+    dataset paper (Ratnam, Weller, Kellett & Murray, Int. J. Sustainable
+    Energy 36(8), 2017, Section 3) instead of a hardcoded customer-ID
+    list.  This means the script automatically derives the correct clean
+    set for whatever date range the input CSV happens to cover (1 yr,
+    3 yr, etc.). The four rules implemented (all thresholds in kW, as
+    in the paper):
 
-  * Implements both paper metering topologies correctly:
-        - Topology 1 (gross FiT): separate meters for PV generation and
-          for load+battery; PV credited at the FiT rate on the raw generation
-          profile g, load billed at TOU on (l - b).
-        - Topology 2 (net metering): a single bi-directional meter on p;
-          imports billed at TOU, exports credited at the net-metering rate.
+      * GC anomaly    : any day where max gc(j) < 0.006   (load <6W all day)
+      * GG Category 1 : any day where max gg(j) < 0.06    (peak PV <60W)
+      * GG Category 2 : any day where max gg(j) < 0.101 AND
+                                       sum gg(j) <= 0.65  (daily PV <=0.325 kWh)
+      * GG Category 3 : any day where sum gg(1..10) > 0.04 (>0.02 kWh before 5am)
 
-  * Uses a single persistent OSQP workspace per worker process. Because
-    the constraint matrices A_batt, l_batt, u_batt are problem-invariant
-    and the Hessian P = 2H is diagonal, we set up once and then use
-    osqp.update(Px=..., q=...) on every subsequent day. This is roughly
-    an order of magnitude faster than tearing down and re-creating the
-    solver each call.
+    A customer is retained iff NO day in the dataset triggers any of
+    these flags. CL anomalies are deliberately ignored, matching the
+    paper's Section 3.4 note that customer 161 (with CL changes) is
+    still in the clean set.
 
-  * Pre-extracts each (customer, day) slice into plain numpy arrays once,
-    outside the hot loop, so the optimisation never touches pandas.
+2.  CSV values are converted from kWh-per-half-hour to kW at load time.
+    The Ausgrid CSV reports energy in each 30-min interval (kWh); the
+    paper's gc(j), gg(j), cl(j) and the OSQP/billing math throughout
+    this file are all in kW. Doing the conversion once at load time
+    makes (a) the cleaning thresholds match the paper exactly and
+    (b) the downstream `flow_kW * tariff * DT` billing dimensionally
+    correct.
 
-  * Reproduces the figures actually shown in the paper: Fig. 2 (example
-    load/PV/battery/grid profiles), Fig. 5 (SOC trajectories for customers
-    75 and 200 on the representative days), Fig. 6 (daily savings
-    distribution), Fig. 7 (annual savings histogram by topology) and
-    Fig. 8 (annual savings vs battery capacity sweep).
-
-Differences from osqp_daily.py worth noting in review comments:
-  - osqp_daily.py uses FEED_IN = 0.08 for its "net" mode; the paper uses
-    0.40 $/kWh for both the gross FiT (topology 1) and the net-metering
-    export credit (topology 2). v2 uses the paper's values by default.
-  - osqp_daily.py's FiT billing credits pv + battery_export at the FiT
-    rate. The paper's topology 1 has separate gross meters so PV is
-    credited exactly once, on the raw generation g; any battery export
-    through M2 is treated as load billing at TOU (and cannot be negative
-    since M2 is gross). v2 implements this.
-  - osqp_daily.py calls figure7 with arguments in an order that swaps the
-    Net and FiT subplot labels. Fixed here.
-  - osqp_daily.py's build_H0 returns the tariff directly. The paper
-    normalises by h_plus and caps at h_bar. Fixed here.
+3.  Interval ordering uses an integer index 1..48 taken from the CSV's
+    natural column order, not a parsed clock time. Sorting "0:00" as
+    a parsed time would put the end-of-day midnight column at the start
+    of the day, shifting every reading by 30 min and (importantly)
+    breaking the "first 10 intervals = before 5 am" check.
 """
 
 import logging
@@ -85,58 +76,185 @@ HEURISTIC_MAX_ITERS = 20  # safety cap on the greedy loop
 
 
 # ==========================================================
-# DATA LOADING + CLEANING (same clean-customer list as v1,
-# which follows the paper's companion dataset paper)
+# CLEANING THRESHOLDS (Ratnam et al. 2017, Section 3)
+# ==========================================================
+# All thresholds are in kW (i.e. on the converted gc(j), gg(j) values).
+
+GC_MAX_THRESHOLD     = 0.006   # GC rule: max gc(j) < 0.006
+GG_CAT1_MAX          = 0.06    # Cat 1: max gg(j) < 0.06
+GG_CAT2_MAX          = 0.101   # Cat 2: max gg(j) < 0.101 AND
+GG_CAT2_SUM          = 0.65    #        sum gg(j)  <= 0.65   (= 0.325 kWh/day)
+GG_CAT3_EARLY_SUM    = 0.04    # Cat 3: sum gg(1..10) > 0.04 (= 0.02 kWh)
+GG_CAT3_EARLY_LIMIT  = 10      # number of leading intervals = 5 hours
+
+
+# ==========================================================
+# DATA LOADING
 # ==========================================================
 
-CLEAN_CUSTOMER_IDS = [
-    2, 13, 14, 20, 33, 35, 38, 39, 56, 69, 73, 74, 75, 82, 87, 88,
-    101, 104, 106, 109, 110, 119, 124, 130, 137, 141, 144, 152, 153,
-    157, 161, 169, 176, 184, 188, 189, 193, 200, 201, 202, 204, 206,
-    207, 210, 211, 212, 214, 218, 244, 246, 253, 256, 273, 276, 297,
-]
-
-
 def load_dataset(path):
+    """
+    Load the Ausgrid 'Solar home electricity data' CSV.
+
+    The file's first row is a free-text title; row 2 is the real header.
+    Each subsequent row holds one (customer, consumption_category, date)
+    tuple with 48 half-hourly values in columns 0:30, 1:00, ..., 23:30,
+    0:00. Values are in kWh per half-hour interval. We convert to kW
+    (average power over the interval) at load time so that the paper's
+    cleaning thresholds and billing math both use a single consistent
+    unit downstream.
+    """
     df = pd.read_csv(path, skiprows=1)
-    time_cols = df.columns[5:]
+
+    # Columns 0..4 are metadata; columns 5.. are the 48 half-hour readings,
+    # in their natural left-to-right order: 0:30, 1:00, ..., 23:30, 0:00.
+    # We assign each an integer interval index 1..48 from this order so
+    # that downstream sorting respects the actual time-of-day, even though
+    # "0:00" (=24:00, end of day) would otherwise sort to the front.
+    time_cols = list(df.columns[5:])
+    if len(time_cols) != T:
+        raise ValueError(
+            f"Expected {T} time columns, found {len(time_cols)}: {time_cols}")
+    interval_map = {label: i + 1 for i, label in enumerate(time_cols)}
+
     df_long = df.melt(
         id_vars=["Customer", "Generator Capacity", "Postcode",
                  "Consumption Category", "date"],
         value_vars=time_cols,
-        var_name="time",
-        value_name="energy",
+        var_name="time_label",
+        value_name="energy_kwh",
     )
-    df_long["time"] = pd.to_datetime(df_long["time"], format="%H:%M")
+    df_long["interval"] = df_long["time_label"].map(interval_map)
+    df_long["energy_kwh"] = pd.to_numeric(
+        df_long["energy_kwh"], errors="coerce").fillna(0.0)
+
+    # kWh-per-half-hour -> kW (average power over the half-hour).
+    df_long["power_kw"] = df_long["energy_kwh"] / DT
+
     pivot = df_long.pivot_table(
-        index=["Customer", "date", "time"],
+        index=["Customer", "date", "interval"],
         columns="Consumption Category",
-        values="energy",
+        values="power_kw",
     ).reset_index()
-    pivot = pivot.sort_values(["Customer", "date", "time"])
+    pivot.columns.name = None
     for col in ("GC", "CL", "GG"):
         if col not in pivot.columns:
             pivot[col] = 0.0
         pivot[col] = pivot[col].fillna(0.0)
+
+    # Parse the date so chronological ordering works downstream
+    # (Ausgrid's day-month-year string sorts lexically otherwise).
+    pivot["date_parsed"] = pd.to_datetime(pivot["date"], format="%d-%b-%y")
+    pivot = pivot.sort_values(["Customer", "date_parsed", "interval"])
+
+    # The paper writes the residential power balance as
+    #     d(j) = gc(j) - gg(j) + cl(j),
+    # so the customer's load (kW) seen behind the meter is GC + CL.
     pivot["load"] = pivot["GC"] + pivot["CL"]
     pivot["pv"] = pivot["GG"]
+
+    logger.info(
+        "Loaded %d rows | %d customers | %d unique dates (%s..%s)",
+        len(pivot),
+        pivot["Customer"].nunique(),
+        pivot["date_parsed"].nunique(),
+        pivot["date_parsed"].min().strftime("%Y-%m-%d"),
+        pivot["date_parsed"].max().strftime("%Y-%m-%d"),
+    )
     return pivot
 
 
+# ==========================================================
+# CLEANING (Ratnam et al. 2017, Section 3)
+# ==========================================================
+
+def identify_clean_customers(df):
+    """
+    Apply the four anomaly rules from the dataset paper and return the
+    sorted list of customer IDs that pass all of them. The rules are
+    intentionally strict: a single anomalous day anywhere in the input
+    range disqualifies a customer for the whole horizon, mirroring the
+    paper's Section 3 procedure.
+    """
+    daily = df.groupby(["Customer", "date_parsed"], sort=False).agg(
+        gc_max=("GC", "max"),
+        gg_max=("GG", "max"),
+        gg_sum=("GG", "sum"),
+        n_intervals=("interval", "count"),
+    )
+
+    # Cat 3 needs the sum over the FIRST 10 intervals (0:30 .. 5:00 inclusive).
+    # Compute it separately and join.
+    early = (
+        df[df["interval"] <= GG_CAT3_EARLY_LIMIT]
+        .groupby(["Customer", "date_parsed"], sort=False)["GG"]
+        .sum()
+        .rename("gg_early_sum")
+    )
+    daily = daily.join(early)
+    daily["gg_early_sum"] = daily["gg_early_sum"].fillna(0.0)
+
+    # Per-day flags (paper Section 3.1, 3.2)
+    daily["gc_anom"]  = daily["gc_max"] < GC_MAX_THRESHOLD
+    daily["gg_cat1"]  = daily["gg_max"] < GG_CAT1_MAX
+    daily["gg_cat2"]  = (daily["gg_max"] < GG_CAT2_MAX) & \
+                       (daily["gg_sum"] <= GG_CAT2_SUM)
+    daily["gg_cat3"]  = daily["gg_early_sum"] > GG_CAT3_EARLY_SUM
+
+    # Per-customer rollup: any anomalous day -> drop the customer
+    per_cust = daily.groupby(level="Customer").agg(
+        any_gc=("gc_anom", "any"),
+        any_c1=("gg_cat1", "any"),
+        any_c2=("gg_cat2", "any"),
+        any_c3=("gg_cat3", "any"),
+    )
+    bad = (per_cust["any_gc"] | per_cust["any_c1"]
+           | per_cust["any_c2"] | per_cust["any_c3"])
+
+    n_total = len(per_cust)
+    logger.info("Cleaning report (Ratnam et al. 2017, Section 3):")
+    logger.info("  Total customers in dataset             : %4d", n_total)
+    logger.info("  Removed by GC rule (load <6W any day)  : %4d",
+                int(per_cust["any_gc"].sum()))
+    logger.info("  Removed by GG Cat 1 (peak <60W any day): %4d",
+                int(per_cust["any_c1"].sum()))
+    logger.info("  Removed by GG Cat 2 (daily PV <=0.325kWh): %4d",
+                int(per_cust["any_c2"].sum()))
+    logger.info("  Removed by GG Cat 3 (PV before 5 am)   : %4d",
+                int(per_cust["any_c3"].sum()))
+    logger.info("  Removed by ANY rule (with overlap)     : %4d",
+                int(bad.sum()))
+    logger.info("  Clean customers retained               : %4d",
+                int((~bad).sum()))
+
+    return sorted(per_cust.index[~bad].astype(int).tolist())
+
+
 def clean_dataset(df):
-    df_clean = df[df["Customer"].isin(CLEAN_CUSTOMER_IDS)]
+    """
+    Apply the paper's cleaning rules, then drop any incomplete days
+    (days without all 48 half-hour readings -- e.g. the AEST/AEDT
+    boundary days noted in Section 2.2 of the paper).
+    """
+    clean_ids = identify_clean_customers(df)
+    df_clean = df[df["Customer"].isin(clean_ids)]
+
     good_days = []
-    removed = 0
-    for _, day in df_clean.groupby(["Customer", "date"], sort=False):
+    incomplete = 0
+    for _, day in df_clean.groupby(["Customer", "date_parsed"], sort=False):
         if len(day) == T:
             good_days.append(day)
         else:
-            removed += 1
+            incomplete += 1
+
     if not good_days:
+        logger.warning("No complete days survived cleaning!")
         return pd.DataFrame(columns=df.columns)
+
     out = pd.concat(good_days, ignore_index=True)
-    logger.info("Customers after cleaning: %d", out["Customer"].nunique())
-    logger.info("Days removed (incomplete): %d", removed)
+    logger.info("Customers after cleaning + completeness : %d",
+                out["Customer"].nunique())
+    logger.info("Incomplete days dropped (DST etc.)      : %d", incomplete)
     return out
 
 
@@ -144,16 +262,18 @@ def extract_day_arrays(df):
     """
     Collapse the long-format dataframe into a dict
         customer_id -> list of (date, load_array, pv_array)
-    where each array has length T. Avoids pandas overhead in the hot loop.
+    where each array has length T (kW units). Avoids pandas overhead
+    in the hot loop.
     """
     out = {}
-    df = df.sort_values(["Customer", "date", "time"])
+    df = df.sort_values(["Customer", "date_parsed", "interval"])
     for cust, cust_df in df.groupby("Customer", sort=True):
         days = []
-        for date, day in cust_df.groupby("date", sort=True):
+        for date_parsed, day in cust_df.groupby("date_parsed", sort=True):
             if len(day) != T:
                 continue
-            days.append((date,
+            date_str = day["date"].iloc[0]
+            days.append((date_str,
                          day["load"].to_numpy(dtype=np.float64),
                          day["pv"].to_numpy(dtype=np.float64)))
         out[int(cust)] = days
@@ -191,8 +311,6 @@ def build_constraints(e_max, soc_init_frac=0.5, p_max=P_MAX):
         (e_max - soc_init) * np.ones(T),
         np.array([0.0]),
     ])
-    # Lower power-limit duplication removed: I_T with symmetric bounds
-    # already does both sides in one block, so we only need one copy.
     return A, l, u
 
 
@@ -209,7 +327,6 @@ def _get_solver(e_max):
         return cache["solver"]
 
     A, l, u = build_constraints(e_max)
-    # Placeholder P and q; will be updated on every solve.
     P0 = sp.diags(2.0 * np.ones(T), format="csc")
     q0 = np.zeros(T)
 
@@ -240,7 +357,7 @@ def solve_battery(load, pv, h_diag, e_max):
     q = -2.0 * h_diag * net
     solver.update(Px=P_data, q=q)
     res = solver.solve()
-    if res.info.status_val not in (1, 2):  # solved / solved_inaccurate
+    if res.info.status_val not in (1, 2):
         logger.warning("OSQP status: %s", res.info.status)
     return res.x
 
@@ -270,7 +387,7 @@ def bill_topology1(load, pv, b, tariff, fit=FIT_RATE):
       - PV credited on raw g at the flat FiT rate.
       - Load+battery billed on max(l - b, 0) at TOU (M2 is gross).
     """
-    flow_m2 = np.maximum(load - b, 0.0)  # M2 is unidirectional
+    flow_m2 = np.maximum(load - b, 0.0)
     return np.sum(flow_m2 * tariff * DT) - np.sum(pv * fit * DT)
 
 
@@ -325,9 +442,6 @@ def optimise_H(load, pv, tariff, e_max, mode):
     best_s, best_b = savings_for(h)
     best_h = h.copy()
 
-    # Tiers of indices, largest weight first. Indices are frozen at the
-    # initial H0 grouping, matching the paper's "doubles weights in H0
-    # progressively, from the largest to the smallest element".
     unique_levels = np.unique(h)[::-1]
     tiers = [np.where(h == lvl)[0] for lvl in unique_levels]
 
@@ -377,8 +491,8 @@ def _worker(args):
             "date": date,
             "load": load,          # l_k  (kW)
             "pv": pv,              # g_k  (kW)
-            "battery": b,          # b_k  (kW, +discharge/−charge)
-            "grid": p,             # p_k  (kW, +import/−export)
+            "battery": b,          # b_k  (kW, +discharge/-charge)
+            "grid": p,             # p_k  (kW, +import/-export)
             "soc": soc,            # SOC at end of each interval (kWh)
             "savings": s,          # daily savings ($)
         })
@@ -388,9 +502,9 @@ def _worker(args):
 def run_all(day_arrays, mode, e_max=E_MAX_DEFAULT):
     """
     Run simulation for every customer. Returns:
-        customers   – sorted array of customer IDs
-        savings     – corresponding annual savings ($)
-        all_profiles – dict  {customer_id: [day_profile_dict, ...]}
+        customers   - sorted array of customer IDs
+        savings     - corresponding annual savings ($)
+        all_profiles - dict {customer_id: [day_profile_dict, ...]}
             Each day_profile_dict has keys:
                 date, load, pv, battery, grid, soc, savings
             All arrays are length-48 numpy float64.
@@ -428,9 +542,6 @@ def save_profiles(all_profiles, mode, out_dir="profiles"):
       2. Per-customer CSVs in profiles/{mode}/cust_{id}/:
          one file per day, containing only the 48-row grid profile p_k.
          These are directly consumable as OpenDSS LoadShape mult files.
-
-    The long CSV is useful for analysis; the per-customer files are
-    useful for driving OpenDSS time-series simulations.
     """
     import os
 
@@ -455,11 +566,9 @@ def save_profiles(all_profiles, mode, out_dir="profiles"):
             soc = day_prof["soc"]
             sav = day_prof["savings"]
 
-            # Per-day OpenDSS shape file: just the grid profile
             fname = os.path.join(cust_dir, f"{date}.csv")
             np.savetxt(fname, grid, fmt="%.6f", delimiter=",")
 
-            # Accumulate rows for the long CSV
             for k in range(T):
                 rows.append({
                     "customer": int(cust),
@@ -487,10 +596,24 @@ def save_profiles(all_profiles, mode, out_dir="profiles"):
 # ==========================================================
 
 def _find_day(day_arrays, customer, target_date_str):
-    """Return (load, pv) for a (customer, date) pair, or None."""
+    """
+    Return (load, pv) for a (customer, date) pair, or None.
+    target_date_str can be either Ausgrid-format (e.g. '5-Feb-11')
+    or ISO (e.g. '2011-02-05'); we match either way.
+    """
+    try:
+        target = pd.to_datetime(target_date_str).strftime("%Y-%m-%d")
+    except Exception:
+        target = None
     for date, load, pv in day_arrays.get(customer, []):
-        if str(date) == target_date_str or str(date).startswith(target_date_str):
+        if str(date) == target_date_str:
             return load, pv
+        if target is not None:
+            try:
+                if pd.to_datetime(date, format="%d-%b-%y").strftime("%Y-%m-%d") == target:
+                    return load, pv
+            except Exception:
+                pass
     return None
 
 
@@ -628,7 +751,6 @@ def figure8_capacity_sweep(day_arrays, customers=(75, 200), mode="fit",
     for cust in customers:
         totals = []
         for cap in capacities:
-            # Reset per-capacity solver
             _SOLVER_CACHE["solver"] = None
             _SOLVER_CACHE["e_max"] = None
             total = 0.0
