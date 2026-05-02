@@ -1,6 +1,6 @@
 """
-osqp_daily_openDSS.py
-================
+osqp_daily.py
+============
 
 Faithful re-implementation of the QP-based residential battery scheduling
 algorithm of Ratnam, Weller & Kellett (Renewable Energy 75, 2015), applied

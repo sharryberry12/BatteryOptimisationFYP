@@ -8,8 +8,8 @@ using OpenDSS, driven entirely from Python via dss-python.
 Builds the IEEE 13 Node Test Feeder — a standard 4.16 kV radial
 distribution network with unbalanced loads, voltage regulators, and
 mixed overhead/underground lines. Adds residential LV distribution
-transformers at key load buses, then maps the 55 clean-dataset customers
-from osqp_daily_v2 onto LV service drops. Injects their half-hourly grid
+transformers at key load buses, then maps all clean-dataset customers
+from osqp_daily onto LV service drops. Injects their half-hourly grid
 profiles as LoadShapes, runs 48-step daily power flow, and records:
 
     * Per-node voltage magnitudes (p.u.)
@@ -20,7 +20,7 @@ profiles as LoadShapes, runs 48-step daily power flow, and records:
 Two scenarios are compared on each simulated day:
 
     Baseline  — no battery (p = l − g, the raw net load)
-    QP        — battery dispatched (p = l − g − b, from osqp_daily_openDSS.py)
+    QP        — battery dispatched (p = l − g − b, from osqp_daily.py)
 
 IEEE 13 Bus Topology (from IEEE PES Test Feeder):
 
@@ -39,7 +39,7 @@ IEEE 13 Bus Topology (from IEEE PES Test Feeder):
 Customer integration:
     * 5 LV distribution transformers (4.16 kV / 0.4 kV, Dyn11) added at
       buses 632, 671, 675, 652, 634 to create LV laterals
-    * 55 customers mapped round-robin across these LV zones and 3 phases
+    * N customers mapped round-robin across these LV zones and 3 phases
     * Each customer connected via a 15 m single-phase service drop
 
 Usage:

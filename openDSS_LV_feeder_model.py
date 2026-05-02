@@ -7,7 +7,7 @@ using OpenDSS, driven entirely from Python via dss-python.
 
 Builds a synthetic but realistic Australian LV distribution feeder from
 scratch — no external .dss files required. Maps the 55 clean-dataset
-customers from osqp_daily_v2 onto buses, injects their half-hourly grid
+customers from osqp_daily onto buses, injects their half-hourly grid
 profiles as LoadShapes, runs 48-step daily power flow, and records:
 
     * Per-node voltage magnitudes (p.u.)
@@ -18,7 +18,7 @@ profiles as LoadShapes, runs 48-step daily power flow, and records:
 Two scenarios are compared on each simulated day:
 
     Baseline  — no battery (p = l − g, the raw net load)
-    QP        — battery dispatched (p = l − g − b, from osqp_daily_openDSS.py)
+    QP        — battery dispatched (p = l − g − b, from osqp_daily.py)
 
 Usage:
     python openDSS_LV_feeder_model.py                          # representative days, show plots
@@ -33,7 +33,7 @@ Australian LV feeder parameters:
     * 11 kV / 433 V, 200 kVA transformer (Dyn11)
     * 300 m underground backbone, 95 mm² Al XLPE
     * 10 backbone nodes at 30 m spacing, 3-phase 4-wire
-    * 55 customers on single-phase service drops, ~19 per phase
+    * N customers on single-phase service drops, spread round-robin across phases
     * AS 60038: 230 V nominal, +10 % / −6 % statutory limits
 """
 

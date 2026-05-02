@@ -21,8 +21,8 @@ Line impedances are extracted from common/Line Configs.glm:
 
 This version adds profile-driven daily simulation and plotting,
 matching the interface of openDSS_LV_feeder_model.py. It reads the
-half-hourly CSV produced by osqp_daily_v2.save_profiles(), maps the
-55 QP-scheduled customers onto a subset of network loads, and compares
+half-hourly CSV produced by osqp_daily.save_profiles(), maps all
+QP-scheduled customers onto a subset of network loads, and compares
 baseline (no battery) vs QP-dispatched scenarios with:
 
     * Per-node voltage envelopes and heatmaps
@@ -645,10 +645,10 @@ def export_dss_summary(path="elermorevale_summary.txt"):
 # The workflow is:
 #   1. Build the full Elermore Vale network (all ~1,785 loads)
 #   2. Enumerate load elements in the DSS circuit
-#   3. Map ALL loads to the 55 OSQP customers via round-robin recycling
-#      (each of the 55 profiles is reused ~32 times, analogous to the
-#      paper's approach of duplicating 291 clean Ausgrid customers to
-#      fill 845 slots). This gives realistic aggregate loading.
+#   3. Map ALL loads to the clean OSQP customers via round-robin recycling
+#      (each profile is reused ~(n_loads/n_customers) times, analogous to
+#      the paper's approach of duplicating clean Ausgrid customers to fill
+#      all network slots). This gives realistic aggregate loading.
 #   4. Override every load to kw=1 with a half-hourly LoadShape
 #   5. Attach voltage monitors to an evenly-spaced SUBSET of loads
 #      (monitoring all ~1,785 would be excessive) + substation TX
@@ -684,11 +684,11 @@ def load_profiles_from_csv(csv_path):
         date, load, pv, battery, grid, soc, savings
     """
     import pandas as pd
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, parse_dates=["date"])
+    df = df.sort_values(["customer", "date", "interval"])
     profiles = defaultdict(list)
 
-    for (cust, date), grp in df.groupby(["customer", "date"], sort=True):
-        grp = grp.sort_values("interval")
+    for (cust, date), grp in df.groupby(["customer", "date"], sort=False):
         profiles[int(cust)].append({
             "date": date,
             "load": grp["load_kw"].to_numpy(dtype=np.float64),
@@ -722,17 +722,17 @@ def get_network_load_names():
 def map_customers_to_network_loads(customer_ids, load_names):
     """
     Map EVERY Load element in the Elermore Vale network to one of the
-    55 OSQP customer profiles, cycling round-robin. This mirrors the
-    paper's approach of duplicating 291 clean Ausgrid customers to fill
-    845 aggregate-member slots.
+    clean OSQP customer profiles, cycling round-robin. This mirrors the
+    paper's approach of duplicating clean Ausgrid customers to fill all
+    network slots, giving realistic aggregate loading.
 
-    With 55 customers and ~1,785 loads, each customer profile is reused
-    about 32 times. The result is realistic aggregate loading: peak
-    aggregate demand will be ~32× what the 55 customers alone produce.
+    The recycling factor is n_loads // n_customers, computed at runtime,
+    so the mapping scales correctly regardless of how many customers
+    pass the cleaning rules.
 
     Returns:
         load_customer_map : {load_element_name: customer_id}
-            — maps EVERY load to one of the 55 customer IDs
+            — maps EVERY load to one of the clean customer IDs
     """
     sorted_loads = sorted(load_names)
     sorted_customers = sorted(customer_ids)
