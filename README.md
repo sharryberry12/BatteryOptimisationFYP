@@ -45,7 +45,7 @@ The three steps below are independent — each takes the previous step's output 
 python osqp_daily.py
 ```
 
-Reads `data.csv`, cleans to the 55 valid customers, runs the [R15] Algorithm 1 weighting heuristic + OSQP for every customer-day under both metering topologies (FiT and net), writes `profiles/fit_profiles.csv` and `profiles/net_profiles.csv`, and produces paper figures 2/5/6/7/8 in [figures/](figures/).
+Reads `data.csv`, cleans to the ~144 valid customers (one-year window), runs the [R15] Algorithm 1 weighting heuristic + OSQP for every customer-day under both metering topologies (FiT and net), writes `profiles/fit_profiles.csv` and `profiles/net_profiles.csv`, and produces paper figures 2/5/6/7/8 in [figures/](figures/).
 
 Mean annual savings are logged at the end (~$430 FiT, ~$190 net for typical capacity).
 
@@ -97,10 +97,10 @@ Writes `elermorevale_dashboard.html` — a single-file dashboard with two tabs (
 
 - **GLM parsing** — `parse_glm()` in [elermorevale_openDSS.py](elermorevale_openDSS.py) walks the flat object syntax used by the Ausgrid GLM files. Numeric properties may carry units (e.g. `"11.59 m^2"`); `gfloat()` strips them before `float()` conversion.
 - **Line impedances** — 11 kV configurations use z-matrix format (Ohm/mile); LV configs reference named conductors with per-mile resistance. Both are extracted at runtime by `extract_impedances()`.
-- **Customer-to-load mapping** — the 55 OSQP customers are spread evenly across the ~1,810 network loads via `map_customers_to_network_loads()`. Unmapped loads are zeroed during simulation so the QP-vs-baseline signal isn't drowned by a static background.
+- **Customer-to-load mapping** — the ~144 OSQP customers are spread evenly across the ~1,810 network loads via `map_customers_to_network_loads()`. Unmapped loads are zeroed during simulation so the QP-vs-baseline signal isn't drowned by a static background.
 - **Per-unit base** — Australian residential loads in the GLM are declared at `nominal_voltage = 240 V`, so `V_NOM = 240.0` in the simulators. AS 60038 limits (`+10 % / −6 %`) are applied to the resulting per-unit voltages.
 - **Convergence** — snapshot/daily solves run with `controlmode=off` and elevated iteration caps. OpenDSS warning #485 (Max Control Iterations Exceeded) is downgraded to a logged warning since the power-flow result is still valid.
 
 ## Data files (not redistributed for size)
 
-`data.csv` and `cleaned_data.csv` are the Ausgrid solar-home electricity dataset (2010-2013). Source: [R17] supplementary data. The cleaning step retains the 55 customers without missing values across the full three-year window.
+`data.csv` and `cleaned_data.csv` are the Ausgrid solar-home electricity dataset (2010-2013). Source: [R17] supplementary data. The cleaning step retains the ~144 customers without missing values across a one-year window.
