@@ -813,7 +813,7 @@ canvas{{width:100%;height:100%;display:block}}
 </style></head><body>
 <div class="D">
 <div class="H">
-<div class="HL"><h1>ELERMORE VALE v2</h1>
+<div class="HL"><h1>ELERMORE VALE LV FEEDER GUI</h1>
 <div class="VT">
 <button class="VB on" data-v="static" onclick="setView('static')">STATIC TOPOLOGY</button>
 <button class="VB" data-v="dynamic" onclick="setView('dynamic')">LIVE FLOW</button>

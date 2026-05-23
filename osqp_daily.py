@@ -96,15 +96,20 @@ def load_dataset(path):
     """
     Load the Ausgrid 'Solar home electricity data' CSV.
 
-    The file's first row is a free-text title; row 2 is the real header.
-    Each subsequent row holds one (customer, consumption_category, date)
-    tuple with 48 half-hourly values in columns 0:30, 1:00, ..., 23:30,
-    0:00. Values are in kWh per half-hour interval. We convert to kW
-    (average power over the interval) at load time so that the paper's
-    cleaning thresholds and billing math both use a single consistent
-    unit downstream.
+    Row 1 is the header. Each subsequent row holds one
+    (customer, consumption_category, date) tuple with 48 half-hourly
+    values in columns 0:30, 1:00, ..., 23:30, 0:00. Values are in
+    kWh per half-hour interval. We convert to kW (average power over
+    the interval) at load time so that the paper's cleaning thresholds
+    and billing math both use a single consistent unit downstream.
+
+    If the file happens to start with a free-text title row (older
+    Ausgrid releases) we transparently skip it.
     """
-    df = pd.read_csv(path, skiprows=1)
+    with open(path, "r", encoding="utf-8-sig") as fh:
+        first_line = fh.readline()
+    has_title_row = "Customer" not in first_line.split(",")[0]
+    df = pd.read_csv(path, skiprows=1 if has_title_row else 0)
 
     # Columns 0..4 are metadata; columns 5.. are the 48 half-hour readings,
     # in their natural left-to-right order: 0:30, 1:00, ..., 23:30, 0:00.
@@ -716,32 +721,39 @@ def figure6_daily_savings(day_arrays, customers=(75, 200), mode="fit",
 
 def figure7_annual_savings(customers_fit, savings_fit,
                            customers_net, savings_net, bin_width=50):
-    """Paper Fig. 7: two-panel histogram, topology 1 (FiT) on top."""
+    """Two-panel histogram of annual savings, matching the paper's figure:
+    topology 1 (FiT) on top, topology 2 (Net) on bottom, with (a)/(b)
+    panel labels sitting outside the right edge of each axes."""
+
+    # Common bin edges spanning both datasets so the two panels are comparable.
     x_min = min(savings_fit.min(), savings_net.min())
     x_max = max(savings_fit.max(), savings_net.max())
     x_min = np.floor(x_min / bin_width) * bin_width
     x_max = np.ceil(x_max / bin_width) * bin_width
     edges = np.arange(x_min, x_max + bin_width, bin_width)
 
-    fig, axes = plt.subplots(2, 1, figsize=(8, 8), sharex=True)
-    axes[0].hist(savings_fit, bins=edges, color="gray", edgecolor="black")
-    axes[0].set_ylabel("Customers")
-    axes[0].set_title("Fig. 7(a): Annual savings, metering topology 1 (FiT)")
-    axes[0].grid(axis="y", alpha=0.3)
+    fig, axes = plt.subplots(2, 1, figsize=(8, 7))
 
-    axes[1].hist(savings_net, bins=edges, color="gray", edgecolor="black")
-    axes[1].set_ylabel("Customers")
-    axes[1].set_title("Fig. 7(b): Annual savings, metering topology 2 (Net)")
-    axes[1].grid(axis="y", alpha=0.3)
+    panels = [
+        (axes[0], savings_fit, "Annual savings given metering topology 1", "(a)"),
+        (axes[1], savings_net, "Annual savings given metering topology 2", "(b)"),
+    ]
 
-    for ax in axes:
-        ax.xaxis.set_major_locator(mticker.MultipleLocator(bin_width))
+    for ax, data, title, label in panels:
+        ax.hist(data, bins=edges, color="gray", edgecolor="black")
+        ax.set_title(title)
+        ax.set_ylabel("Customers")
+        ax.set_xlabel("$/yr")
+        ax.set_ylim(0, 20)
+        ax.set_yticks([0, 5, 10, 15, 20])
+        ax.xaxis.set_major_locator(mticker.MultipleLocator(500))
         ax.set_xlim(x_min, x_max)
-        ax.axvline(0, color="black", lw=0.8)
-    axes[-1].set_xlabel("$/yr")
+        # Panel label outside the right edge, vertically centred.
+        ax.text(1.02, 0.5, label, transform=ax.transAxes,
+                ha="left", va="center", fontsize=12)
+
     plt.tight_layout()
     plt.show()
-
 
 def figure8_capacity_sweep(day_arrays, customers=(75, 200), mode="fit",
                            capacities=(0.1, 1, 2, 4, 6, 8, 10, 15, 20, 30)):
@@ -774,7 +786,7 @@ def figure8_capacity_sweep(day_arrays, customers=(75, 200), mode="fit",
 # ==========================================================
 
 def main():
-    df_raw = load_dataset("data.csv")
+    df_raw = load_dataset("data1.csv")
     df_clean = clean_dataset(df_raw)
     day_arrays = extract_day_arrays(df_clean)
     logger.info("Extracted %d customers", len(day_arrays))
