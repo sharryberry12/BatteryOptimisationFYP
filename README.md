@@ -2,7 +2,7 @@
 
 QP-based residential battery scheduling on the Ausgrid solar-home dataset, validated on three OpenDSS distribution-network models (synthetic LV feeder, IEEE 13-bus, and the real Elermore Vale 11 kV feeder).
 
-The project reproduces the algorithm of Ratnam, Weller & Kellett (*Renewable Energy 75*, 2015) and assesses how the resulting battery dispatches behave when injected into a power-flow simulation of an actual Ausgrid feeder...
+The project reproduces the algorithm of Ratnam, Weller & Kellett (*Renewable Energy 75*, 2015) and assesses how the resulting battery dispatches behave when injected into a power-flow simulation of an actual Ausgrid feeder.
 
 ## References
 
