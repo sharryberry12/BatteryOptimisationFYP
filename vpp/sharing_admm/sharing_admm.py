@@ -122,7 +122,7 @@ def main():
     logger.info("=== Method D: sharing ADMM ===")
     logger.info("  iterations used     : %d", n_used)
     logger.info("  surrogate objective : %.4f", obj)
-    if obj_star:
+    if obj_star is not None:
         logger.info("  gap vs centralised  : %.3f %%",
                     (obj - obj_star) / obj_star * 100.0)
     logger.info("  envelope violation  : %.4f kW max", viol["max_kw"])

@@ -110,7 +110,8 @@ def main():
         obj = vc.objective_surrogate(households, B)
         agg_pi = vc.aggregate_pi(households, B)
         viol = vc.envelope_violation(agg_pi, d_min, d_max)
-        gap = (obj - obj_star) / obj_star * 100.0 if obj_star else np.nan
+        gap = (obj - obj_star) / obj_star * 100.0 \
+            if obj_star is not None else np.nan
         logger.info("  %-8s %10.3f %8.2f %9.3f %9.3f %10.2f",
                     name, obj, gap, viol["max_kw"], viol["energy_kwh"],
                     -agg_pi.min())

@@ -72,7 +72,8 @@ def solve_fcas(households, d_min, d_max, fcas_price, tau):
 
     blk_I = sp.block_diag([I_T] * N, format="csc")
     blk_soc = sp.block_diag([A_soc] * N, format="csc")
-    soc_init = vc.SOC_INIT_FRAC * households[0].e_max
+    soc_init = vc.SOC_INIT_FRAC * np.concatenate(
+        [np.full(T_, hh.e_max) for hh in households])
 
     rows = [
         # local battery rows (b only)
@@ -100,7 +101,7 @@ def solve_fcas(households, d_min, d_max, fcas_price, tau):
         np.concatenate(us),
         vc.P_MAX * np.ones(n),
         vc.P_MAX * np.ones(n),
-        soc_init * np.ones(n),
+        soc_init,
         np.inf * np.ones(T_),
         agg_net - d_min,
     ])

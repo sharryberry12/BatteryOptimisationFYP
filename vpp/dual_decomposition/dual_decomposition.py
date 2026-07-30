@@ -115,7 +115,7 @@ def main():
 
     logger.info("=== Method C: dual decomposition (ergodic average) ===")
     logger.info("  surrogate objective : %.4f", obj)
-    if obj_star:
+    if obj_star is not None:
         logger.info("  gap vs centralised  : %.3f %%",
                     (obj - obj_star) / obj_star * 100.0)
     logger.info("  envelope violation  : %.4f kW max (%d intervals)",

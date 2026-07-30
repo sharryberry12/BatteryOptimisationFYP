@@ -86,7 +86,9 @@ def allocate(rule, households, d_min, d_max):
         w = np.vstack([np.maximum(-hh.net, 0.0) for hh in households])
         col = w.sum(axis=0)
         share = np.where(col > 1e-9, w / np.maximum(col, 1e-9), 1.0 / N)
-        alloc = share * budget
+        # inf budget (unconstrained interval): share*inf gives 0*inf=nan
+        alloc = np.where(np.isinf(budget), np.inf,
+                         share * np.where(np.isfinite(budget), budget, 0.0))
     elif rule == "maxmin":
         caps = export_caps(households)
         alloc = np.zeros((N, vc.T))
@@ -113,10 +115,16 @@ def run_rule(rule, households, d_min, d_max):
     n_failed = 0
     for i, hh in enumerate(households):
         solver = vc.HouseholdSolver(hh, d_min=d_min_i[i], d_max=d_max_i[i])
-        curtail_kwh += float(solver.doe_relax_kw.sum() * vc.DT)
+        curtail_kwh += float((solver.doe_relax_kw
+                              + solver.import_relax_kw).sum() * vc.DT)
         b, status = solver.solve()
         if "solved" not in status:
             n_failed += 1  # zeros returned; shows up in violation metrics
+        elif vc.validate_dispatch(hh, b, d_min_hh=solver.d_min_eff,
+                                  d_max_hh=solver.d_max_eff):
+            n_failed += 1
+            logger.warning("household %s: dispatch violates its allocated "
+                           "envelope", hh.name)
         B[i] = b
     return B, curtail_kwh, n_failed
 
@@ -152,7 +160,8 @@ def main():
         agg_pi = vc.aggregate_pi(households, B)
         viol = vc.envelope_violation(agg_pi, d_min, d_max)
         savings = vc.savings_vector(households, B, tariff, args.mode)
-        gap = (obj - obj_star) / obj_star * 100.0 if obj_star else np.nan
+        gap = (obj - obj_star) / obj_star * 100.0 \
+            if obj_star is not None else np.nan
         rows.append((rule, obj, gap, savings.sum(),
                      vc.jain_index(savings), vc.gini(savings),
                      viol["max_kw"], curtail_kwh, n_failed))

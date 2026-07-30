@@ -164,6 +164,8 @@ def assemble_ensemble(day_arrays, n_households, date_iso=None,
     cyclically (name gets a '#rep' suffix), mirroring the replication
     already used to spread 145 customers over the feeder loads.
     """
+    if n_households < 1:
+        raise ValueError("n_households must be >= 1")
     date_iso = pick_date(day_arrays, date_iso)
     tariff = base.build_tariff()
 
@@ -261,6 +263,9 @@ class HouseholdSolver:
         self.hh = hh
         A, l, u = base.build_constraints(hh.e_max)
         self.doe_relax_kw = np.zeros(T)
+        self.import_relax_kw = np.zeros(T)
+        self.d_min_eff = None
+        self.d_max_eff = None
         if d_min is not None or d_max is not None:
             dmin = -np.inf * np.ones(T) if d_min is None else np.asarray(d_min)
             dmax = np.inf * np.ones(T) if d_max is None else np.asarray(d_max)
@@ -271,8 +276,13 @@ class HouseholdSolver:
             # physical meaning is PV curtailment. Relax to the battery
             # limit and record the shortfall so callers can report it.
             self.doe_relax_kw = np.maximum(-P_MAX - u_doe, 0.0)
+            self.import_relax_kw = np.maximum(l_doe - P_MAX, 0.0)
             u_doe = np.maximum(u_doe, -P_MAX)
             l_doe = np.minimum(l_doe, P_MAX)
+            # effective (post-relaxation) envelope in pi space, so callers
+            # can validate dispatches against what was actually enforced
+            self.d_min_eff = hh.net - u_doe
+            self.d_max_eff = hh.net - l_doe
             A = sp.vstack([A, sp.eye(T, format="csc")]).tocsc()
             l = np.concatenate([l, l_doe])
             u = np.concatenate([u, u_doe])
