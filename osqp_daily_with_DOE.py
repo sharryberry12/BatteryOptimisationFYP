@@ -863,7 +863,7 @@ def main():
     """
     Example workflow: load data, run baseline, then compare DOE scenarios.
     """
-    df_raw = load_dataset("data1.csv")
+    df_raw = load_dataset("data.csv")
     df_clean = clean_dataset(df_raw)
     day_arrays = extract_day_arrays(df_clean)
     logger.info("Extracted %d customers", len(day_arrays))

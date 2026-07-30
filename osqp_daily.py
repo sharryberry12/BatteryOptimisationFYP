@@ -786,7 +786,7 @@ def figure8_capacity_sweep(day_arrays, customers=(75, 200), mode="fit",
 # ==========================================================
 
 def main():
-    df_raw = load_dataset("data1.csv")
+    df_raw = load_dataset("data.csv")
     df_clean = clean_dataset(df_raw)
     day_arrays = extract_day_arrays(df_clean)
     logger.info("Extracted %d customers", len(day_arrays))

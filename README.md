@@ -23,6 +23,7 @@ PDFs of [R15] and [R17] are checked in at the repo root.
 | [elermorevale_gui.py](elermorevale_gui.py) | Self-contained HTML dashboard for the Elermore Vale network: static topology view + animated live-flow view with synced Plotly charts. |
 | [Elermorevale/](Elermorevale/) | GridLAB-D source for the Elermore Vale 11 kV feeder (zone substation, 23 distribution transformers, ~1,810 loads, 155 PV systems, 40 Redflow batteries). |
 | [common/](common/) | Shared GridLAB-D includes — line configurations, transformer configs, tariff schedules, GLM modules. |
+| [vpp/](vpp/) | Part B VPP extension: multi-household coupling methods (centralised QP, two-stage DOE allocation, dual decomposition, sharing ADMM, price-based control, FCAS co-optimisation), one subfolder + README per approach. See [vpp/README.md](vpp/README.md) and the design docs [VPP_EXTENSION.md](VPP_EXTENSION.md) / [paper_context.md](paper_context.md). |
 | [profiles/](profiles/) | Output of `osqp_daily.py`: half-hourly load/PV/battery/grid time series in long-format CSV. `fit_profiles.csv` = topology 1 (gross FiT); `net_profiles.csv` = topology 2 (net metering). |
 | [figures/](figures/) | Generated plots — paper figures from the QP run, plus voltage envelopes / heatmaps / substation power curves from the network simulations. |
 | `data.csv`, `cleaned_data.csv` | Raw and cleaned Ausgrid solar-home dataset. |

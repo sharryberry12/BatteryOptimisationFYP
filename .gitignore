@@ -4,3 +4,4 @@ profiles/
 *.csv
 *.pdf
 *.html
+*.pkl
