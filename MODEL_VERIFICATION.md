@@ -22,7 +22,7 @@ The test suite currently proves (1) up to the documented approximations below.
 
 ```bash
 pip install -r requirements.txt   # includes pytest
-python -m pytest                  # 57 tests, all pass (~4 s)
+python -m pytest                  # 73 tests, all pass (~4 s)
 ```
 
 `pytest.ini` disables pytest's faulthandler: dss-python's FreePascal engine
@@ -37,7 +37,7 @@ faulthandler would otherwise print as a scary-but-benign
 | 1 | Unit tests on the pure translation functions | ✅ [tests/test_glm_translation.py](tests/test_glm_translation.py) |
 | 2 | Invariants: GLM source vs built DSS circuit | ✅ [tests/test_translation_invariants.py](tests/test_translation_invariants.py) |
 | 3 | Physics sanity tests (known-answer power flows) | ✅ [tests/test_physics_sanity.py](tests/test_physics_sanity.py) |
-| 4 | Cross-validation against GridLAB-D | ⬜ planned (see plan below) |
+| 4 | Cross-validation against GridLAB-D | ✅ [validation/](validation/) + [tests/test_validation_harness.py](tests/test_validation_harness.py) — measured agreement ~1.0 % mean at 11 kV, ~1.1 % at LV, 3.9 % max at one feeder tail (results below) |
 
 ## Level 1 — unit tests (synthetic inputs, no repo data)
 
@@ -120,17 +120,18 @@ These bound the achievable agreement in Level 4: expect *close*, not exact.
 
 These solve the circuit and assert physical identities. They run the
 **load-only model at 1 kW/household** — the builder's 3 kW default is a
-placeholder that overloads the LV network (mean voltage ~0.74 pu, 19 %
-losses), pushing constant-P loads below their 0.85 pu model floor.
+placeholder that overloads the LV network (mean voltage 0.84 pu, 12.7 %
+losses, measured post-fix 2026-08), pushing constant-P loads below their
+0.85 pu model floor.
 
 | Test | Physical identity checked |
 |------|---------------------------|
 | `test_zero_load_gives_flat_profile_and_no_losses` | no load → all buses 0.97–1.03 pu, losses ≈ 0. Best single detector of impedance-unit bugs |
 | `test_energy_conservation` | source P = Σ actual load P + losses (0.1 %) |
-| `test_transformer_voltage_drop_matches_hand_calc` | solved 11 kV bus dip matches dV ≈ P·R + Q·X from the GLM's zone-transformer impedance (measured agreement ~3×10⁻⁴ pu) |
-| `test_losses_scale_superlinearly_with_load` | loads ×1.2 → min V falls, loss ratio in (1.2, 1.2³); measured 1.51 ≈ quadratic |
-| `test_golden_snapshot_regression` | frozen reference solve: source 1,945 kW, losses 133.7 kW, V min/mean/max 0.790/0.906/1.000 pu (dss-python 0.15.7 / DSS C-API 0.14.5) |
-| `test_full_model_snapshot_energises_network` | full model (PV + generator-modelled batteries) solves and energises all nodes — guards the Storage-defect workaround below |
+| `test_transformer_voltage_drop_matches_hand_calc` | solved 11 kV bus dip matches dV ≈ P·R + Q·X from the GLM's zone-transformer impedance (measured agreement ~2×10⁻⁴ pu) |
+| `test_losses_scale_superlinearly_with_load` | loads ×1.2 → min V falls, loss ratio in (1.2, 1.2³); measured 1.49 ≈ quadratic |
+| `test_golden_snapshot_regression` | frozen reference solve: source 1,871.1 kW, losses 75.1 kW, V min/mean/max 0.830/0.949/1.005 pu (dss-python 0.15.7 / DSS C-API 0.14.5, post fixes #3–#5 below) |
+| `test_full_model_snapshot_energises_network` | full model (PV + generator-modelled batteries) solves and energises all 4,597 network node-phases — guards the Storage-defect workaround below |
 
 ## Known defects (found by this suite)
 
@@ -165,38 +166,93 @@ losses), pushing constant-P loads below their 0.85 pu model floor.
    silent. A robust check should also require a non-empty energised-bus
    set (see `live_voltages_pu` in the physics tests).
 
-## Level 4 — cross-validation against GridLAB-D (plan)
+3. **[FIXED] Bare GLM lengths misread as metres** — caught by the Level 4
+   cross-validation. GridLAB-D's default length unit is FEET; all 62 of
+   the 11 kV backbone lengths are bare numbers while every LV length is
+   metre-suffixed. The translation treated bare lengths as metres,
+   inflating every 11 kV section impedance by 3.28× — a systematic ~4–5 %
+   voltage-drop overstatement across the whole feeder (and inflated
+   losses) in ALL results generated before 2026-08-13. Fixed by
+   `glm_length_m()` in `elermorevale_openDSS.py` (explicit suffix wins,
+   bare = feet); guarded by `test_glm_length_m` and the re-pinned golden
+   regression. **Network results produced before this fix should be
+   regenerated.**
 
-Goal: quantify the translation's approximation error by solving the *same*
-operating point in both engines. Because of the documented approximations
-(z11-only lines, estimated LV reactances), expect *close*, not identical —
-the deliverable is a measured deviation, e.g. "voltages agree within X %".
+4. **[FIXED] 3-phase loads built with the line-to-neutral `kv`** — caught
+   by review of the first Level 4 harness. OpenDSS reads Load `kv` as L-N
+   for 1-phase loads but **L-L for 2/3-phase loads**; the builder passed
+   the GLM `nominal_voltage` (240 V L-N) for all of them. The 7 `ABCN`
+   loads saw a per-phase base of 138.6 V (~1.8 pu at a ~250 V bus), above
+   `vmaxpu=1.15`, so the constant-P model silently clamped them to
+   constant-Z overdraw (~2.4× the commanded kW). Fixed with
+   `kv = nominal_voltage·√3` for multi-phase loads; guarded by
+   `test_multiphase_load_kv_uses_line_to_line_base`.
 
-1. **Install GridLAB-D** (v4.x binary release) and check the original model
-   still runs: `gridlabd Elermorevale/main.glm` from the repo root. Expect
-   to stub out `climate`/`player`/`recorder` includes that reference
-   missing input files.
-2. **Freeze one comparable operating point.** In GridLAB-D, override every
-   load to constant 1 kW at 0.95 pf (matching `REALISTIC_KW` in the Level 3
-   tests); disable PV, batteries, and the OLTC lookup-table control so both
-   engines solve the same passive network snapshot.
-3. **Record from GridLAB-D**: zone-substation P/Q, and voltage magnitudes
-   at matched buses — the 11 kV bus, each of the 23 distribution-transformer
-   LV buses, and ~20 spot loads spread across feeders (add `recorder`
-   objects; single timestep).
-4. **Record from OpenDSS**: the same quantities via the Level 3 helpers
-   (`node_mean_pu`, `source_pq_kw`) on `build_elermorevale(...,
-   skip_generators=True)` + `BatchEdit Load..* kW=1.0`.
-5. **Compare in a script** (`tests/` or a notebook): join on bus name
-   (GridLAB-D names map to OpenDSS via `safe_name`), report per-bus ΔV (pu),
-   substation ΔP/ΔQ (%), and plot ΔV vs electrical distance. Acceptance
-   guide: ≤1 % ΔV at 11 kV buses (z-matrix diagonal is faithful), a few %
-   at LV extremities (reactances there are estimates).
-6. **Write the result into the thesis** as: translation verified (Levels
-   1–3) + approximation measured (Level 4). If LV deviations exceed a few
-   percent, revisit the estimated x values (0.25/0.08 Ω/km) first — they
-   are the loosest part of the translation.
+5. **[FIXED] Phantom phases from linecode-driven Line phase counts** —
+   caught by the DSS-coverage guard added to `compare_voltages.py`. The
+   builder never set `phases=` on `New Line`, so OpenDSS took the phase
+   count from the **linecode**; a 1-phase GLM line using a shared 3-phase
+   configuration padded `bus.1` to `bus.1.2.3`, energising ~1,900 phantom
+   node-phases (6,485 vs the true 4,610) that polluted every voltage
+   statistic. Fixed by an explicit `phases={nph}` after `linecode=`
+   (OpenDSS rebuilds Z for the declared count from the code's
+   symmetrical components); guarded by the 100 % join-coverage bound and
+   the re-pinned node census.
 
-Prerequisite/caveat: GridLAB-D's solver (FBS/NR on the full 3×3 z-matrices)
-uses the mutual-coupling terms the translation drops, so some deviation is
-expected *by construction*; that measured gap **is** the result, not a bug.
+## Level 4 — cross-validation against GridLAB-D (results)
+
+The *same* frozen operating point (load-only network, 1 kW @ 0.95 pf per
+household, OLTC at neutral, source at 1.0 pu) solved independently by
+GridLAB-D 5.3.0 (full 3×3 z-matrices, NR) and by the OpenDSS translation.
+Reproduce from the repo root:
+
+```bash
+python validation/gen_harness.py       # strip GLM sources -> validation/stripped/ + harness.glm
+gridlabd validation/harness.glm        # -> validation/voltages_gld.csv (4,252 nodes)
+python validation/compare_voltages.py  # -> validation/voltage_comparison.csv + report
+```
+
+The harness strips what the comparison must not contain: solar/inverter
+blocks, the LDC runtime-class regulator control (taps pinned to neutral),
+the temperature-dependent load transforms (loads pinned to constant_power
+totalling 1 kW @ 0.95 pf **per load, split across declared phases** — the
+same total as OpenDSS's `kW=1.0`), and the tape-shield parameters
+GridLAB-D 5.x rejects on concentric-neutral cables. The 25 loads outside
+`subs/` are zeroed on the OpenDSS side for parity.
+
+The comparison **fails loudly** (non-zero exit) instead of printing a
+counter when its own inputs are broken: join coverage of live OpenDSS
+node-phases must be ≥99 % (measured: **100.00 %**), no node may be dead
+in one engine but live in the other (catches the all-zero
+Converged=True defect, Known defects #1/#2), and no GridLAB-D node may
+be collapsed rather than absent. `tests/test_validation_harness.py`
+unit-tests the harness text surgery and pins the raw-name join contract
+and load-kv semantics the comparison depends on.
+
+**Result (4,597 matched node-phases — 100 % of live OpenDSS nodes):**
+
+| Level | n | mean \|ΔV\| | p95 | max |
+|-------|---|---------|-----|-----|
+| 132 kV | 3 | 0.03 % | 0.03 % | 0.03 % |
+| 11 kV | 306 | 1.01 % | 1.33 % | 1.35 % |
+| LV | 4,288 | 1.10 % | 1.82 % | 3.90 % |
+
+Stated as measured: **~1.0 % mean at 11 kV (p95 1.33 %), ~1.1 % mean at
+LV, 3.9 % max** at the tail of one long feeder (FDR_61210L). This is
+consistent with the pre-registered expectation of roughly 1 % at 11 kV
+and a few % at LV extremities; the 11 kV mean sits marginally above the
+1.0 % figure, and the residual gap is the documented approximation by
+construction: the translation drops the z-matrix mutual-coupling terms
+and uses estimated LV reactances, and OpenDSS sits consistently slightly
+lower — worst at feeder tails.
+**The thesis claim this supports: translation verified (Levels 1–3),
+approximation measured at ~1 % mean / ≤3.9 % max (Level 4).**
+
+History: the first comparison run showed 4.8–5.3 % systematic deviation
+and caught the bare-length=feet bug (Known defects #3). The first
+*harness* revision then reported 1.02 %/1.09 % over only 4,366
+node-phases — a join-key bug (safe_name applied to one side only)
+silently excluded 77 of the 101 11 kV backbone buses, and 3-phase loads
+sat at 3× the OpenDSS operating point; those figures are superseded by
+the table above, computed over the complete join after Known defects
+#4/#5 were fixed. The cross-validation caught every one of these.

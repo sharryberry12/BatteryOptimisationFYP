@@ -36,6 +36,31 @@ def test_gfloat_falls_back_to_default(ev, raw):
 
 
 # ==========================================================
+# glm_length_m -- line lengths with GridLAB-D unit semantics
+# ==========================================================
+
+@pytest.mark.parametrize("raw, metres", [
+    ("68.9 m", 68.9),            # explicit metres (all LV lengths)
+    ("754.59", 754.59 * 0.3048),  # bare = FEET, GridLAB-D's default
+    ("1.2 km", 1200.0),
+    ("100 ft", 30.48),
+    ("100 ft;", 30.48),           # tolerate trailing semicolon
+])
+def test_glm_length_m(ev, raw, metres):
+    assert ev.glm_length_m(raw) == pytest.approx(metres, rel=1e-6)
+
+
+def test_glm_length_m_default(ev):
+    assert ev.glm_length_m(None, default=2.5) == 2.5
+    assert ev.glm_length_m("", default=2.5) == 2.5
+
+
+def test_glm_length_m_numeric_zero_is_zero(ev):
+    # 0 is a value, not an absence -- must not fall through to the default
+    assert ev.glm_length_m(0, default=2.5) == 0.0
+
+
+# ==========================================================
 # glm_phases_to_dss -- phase notation mapping
 # ==========================================================
 

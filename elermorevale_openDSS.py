@@ -207,6 +207,35 @@ def gfloat(value, default=0.0):
     return float(m.group(0)) if m else float(default)
 
 
+GLM_LENGTH_UNITS = {"m": 1.0, "km": 1000.0, "ft": 0.3048, "yd": 0.9144,
+                    "mi": 1609.34, "mile": 1609.34, "in": 0.0254}
+
+
+def glm_length_m(value, default=1.0):
+    """
+    Parse a GLM line length into metres, honouring GridLAB-D semantics:
+    an explicit unit suffix ('68.9 m') wins, but a BARE number is FEET --
+    GridLAB-D's default length unit. In the Elermore Vale sources every LV
+    length is metre-suffixed while all 62 of the 11 kV backbone lengths
+    are bare; treating those as metres inflated every 11 kV impedance by
+    3.28x (caught by the Level 4 GridLAB-D cross-validation).
+    """
+    if value is None:
+        return float(default)
+    s = str(value).strip().rstrip(";").strip()
+    m = re.match(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*([A-Za-z]*)", s)
+    if not m:
+        return float(default)
+    qty = float(m.group(1))
+    unit = m.group(2).lower()
+    if unit == "":
+        return qty * GLM_LENGTH_UNITS["ft"]
+    if unit not in GLM_LENGTH_UNITS:
+        logger.warning("Unknown length unit %r in %r; treating as metres",
+                       unit, s)
+    return qty * GLM_LENGTH_UNITS.get(unit, 1.0)
+
+
 # ==================================================================
 # NETWORK BUILDER
 # ==================================================================
@@ -362,8 +391,8 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
         config = p.get("configuration", "")
         length_raw = p.get("length", "1")
 
-        # Parse length — strip any unit suffix like " m" or " ft"
-        length_m = float(re.sub(r"[^\d.]", "", length_raw)) if length_raw else 1.0
+        # Parse length honouring GridLAB-D units (bare number = feet)
+        length_m = glm_length_m(length_raw)
 
         # Determine phase suffix and count
         suffix, nph = glm_phases_to_dss(phases)
@@ -378,10 +407,16 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
                 unmapped.add(config)
             lc = "fallback_3ph" if nph == 3 else "fallback_1ph"
 
+        # phases= must FOLLOW linecode=: assigning a linecode forces the
+        # line to the code's phase count, so a 1-phase GLM line with a
+        # shared 3-phase config would pad bus.1 to bus.1.2.3 and energise
+        # phantom phases (caught by the Level 4 DSS-coverage guard).
+        # Setting phases afterwards rebuilds Z for nph from the code's
+        # symmetrical components (all linecodes here are r1/x1/r0/x0).
         cmd.Command = (
             f"New Line.{safe_name(name)} "
             f"bus1={bus1} bus2={bus2} "
-            f"linecode={lc} "
+            f"linecode={lc} phases={nph} "
             f"length={length_m:.2f} units=m"
         )
         n_lines += 1
@@ -404,7 +439,7 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
         cmd.Command = (
             f"New Line.{sn} "
             f"bus1={from_b}{suffix} bus2={to_b}{suffix} "
-            f"linecode={lc} length=0.001 units=m"
+            f"linecode={lc} phases={nph} length=0.001 units=m"
         )
         # Open the switch if the GLM says it's open
         if "OPEN" in status.upper():
@@ -466,7 +501,15 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
 
         suffix, nph = glm_phases_to_dss(phases)
         bus = (resolved + suffix) if resolved else (name + suffix)
-        kv_ph = nom_v / 1000.0            # 240 V -> 0.240 kV
+        # OpenDSS Load kv semantics: line-to-neutral for 1-phase loads but
+        # line-to-LINE for 2/3-phase loads; GLM nominal_voltage is always
+        # line-to-neutral. Feeding a 3-phase load the L-N base (0.240) puts
+        # its per-phase base at 138.6 V against a ~250 V bus (~1.8 pu),
+        # above vmaxpu -- the constant-P model silently degrades to
+        # clamped constant-Z overdraw.
+        kv_ph = nom_v / 1000.0            # 240 V -> 0.240 kV (L-N)
+        if nph > 1:
+            kv_ph = nom_v * 3 ** 0.5 / 1000.0   # -> 0.4157 kV (L-L)
 
         # Default load: 3 kW at 0.95 pf, constant-P model.
         # The GridLAB-D model uses temperature-dependent load transforms

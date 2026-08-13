@@ -10,9 +10,9 @@ because it mutates load setpoints on the singleton DSS engine.
 
 All tests run the load-only model (skip_generators=True) at a realistic
 diversified demand of ~1 kW/household: the builder's 3 kW default is a
-placeholder that overloads the LV network (mean voltage ~0.74 pu), pushing
-constant-P loads below their 0.85 pu model floor. 1 kW keeps the network in
-its normal operating region. The final test covers the full model
+placeholder that heavily stresses the LV network, pushing some constant-P
+loads below their 0.85 pu model floor. 1 kW keeps the network in its
+normal operating region. The final test covers the full model
 (PV + generator-modelled batteries).
 """
 
@@ -137,18 +137,22 @@ def test_losses_scale_superlinearly_with_load(ev):
 
 def test_golden_snapshot_regression(ev):
     """Frozen reference solve (load-only, 1 kW/household), measured 2026-08
-    with dss-python 0.15.7 / DSS C-API 0.14.5. Guards the whole translation
-    against silent regressions; re-derive deliberately if the model or the
-    engine version changes (see MODEL_VERIFICATION.md)."""
+    with dss-python 0.15.7 / DSS C-API 0.14.5, after three corrections the
+    Level 4 GridLAB-D cross-validation forced: bare-length=feet, 3-phase
+    load kv = line-to-line, and explicit Line phases= (a 1-phase GLM line
+    with a shared 3-phase linecode used to energise phantom phases).
+    Guards the whole translation against silent regressions; re-derive
+    deliberately if the model or the engine version changes
+    (see MODEL_VERIFICATION.md)."""
     build_load_only(ev, kw=REALISTIC_KW)
     solved(ev)
     v = live_voltages_pu(ev)
     p_source, _ = source_pq_kw(ev)
-    assert p_source == pytest.approx(1945.0, rel=0.01)
-    assert losses_kw(ev) == pytest.approx(133.74, rel=0.02)
-    assert v.min() == pytest.approx(0.7898, abs=0.01)
-    assert v.mean() == pytest.approx(0.9064, abs=0.01)
-    assert v.max() == pytest.approx(0.9997, abs=0.005)
+    assert p_source == pytest.approx(1871.1, rel=0.01)
+    assert losses_kw(ev) == pytest.approx(75.07, rel=0.02)
+    assert v.min() == pytest.approx(0.8300, abs=0.01)
+    assert v.mean() == pytest.approx(0.9489, abs=0.01)
+    assert v.max() == pytest.approx(1.0048, abs=0.005)
 
 
 def test_full_model_snapshot_energises_network(ev):
@@ -161,5 +165,8 @@ def test_full_model_snapshot_energises_network(ev):
     ev.build_elermorevale(str(GLM_DIR), str(COMMON_DIR), skip_generators=False)
     assert ev.solve_snapshot()
     v = live_voltages_pu(ev)
-    assert v.size > 6000                # essentially all nodes energised
+    # 4,597 network node-phases live (measured 2026-08, after the explicit
+    # Line phases= fix removed ~1,900 phantom node-phases). The remaining
+    # dead ones are generator-bus phase padding with no network path.
+    assert v.size > 4500                # essentially all nodes energised
     assert v.min() > 0.5                # and at sane magnitudes
