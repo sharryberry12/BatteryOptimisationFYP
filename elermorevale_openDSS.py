@@ -806,11 +806,14 @@ def add_monitors(monitored_loads):
 # LOADSHAPE ATTACHMENT
 # ==================================================================
 
-def attach_loadshapes(load_customer_map, profiles, day_idx=0):
+def attach_shapes(load_customer_map, profiles, day_idx=0, series="grid"):
     """
-    Create a LoadShape object for each load in the network using the
-    QP-dispatched grid profile p_k = l_k − g_k − b_k, then bind it
+    Create a LoadShape object for each load in the network and bind it
     to the Load element via the daily= property.
+
+    series selects which per-day time series is injected:
+        "grid"     : the dispatched grid profile p_k = l_k − g_k − b_k
+        "baseline" : the no-battery baseline l_k − g_k (b_k = 0)
 
     Every load in load_customer_map gets a profile (all ~1,785 loads).
     The load's kw is overridden to 1 (base multiplier) and pf to 1,
@@ -818,6 +821,8 @@ def attach_loadshapes(load_customer_map, profiles, day_idx=0):
 
     Returns the date string of the simulated day.
     """
+    if series not in ("grid", "baseline"):
+        raise ValueError(f"unknown series {series!r}")
     cmd = dss.Text
     date_str = None
 
@@ -829,8 +834,11 @@ def attach_loadshapes(load_customer_map, profiles, day_idx=0):
             day = days[day_idx]
             if date_str is None:
                 date_str = str(day["date"])
-            grid = day["grid"]
-            mult_str = ",".join(f"{v:.6f}" for v in grid)
+            if series == "grid":
+                vals = day["grid"]
+            else:
+                vals = day["load"] - day["pv"]
+            mult_str = ",".join(f"{v:.6f}" for v in vals)
 
         cmd.Command = (
             f"New Loadshape.shape_{lname} npts={T} "
@@ -844,35 +852,31 @@ def attach_loadshapes(load_customer_map, profiles, day_idx=0):
     return date_str
 
 
+def attach_loadshapes(load_customer_map, profiles, day_idx=0):
+    """Back-compat wrapper: attach the QP-dispatched grid profiles."""
+    return attach_shapes(load_customer_map, profiles, day_idx,
+                         series="grid")
+
+
 def attach_baseline_shapes(load_customer_map, profiles, day_idx=0):
+    """Back-compat wrapper: attach the no-battery baseline profiles."""
+    return attach_shapes(load_customer_map, profiles, day_idx,
+                         series="baseline")
+
+
+def day_index_for_date(profiles, date_str):
     """
-    Same as attach_loadshapes but uses the no-battery baseline:
-        p_baseline_k = l_k − g_k    (i.e. b_k = 0 for all k)
-    Every load in load_customer_map gets a baseline profile.
+    Resolve an ISO date (yyyy-mm-dd) to a day index into each customer's
+    day list. Uses the first customer's list (all customers share the
+    same day ordering after load_profiles_from_csv's sort). Returns
+    None if the date is not present.
     """
-    cmd = dss.Text
-    date_str = None
-
-    for lname, cid in load_customer_map.items():
-        days = profiles.get(cid, [])
-        if day_idx >= len(days):
-            mult_str = ",".join(["0"] * T)
-        else:
-            day = days[day_idx]
-            if date_str is None:
-                date_str = str(day["date"])
-            baseline = day["load"] - day["pv"]
-            mult_str = ",".join(f"{v:.6f}" for v in baseline)
-
-        cmd.Command = (
-            f"New Loadshape.shape_{lname} npts={T} "
-            f"minterval=30 mult=({mult_str})"
-        )
-        cmd.Command = f"Load.{lname}.kw=1"
-        cmd.Command = f"Load.{lname}.pf=1"
-        cmd.Command = f"Load.{lname}.daily=shape_{lname}"
-
-    return date_str
+    for cid in sorted(profiles):
+        for idx, day in enumerate(profiles[cid]):
+            if str(day["date"])[:10] == str(date_str)[:10]:
+                return idx
+        return None
+    return None
 
 
 # ==================================================================
@@ -958,7 +962,10 @@ def collect_tx_power():
     q1 = np.array(dss.ActiveCircuit.Monitors.Channel(2))
     q2 = np.array(dss.ActiveCircuit.Monitors.Channel(4))
     q3 = np.array(dss.ActiveCircuit.Monitors.Channel(6))
-    return p1 + p2 + p3, q1 + q2 + q3
+    # OpenDSS monitors measure power flowing INTO the monitored terminal,
+    # so a load-serving flow out of terminal 2 records as negative.
+    # Negate so positive = import from the grid, as documented above.
+    return -(p1 + p2 + p3), -(q1 + q2 + q3)
 
 
 def collect_losses():
@@ -983,10 +990,8 @@ def simulate_scenario(glm_dir, common_dir, load_customer_map,
 
     add_monitors(monitored_loads)
 
-    if use_baseline:
-        date_str = attach_baseline_shapes(load_customer_map, profiles, day_idx)
-    else:
-        date_str = attach_loadshapes(load_customer_map, profiles, day_idx)
+    date_str = attach_shapes(load_customer_map, profiles, day_idx,
+                             series="baseline" if use_baseline else "grid")
 
     run_daily()
 
