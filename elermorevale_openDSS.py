@@ -523,26 +523,29 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
         # ================================================================
         # 9. BATTERY STORAGE (Redflow units from Generators2.glm)
         # ================================================================
+        # Modelled as dispatchable Generator elements, NOT Storage elements:
+        # with 2+ active Storage elements this network makes DSS C-API 0.14.5
+        # collapse to a dead all-zero solution that still reports Converged
+        # (see MODEL_VERIFICATION.md "Known defects"). A negative-kW generator
+        # is the standard OpenDSS workaround: kw=-0.18 is the Redflow's 180 W
+        # parasitic draw at idle; dispatch externally via the Generators API
+        # (kw > 0 discharges, kw < 0 charges). Unlike a real Storage element
+        # the engine enforces NO limits here: |kw| <= P_Max, state of charge,
+        # and charge/discharge efficiency are the caller's responsibility.
         logger.info("Building %d batteries ...", len(by_type.get("battery", [])))
         for src, p in by_type.get("battery", []):
             name = p.get("name", f"batt_{n_batt}")
             parent = p.get("parent", "")      # LV service-point bus
             parent = resolve_bus(parent) if parent else parent
             p_max = gfloat(p.get("P_Max", "5000"), 5000.0) / 1000.0   # W -> kW
-            e_max = gfloat(p.get("E_Max", "10000"), 10000.0) / 1000.0  # Wh -> kWh
-            eff = gfloat(p.get("base_efficiency", "0.86"), 0.86) * 100.0
 
             cmd.Command = (
-                f"New Storage.{safe_name(name)} "
+                f"New Generator.{safe_name(name)} "
                 f"bus1={parent}.1 phases=1 "
                 f"kv=0.240 "
-                f"kwrated={p_max:.1f} "           # max charge/discharge power
-                f"kwhrated={e_max:.1f} "          # energy capacity
-                f"kwhstored={e_max * 0.5:.1f} "   # initial SOC at 50%
-                f"%EffCharge={eff:.1f} "
-                f"%EffDischarge={eff:.1f} "
-                f"%IdlingkW=0.18 "                # 180 W parasitic (from GLM)
-                f"model=1 state=IDLING"           # start idle, dispatch externally
+                f"kva={p_max:.1f} "               # inverter rating (5 kW)
+                f"kw=-0.18 "                      # idle: 180 W parasitic draw
+                f"pf=1 model=1"
             )
             n_batt += 1
 

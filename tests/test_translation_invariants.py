@@ -42,12 +42,14 @@ TOTAL_GLM_OBJECTS = 7958
 # GLM object types the builder maps into each OpenDSS element namespace.
 BRANCH_TYPES = ("overhead_line", "underground_line", "triplex_line",
                 "switch", "fuse")
+# Batteries share the Generator namespace: Storage elements destabilise the
+# engine on this network (MODEL_VERIFICATION.md "Known defects"), so the
+# builder models them as dispatchable generators.
 DSS_NAMESPACES = {
     "Line": BRANCH_TYPES,
     "Transformer": ("transformer",),
     "Load": ("load",),
-    "Generator": ("solar",),
-    "Storage": ("battery",),
+    "Generator": ("solar", "battery"),
 }
 
 
@@ -201,10 +203,11 @@ def test_engine_element_counts_match_source(built_circuit):
     assert ckt.Loads.Count == stats["loads"]
     # +2: the manually built zone-sub transformer and OLTC autotransformer
     assert ckt.Transformers.Count == stats["distribution_transformers"] + 2
-    assert ckt.Generators.Count == stats["pv_systems"]
+    # batteries are modelled as generators (see DSS_NAMESPACES note)
+    assert ckt.Generators.Count == stats["pv_systems"] + stats["batteries"]
     n_storage = sum(1 for name in ckt.AllElementNames
                     if name.lower().startswith("storage."))
-    assert n_storage == stats["batteries"]
+    assert n_storage == 0
 
 
 def test_engine_total_load_power(built_circuit):

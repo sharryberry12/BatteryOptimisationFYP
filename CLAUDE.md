@@ -37,7 +37,7 @@ python elermorevale_gui.py --simulate --day 190 --open   # with baseline-vs-QP o
 python elermorevale_gui.py --serve --port 8765           # optional Flask backend instead of static HTML
 ```
 
-There is no linter config or build step. The Elermore Vale GLM→OpenDSS translation has a pytest suite (`python -m pytest`, ~1.5 s — see `MODEL_VERIFICATION.md`; census constants in `tests/test_translation_invariants.py` are measured ground truth of the checked-in GLM sources). Everything else is verified by running the scripts and inspecting logged metrics (e.g. mean annual savings ~$430 FiT / ~$190 net) and generated figures.
+There is no linter config or build step. The Elermore Vale GLM→OpenDSS translation has a pytest suite (`python -m pytest`, ~4 s: unit tests, source-vs-circuit invariants, physics sanity power flows — see `MODEL_VERIFICATION.md`; census/golden constants in `tests/` are measured ground truth). Note: the 40 Redflow batteries are deliberately built as dispatchable `Generator` elements, not `Storage` — 2+ active Storage elements make DSS C-API 0.14.5 collapse to a dead circuit that still reports Converged=True (`MODEL_VERIFICATION.md` "Known defects"). Everything else is verified by running the scripts and inspecting logged metrics (e.g. mean annual savings ~$430 FiT / ~$190 net) and generated figures.
 
 ## Architecture
 

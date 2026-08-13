@@ -22,7 +22,7 @@ The test suite currently proves (1) up to the documented approximations below.
 
 ```bash
 pip install -r requirements.txt   # includes pytest
-python -m pytest                  # 51 tests, ~1.5 s
+python -m pytest                  # 57 tests, all pass (~4 s)
 ```
 
 `pytest.ini` disables pytest's faulthandler: dss-python's FreePascal engine
@@ -36,8 +36,8 @@ faulthandler would otherwise print as a scary-but-benign
 |-------|------|--------|
 | 1 | Unit tests on the pure translation functions | ✅ [tests/test_glm_translation.py](tests/test_glm_translation.py) |
 | 2 | Invariants: GLM source vs built DSS circuit | ✅ [tests/test_translation_invariants.py](tests/test_translation_invariants.py) |
-| 3 | Physics sanity tests (known-answer power flows) | ⬜ future work (recipes below) |
-| 4 | Cross-validation against GridLAB-D | ⬜ future work (recipes below) |
+| 3 | Physics sanity tests (known-answer power flows) | ✅ [tests/test_physics_sanity.py](tests/test_physics_sanity.py) |
+| 4 | Cross-validation against GridLAB-D | ⬜ planned (see plan below) |
 
 ## Level 1 — unit tests (synthetic inputs, no repo data)
 
@@ -92,7 +92,7 @@ highest-value assertions and the silent failure they guard against:
 | Switches / fuses | 246 / 40 |
 | Line configurations / conductors | 3,834 / 395 (1,136 z-matrix) |
 | Configs referenced by lines | 82 — all resolve, 0 fallbacks |
-| DSS engine after build | 2,451 Lines, 1,810 Loads, 25 Transformers (+OLTC +zone sub), 155 Generators, 40 Storage |
+| DSS engine after build | 2,451 Lines, 1,810 Loads, 25 Transformers (+OLTC +zone sub), 195 Generators (155 PV + 40 batteries — see Known defects #1), 0 Storage |
 
 If the GLM sources are ever regenerated, re-derive these numbers (parse with
 `parse_all_glm` and count by type) instead of deleting the assertions.
@@ -116,25 +116,87 @@ this approximation*, not to a perfect electromagnetic model:
 
 These bound the achievable agreement in Level 4: expect *close*, not exact.
 
-## Level 3 — physics sanity tests (future work)
+## Level 3 — physics sanity tests (known-answer power flows)
 
-Known-answer snapshot solves, in rough order of value:
+These solve the circuit and assert physical identities. They run the
+**load-only model at 1 kW/household** — the builder's 3 kW default is a
+placeholder that overloads the LV network (mean voltage ~0.74 pu, 19 %
+losses), pushing constant-P loads below their 0.85 pu model floor.
 
-1. **Zero-load test**: set every load to 0 kW → all buses ≈ 1.0 pu, losses
-   ≈ 0. The single best detector of impedance-unit bugs.
-2. **Energy conservation**: substation input P = Σ load P + total losses.
-3. **Scaling monotonicity**: loads × 1.1 → min voltage falls, losses rise
-   ≈ quadratically (×1.21).
-4. **One hand-calculated voltage drop** along a single radial path
-   (zone sub → 11 kV section → distribution transformer → load), compared
-   within a few percent.
-5. **Golden-file regression**: freeze snapshot results (losses, min/mean/max
-   pu voltage) once validated; assert against them on every change.
+| Test | Physical identity checked |
+|------|---------------------------|
+| `test_zero_load_gives_flat_profile_and_no_losses` | no load → all buses 0.97–1.03 pu, losses ≈ 0. Best single detector of impedance-unit bugs |
+| `test_energy_conservation` | source P = Σ actual load P + losses (0.1 %) |
+| `test_transformer_voltage_drop_matches_hand_calc` | solved 11 kV bus dip matches dV ≈ P·R + Q·X from the GLM's zone-transformer impedance (measured agreement ~3×10⁻⁴ pu) |
+| `test_losses_scale_superlinearly_with_load` | loads ×1.2 → min V falls, loss ratio in (1.2, 1.2³); measured 1.51 ≈ quadratic |
+| `test_golden_snapshot_regression` | frozen reference solve: source 1,945 kW, losses 133.7 kW, V min/mean/max 0.790/0.906/1.000 pu (dss-python 0.15.7 / DSS C-API 0.14.5) |
+| `test_full_model_snapshot_energises_network` | full model (PV + generator-modelled batteries) solves and energises all nodes — guards the Storage-defect workaround below |
 
-## Level 4 — cross-validation against GridLAB-D (future work)
+## Known defects (found by this suite)
 
-Run the original `.glm` model in GridLAB-D on the same snapshot and compare
-substation P/Q, feeder-head current, and voltages at matched nodes. Because
-of the approximations above, report the deviation ("voltages agree within
-X %") rather than expecting identity — *verified translation, measured
-approximation* is the defensible claim for the thesis.
+1. **[WORKED AROUND] Storage elements destabilise the snapshot solve**
+   (dss-python 0.15.7 / DSS C-API 0.14.5). With 2+ active `Storage`
+   elements on this network the solve either fails to converge or — worse —
+   collapses in 2 iterations to a **dead circuit (all voltages 0, zero
+   power) that still reports `Converged=True`**. Any *single* storage is
+   fine. Ruled out during diagnosis: connectivity (all 40 battery buses are
+   real network buses), idle draw (0 doesn't help), explicit `kva`,
+   `dispmode=EXTERNAL`, `controlmode=static` with a high cap, and
+   `algorithm=Newton` (partial energisation only). A minimal 3-bus circuit
+   does **not** reproduce it, and no newer dss-python is available for this
+   Python version, so the root cause inside the engine remains open.
+   **Workaround (implemented)**: `build_elermorevale` models the 40 Redflow
+   batteries as dispatchable `Generator` elements — `kw=-0.18` idle
+   (parasitic draw), `kva=5` rating; dispatch via the Generators API
+   (kw > 0 discharge, kw < 0 charge). The full model now solves; guarded by
+   `test_full_model_snapshot_energises_network`.
+   **Fidelity caveat**: generators carry no state of charge, capacity, or
+   round-trip efficiency, and the engine does not clamp `|kw|` to the 5 kW
+   rating — any future dispatch built on these elements must enforce
+   `|kw| ≤ P_Max` and do SOC/efficiency bookkeeping externally (the
+   profile-driven pipeline already does: batteries enter via net-load
+   LoadShapes with `skip_generators=True`). If a future dss-python fixes
+   Storage, revert by swapping the generator block back and re-adding the
+   engine-count expectations for Storage in the Level 2 tests.
+
+2. **`solve_snapshot` trusts `Converged` alone.** In the dead-circuit state
+   above it logs "converged: True", losses 0.0, and skips the voltage
+   summary (the >0.01 pu filter removes every bus), so the failure is
+   silent. A robust check should also require a non-empty energised-bus
+   set (see `live_voltages_pu` in the physics tests).
+
+## Level 4 — cross-validation against GridLAB-D (plan)
+
+Goal: quantify the translation's approximation error by solving the *same*
+operating point in both engines. Because of the documented approximations
+(z11-only lines, estimated LV reactances), expect *close*, not identical —
+the deliverable is a measured deviation, e.g. "voltages agree within X %".
+
+1. **Install GridLAB-D** (v4.x binary release) and check the original model
+   still runs: `gridlabd Elermorevale/main.glm` from the repo root. Expect
+   to stub out `climate`/`player`/`recorder` includes that reference
+   missing input files.
+2. **Freeze one comparable operating point.** In GridLAB-D, override every
+   load to constant 1 kW at 0.95 pf (matching `REALISTIC_KW` in the Level 3
+   tests); disable PV, batteries, and the OLTC lookup-table control so both
+   engines solve the same passive network snapshot.
+3. **Record from GridLAB-D**: zone-substation P/Q, and voltage magnitudes
+   at matched buses — the 11 kV bus, each of the 23 distribution-transformer
+   LV buses, and ~20 spot loads spread across feeders (add `recorder`
+   objects; single timestep).
+4. **Record from OpenDSS**: the same quantities via the Level 3 helpers
+   (`node_mean_pu`, `source_pq_kw`) on `build_elermorevale(...,
+   skip_generators=True)` + `BatchEdit Load..* kW=1.0`.
+5. **Compare in a script** (`tests/` or a notebook): join on bus name
+   (GridLAB-D names map to OpenDSS via `safe_name`), report per-bus ΔV (pu),
+   substation ΔP/ΔQ (%), and plot ΔV vs electrical distance. Acceptance
+   guide: ≤1 % ΔV at 11 kV buses (z-matrix diagonal is faithful), a few %
+   at LV extremities (reactances there are estimates).
+6. **Write the result into the thesis** as: translation verified (Levels
+   1–3) + approximation measured (Level 4). If LV deviations exceed a few
+   percent, revisit the estimated x values (0.25/0.08 Ω/km) first — they
+   are the loosest part of the translation.
+
+Prerequisite/caveat: GridLAB-D's solver (FBS/NR on the full 3×3 z-matrices)
+uses the mutual-coupling terms the translation drops, so some deviation is
+expected *by construction*; that measured gap **is** the result, not a bug.
