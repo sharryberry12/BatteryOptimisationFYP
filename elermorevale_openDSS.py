@@ -11,7 +11,7 @@ Newcastle/Lake Macquarie area with:
   - 52 sections of 11 kV overhead line (z-matrix impedances)
   - 23 distribution transformers (11 kV / 433 V, 200-1000 kVA)
   - ~2,100 LV line segments (overhead + underground)
-  - 1,785 residential loads (single-phase, constant-P)
+  - 1,810 residential loads (single-phase, constant-P)
   - 155 rooftop PV systems
   - 40 Redflow battery storage units (10 kWh, 5 kW)
 
