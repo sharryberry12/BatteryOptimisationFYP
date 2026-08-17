@@ -11,7 +11,9 @@ Newcastle/Lake Macquarie area with:
   - 52 sections of 11 kV overhead line (z-matrix impedances)
   - 23 distribution transformers (11 kV / 433 V, 200-1000 kVA)
   - ~2,100 LV line segments (overhead + underground)
-  - 1,810 residential loads (single-phase, constant-P)
+  - 1,785 residential loads (single-phase, constant-P); the 25 BlueGen CHP
+    units declared as loads in generators/Generators2.glm are excluded
+    (is_chp_load -- MODEL_VERIFICATION.md defect #6)
   - 155 rooftop PV systems
   - 40 Redflow battery storage units (10 kWh, 5 kW)
 
@@ -36,6 +38,10 @@ Usage:
     python elermorevale_openDSS.py --profiles ... --full --save           # full sweep
     python elermorevale_openDSS.py --profiles ... --save --oltc           # zone RegControl active
                                                                           #   (-> <output-dir>_oltc)
+
+Every profile-driven day asserts all voltage monitors stayed energised
+(assert_monitors_energised -> DeadMonitorError); daily summaries split
+violations into over (> +10 %) and under (< -6 %) voltage.
 
 Prerequisites:
     pip install dss-python numpy pandas matplotlib
@@ -190,6 +196,26 @@ def glm_phases_to_dss(phases_str):
     if not parts:
         parts = ["1", "2", "3"]
     return "." + ".".join(parts), len(parts)
+
+
+# GLM `object load`s declared in the generators scenario files are BlueGen
+# fuel-cell CHP units (Generators2.glm: 25 units driving `schedule_BlueGen0`,
+# which no checked-in file defines), not households. 14 of them also declare
+# a phase different from their service-point meter (e.g. `phases CN` under a
+# `BN` meter), so building them as loads leaves them floating on
+# un-energised node-phases (0 V) -- invisible until explicit Line phases=
+# removed the phantom phases that used to energise them, after which two of
+# them landed in the monitored set and zeroed every sweep's V min. They are
+# excluded from the residential-load build in every mode (main.glm does not
+# #include this file either); the 40 Redflow batteries in the same file are
+# still built (section 9). See MODEL_VERIFICATION.md "Known defects".
+GENERATOR_SCENARIO_FILES = ("generators.glm", "generators2.glm")
+
+
+def is_chp_load(src_file):
+    """True if a GLM `load` object comes from a generators scenario file
+    (i.e. it is a BlueGen CHP unit, not a residential load)."""
+    return os.path.basename(str(src_file)).lower() in GENERATOR_SCENARIO_FILES
 
 
 def safe_name(name):
@@ -502,8 +528,12 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
     # 7. RESIDENTIAL LOADS
     # ================================================================
     logger.info("Building %d loads ...", len(by_type.get("load", [])))
-    n_resolved = 0
+    n_resolved = n_chp = 0
     for src, p in by_type.get("load", []):
+        if is_chp_load(src):
+            # BlueGen CHP units, not households -- see is_chp_load().
+            n_chp += 1
+            continue
         name = p.get("name", f"load_{n_loads}")
         parent = p.get("parent", "")      # may be a meter, not a bus
         phases = p.get("phases", "AN")
@@ -542,6 +572,10 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
     if n_resolved > 0:
         logger.info("Resolved %d load parents through meter/node chain",
                     n_resolved)
+    if n_chp > 0:
+        logger.info("Skipped %d BlueGen CHP units declared as loads in the "
+                    "generators scenario file (not households; see "
+                    "MODEL_VERIFICATION.md 'Known defects')", n_chp)
 
     # ================================================================
     # 8. PV GENERATORS + BATTERIES (skip in profile mode)
@@ -624,6 +658,7 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
         "switches_and_fuses": n_sw,
         "distribution_transformers": n_tx,
         "loads": n_loads,
+        "chp_units_skipped": n_chp,
         "pv_systems": n_pv,
         "batteries": n_batt,
         "linecodes_from_real_data": len(linecodes),
@@ -664,21 +699,34 @@ def solve_snapshot():
         logger.warning("Power flow did NOT converge. Check topology.")
         return False
 
+    # Converged=True is necessary, not sufficient: the engine has been seen
+    # to report a converged all-zero solution (dead circuit) with 2+ active
+    # Storage elements (MODEL_VERIFICATION.md defect #1/#2). Require a
+    # non-empty energised bus set before trusting anything else.
+    all_v = np.array(dss.ActiveCircuit.AllBusVmagPu)
+    valid = all_v[all_v > 0.01]             # filter zero-injection buses
+    if len(valid) == 0:
+        logger.error("Solve reported Converged=True but every bus is at 0 V "
+                     "(dead circuit) -- treating as a failed solve.")
+        return False
+    n_dead = all_v.size - valid.size
+    if n_dead:
+        logger.info("%d of %d node-phases are de-energised (generator-bus "
+                    "phase padding is expected; loads on dead node-phases "
+                    "are not)", n_dead, all_v.size)
+
     # Total circuit losses
     losses = dss.ActiveCircuit.Losses       # returns (watts, vars)
     logger.info("Total losses: %.1f kW, %.1f kvar",
                 losses[0] / 1000, losses[1] / 1000)
 
     # Bus voltage summary
-    all_v = np.array(dss.ActiveCircuit.AllBusVmagPu)
-    valid = all_v[all_v > 0.01]             # filter zero-injection buses
-    if len(valid) > 0:
-        logger.info("Bus voltages (p.u.): min=%.4f  mean=%.4f  max=%.4f",
-                    valid.min(), valid.mean(), valid.max())
-        n_over = int(np.sum(valid > 1.10))
-        n_under = int(np.sum(valid < 0.94))
-        logger.info("Buses outside AS 60038: %d over, %d under (of %d total)",
-                    n_over, n_under, len(valid))
+    logger.info("Bus voltages (p.u.): min=%.4f  mean=%.4f  max=%.4f",
+                valid.min(), valid.mean(), valid.max())
+    n_over = int(np.sum(valid > 1.10))
+    n_under = int(np.sum(valid < 0.94))
+    logger.info("Buses outside AS 60038: %d over, %d under (of %d total)",
+                n_over, n_under, len(valid))
 
     # Element counts from the DSS engine
     logger.info(
@@ -739,6 +787,26 @@ OLTC_ACTIVE = False
 # LOAD PROFILES FROM DISK
 # ==================================================================
 
+# Date formats the profile writers emit: osqp_daily*.save_profiles() passes
+# the Ausgrid date string straight through ("1-Jul-10"), vpp_export writes
+# ISO ("2010-07-01"). Try each explicitly -- an unspecified format makes
+# pandas fall back to per-element dateutil parsing on ~300 MB files.
+PROFILE_DATE_FORMATS = ("%d-%b-%y", "ISO8601")
+
+
+def parse_profile_dates(series):
+    """Parse a profile CSV's `date` column with the known writer formats."""
+    import pandas as pd
+    for fmt in PROFILE_DATE_FORMATS:
+        try:
+            return pd.to_datetime(series, format=fmt)
+        except (ValueError, TypeError):
+            continue
+    raise ValueError(
+        f"profile dates match none of {PROFILE_DATE_FORMATS}; "
+        f"first value: {series.iloc[0]!r}")
+
+
 def load_profiles_from_csv(csv_path):
     """
     Read the long-format CSV produced by osqp_daily_v2.save_profiles()
@@ -749,7 +817,8 @@ def load_profiles_from_csv(csv_path):
         date, load, pv, battery, grid, soc, savings
     """
     import pandas as pd
-    df = pd.read_csv(csv_path, parse_dates=["date"])
+    df = pd.read_csv(csv_path)
+    df["date"] = parse_profile_dates(df["date"])
     df = df.sort_values(["customer", "date", "interval"])
     profiles = defaultdict(list)
 
@@ -1044,6 +1113,37 @@ def collect_losses():
     return losses[0] / 1000.0, losses[1] / 1000.0
 
 
+class DeadMonitorError(RuntimeError):
+    """A voltage monitor read ~0 V: a modelling defect (floating load,
+    collapsed solve, truncated day), never a transient -- callers that
+    tolerate per-day failures must NOT swallow this one."""
+
+
+def assert_monitors_energised(voltages, floor_pu=0.01):
+    """
+    Fail fast if any voltage monitor read ~0 V at any interval.
+
+    A monitored load on a de-energised node-phase (GLM phase mismatch, an
+    open switch, a collapsed solve) or a daily run that aborted part-way
+    (zero-padded monitor buffers) would otherwise flow straight into
+    v_min_pu = 0.0 and +48 fake under-voltage violations per monitor -- the
+    engine reports Converged=True either way. This is what contaminated
+    every sweep between the 2026-08-13 phases= fix and the BlueGen CHP
+    exclusion (MODEL_VERIFICATION.md defects #2 and #6).
+    """
+    bad = {name: int(np.sum(v <= floor_pu)) for name, v in voltages.items()
+           if np.any(v <= floor_pu)}
+    if bad:
+        sample = ", ".join(f"{n} ({k}/{T} intervals)"
+                           for n, k in sorted(bad.items())[:5])
+        raise DeadMonitorError(
+            f"{len(bad)} of {len(voltages)} voltage monitors read <= "
+            f"{floor_pu} pu at some interval: {sample}. The monitored load "
+            "sits on a de-energised node-phase or the daily solve did not "
+            "complete -- summary statistics would be silently wrong. See "
+            "MODEL_VERIFICATION.md 'Known defects'.")
+
+
 def simulate_scenario(glm_dir, common_dir, load_customer_map,
                       monitored_loads, profiles,
                       day_idx, use_baseline=False):
@@ -1067,13 +1167,13 @@ def simulate_scenario(glm_dir, common_dir, load_customer_map,
     run_daily()
 
     voltages = collect_voltages(monitored_loads)
+    assert_monitors_energised(voltages)
     tx_p, tx_q = collect_tx_power()
     loss_kw, loss_kvar = collect_losses()
 
     all_v = np.array(list(voltages.values()))          # shape (n_monitored, T)
-    n_violations = int(np.sum(
-        (all_v < V_LOWER_PU) | (all_v > V_UPPER_PU)
-    ))
+    n_over = int(np.sum(all_v > V_UPPER_PU))
+    n_under = int(np.sum(all_v < V_LOWER_PU))
 
     return {
         "date": date_str,
@@ -1084,7 +1184,9 @@ def simulate_scenario(glm_dir, common_dir, load_customer_map,
         "loss_kvar": loss_kvar,
         "v_min_pu": all_v.min(),
         "v_max_pu": all_v.max(),
-        "n_violations": n_violations,
+        "n_violations": n_over + n_under,
+        "n_over": n_over,           # > +10 % (PV export / battery discharge)
+        "n_under": n_under,         # < -6 %  (evening peak / battery charging)
         "total_points": all_v.size,
     }
 
@@ -1317,6 +1419,8 @@ def plot_daily_summary_table(base, qp, date_str=None):
     lines.append(f"{'V min (p.u.)':<30} {base['v_min_pu']:>12.4f} {qp['v_min_pu']:>12.4f}")
     lines.append(f"{'V max (p.u.)':<30} {base['v_max_pu']:>12.4f} {qp['v_max_pu']:>12.4f}")
     lines.append(f"{'Voltage violations':<30} {base['n_violations']:>12d} {qp['n_violations']:>12d}")
+    lines.append(f"{'  of which over (> +10 %)':<30} {base['n_over']:>12d} {qp['n_over']:>12d}")
+    lines.append(f"{'  of which under (< -6 %)':<30} {base['n_under']:>12d} {qp['n_under']:>12d}")
     lines.append(f"{'Total (load×interval) points':<30} {base['total_points']:>12d} {qp['total_points']:>12d}")
     lines.append(f"{'Peak TX power (kW)':<30} "
                  f"{np.max(np.abs(base['tx_p_kw'])):>12.1f} "
@@ -1351,14 +1455,17 @@ def run_full_sweep(glm_dir, common_dir, load_customer_map,
         n_days = min(n_days, max_days)
     logger.info("Running full sweep for %d days", n_days)
 
-    records = []
+    records, failed_days = [], []
     for d in range(n_days):
         try:
             base, qp = simulate_day_comparison(
                 glm_dir, common_dir, load_customer_map,
                 monitored_loads, profiles, d)
+        except DeadMonitorError:
+            raise                       # modelling defect: never skip past it
         except Exception as e:
             logger.warning("Day %d failed: %s", d, e)
+            failed_days.append(d)
             continue
 
         records.append({
@@ -1368,11 +1475,15 @@ def run_full_sweep(glm_dir, common_dir, load_customer_map,
             "base_v_min": base["v_min_pu"],
             "base_v_max": base["v_max_pu"],
             "base_violations": base["n_violations"],
+            "base_over": base["n_over"],
+            "base_under": base["n_under"],
             "base_peak_tx_kw": np.max(np.abs(base["tx_p_kw"])),
             "base_loss_kw": base["loss_kw"],
             "qp_v_min": qp["v_min_pu"],
             "qp_v_max": qp["v_max_pu"],
             "qp_violations": qp["n_violations"],
+            "qp_over": qp["n_over"],
+            "qp_under": qp["n_under"],
             "qp_peak_tx_kw": np.max(np.abs(qp["tx_p_kw"])),
             "qp_loss_kw": qp["loss_kw"],
         })
@@ -1389,6 +1500,11 @@ def run_full_sweep(glm_dir, common_dir, load_customer_map,
         if d % 50 == 0:
             logger.info("Completed %d / %d days", d + 1, n_days)
 
+    if failed_days:
+        logger.warning("%d of %d days failed and are MISSING from the sweep: "
+                       "%s", len(failed_days), n_days, failed_days[:20])
+    if not records:
+        raise RuntimeError(f"all {n_days} sweep days failed -- see warnings")
     return pd.DataFrame(records)
 
 

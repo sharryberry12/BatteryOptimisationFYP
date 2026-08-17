@@ -249,3 +249,67 @@ def test_conductor_reference_underground_and_three_phase(ev):
 def test_config_without_impedance_source_is_omitted(ev):
     configs = {"spacer_only": {"spacing": "some_spacing"}}
     assert ev.extract_impedances({}, configs) == {}
+
+
+# ==========================================================
+# is_chp_load -- BlueGen CHP units masquerading as GLM loads
+# ==========================================================
+
+@pytest.mark.parametrize("src, expected", [
+    ("Generators2.glm", True),
+    ("generators2.glm", True),
+    (r"Elermorevale\generators\Generators2.glm", True),   # full path
+    ("Generators.glm", True),
+    ("HP00016304GTX00000001.glm", False),               # a subs/ file
+    ("elermorevale11kV.glm", False),
+])
+def test_is_chp_load_by_source_file(ev, src, expected):
+    assert ev.is_chp_load(src) is expected
+
+
+# ==========================================================
+# parse_profile_dates -- both writer formats, no dateutil fallback
+# ==========================================================
+
+@pytest.mark.parametrize("raw", [
+    ["1-Jul-10", "7-Jan-11"],                       # osqp_daily*.save_profiles
+    ["2010-07-01", "2011-01-07"],                   # vpp_export (ISO)
+    ["2010-07-01 00:00:00", "2011-01-07 00:00:00"], # re-serialised Timestamps
+])
+def test_parse_profile_dates_known_formats(ev, raw):
+    import pandas as pd
+    out = ev.parse_profile_dates(pd.Series(raw))
+    assert list(out.dt.strftime("%Y-%m-%d")) == ["2010-07-01", "2011-01-07"]
+
+
+def test_parse_profile_dates_rejects_unknown_format(ev):
+    import pandas as pd
+    with pytest.raises(ValueError, match="match none of"):
+        ev.parse_profile_dates(pd.Series(["07/01/2010", "01/07/2011"]))
+
+
+# ==========================================================
+# assert_monitors_energised -- dead-monitor guard for daily runs
+# ==========================================================
+
+def test_assert_monitors_energised_accepts_live_monitors(ev):
+    import numpy as np
+    ev.assert_monitors_energised({"a": np.full(ev.T, 0.98),
+                                  "b": np.full(ev.T, 1.05)})
+
+
+def test_assert_monitors_energised_rejects_dead_monitor(ev):
+    import numpy as np
+    with pytest.raises(RuntimeError, match=r"1 of 2 .*dead_load \(48/48"):
+        ev.assert_monitors_energised({"live": np.full(ev.T, 0.98),
+                                      "dead_load": np.zeros(ev.T)})
+
+
+def test_assert_monitors_energised_rejects_truncated_day(ev):
+    """A daily solve that aborts part-way leaves zero-padded monitor
+    buffers -- a single 0 V sample must trip the guard too."""
+    import numpy as np
+    v = np.full(ev.T, 0.99)
+    v[-1] = 0.0
+    with pytest.raises(RuntimeError, match=r"partial \(1/48"):
+        ev.assert_monitors_energised({"partial": v})

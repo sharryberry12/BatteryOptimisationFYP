@@ -38,6 +38,12 @@ EXPECTED_GLM_CENSUS = {
     "inverter": 161,
 }
 TOTAL_GLM_OBJECTS = 7958
+# Of the 1,810 GLM `load` objects, 25 live in generators/Generators2.glm and
+# are BlueGen fuel-cell CHP units (not households); 14 of those declare a
+# phase their service-point meter does not carry. The builder skips all 25
+# (elermorevale_openDSS.is_chp_load) -- see MODEL_VERIFICATION.md defect #6.
+EXPECTED_CHP_UNITS = 25
+EXPECTED_CHP_PHASE_MISMATCHES = 14
 
 # GLM object types the builder maps into each OpenDSS element namespace.
 BRANCH_TYPES = ("overhead_line", "underground_line", "triplex_line",
@@ -175,13 +181,44 @@ def test_all_loads_connect_to_the_network(glm_objects):
     assert not orphans, f"loads not reachable from any branch: {orphans[:10]}"
 
 
+def test_residential_load_phases_are_subset_of_service_point(ev, glm_objects):
+    """A load can only be energised on phases its parent (meter/node)
+    actually carries -- GridLAB-D's own child-phase rule. The builder trusts
+    each load's declared `phases`, so a mismatch produces a floating 0 V
+    node-phase that Topology.NumIsolatedLoads cannot see. Every residential
+    load must satisfy the rule; the BlueGen CHP `load`s in Generators2.glm
+    are the measured exception (14 of 25) and are why the builder skips them."""
+    phases_of = {p["name"]: p.get("phases", "") for _, _, p in glm_objects
+                 if p.get("name")}
+    letters = lambda s: {c for c in s if c in "ABC"}
+    bad_res, n_chp, bad_chp = [], 0, 0
+    for src, otype, p in glm_objects:
+        if otype != "load":
+            continue
+        parent = p.get("parent", "")
+        if parent not in phases_of:
+            continue                      # orphan check lives in another test
+        subset = letters(p.get("phases", "")) <= letters(phases_of[parent])
+        if ev.is_chp_load(src):
+            n_chp += 1
+            bad_chp += (not subset)
+        elif not subset:
+            bad_res.append((p["name"], p.get("phases"), phases_of[parent]))
+    assert not bad_res, f"residential loads off their parent's phases: {bad_res[:10]}"
+    assert n_chp == EXPECTED_CHP_UNITS
+    assert bad_chp == EXPECTED_CHP_PHASE_MISMATCHES
+
+
 # ==========================================================
 # GROUP 2 -- engine reconciliation (builds the DSS circuit)
 # ==========================================================
 
 def test_builder_stats_match_glm_census(built_circuit):
     stats, _ = built_circuit
-    assert stats["loads"] == EXPECTED_GLM_CENSUS["load"]
+    # every GLM load is either a built residential Load or a skipped CHP unit
+    assert stats["chp_units_skipped"] == EXPECTED_CHP_UNITS
+    assert (stats["loads"] + stats["chp_units_skipped"]
+            == EXPECTED_GLM_CENSUS["load"])
     assert stats["pv_systems"] == EXPECTED_GLM_CENSUS["solar"]
     assert stats["batteries"] == EXPECTED_GLM_CENSUS["battery"]
     # zone substation is excluded from the distribution-transformer count

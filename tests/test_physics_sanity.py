@@ -137,22 +137,61 @@ def test_losses_scale_superlinearly_with_load(ev):
 
 def test_golden_snapshot_regression(ev):
     """Frozen reference solve (load-only, 1 kW/household), measured 2026-08
-    with dss-python 0.15.7 / DSS C-API 0.14.5, after three corrections the
-    Level 4 GridLAB-D cross-validation forced: bare-length=feet, 3-phase
-    load kv = line-to-line, and explicit Line phases= (a 1-phase GLM line
-    with a shared 3-phase linecode used to energise phantom phases).
-    Guards the whole translation against silent regressions; re-derive
-    deliberately if the model or the engine version changes
-    (see MODEL_VERIFICATION.md)."""
+    with dss-python 0.15.7 / DSS C-API 0.14.5, after four corrections:
+    three the Level 4 GridLAB-D cross-validation forced (bare-length=feet,
+    3-phase load kv = line-to-line, explicit Line phases= -- a 1-phase GLM
+    line with a shared 3-phase linecode used to energise phantom phases)
+    and the 2026-08-16 exclusion of the 25 BlueGen CHP `load` objects from
+    Generators2.glm (11 of them were energised 1 kW loads here, 14 floated
+    at 0 V; previous golden 1871.1 kW / 75.07 kW). Guards the whole
+    translation against silent regressions; re-derive deliberately if the
+    model or the engine version changes (see MODEL_VERIFICATION.md)."""
     build_load_only(ev, kw=REALISTIC_KW)
     solved(ev)
     v = live_voltages_pu(ev)
     p_source, _ = source_pq_kw(ev)
-    assert p_source == pytest.approx(1871.1, rel=0.01)
-    assert losses_kw(ev) == pytest.approx(75.07, rel=0.02)
-    assert v.min() == pytest.approx(0.8300, abs=0.01)
-    assert v.mean() == pytest.approx(0.9489, abs=0.01)
+    assert p_source == pytest.approx(1859.5, rel=0.01)
+    assert losses_kw(ev) == pytest.approx(74.53, rel=0.02)
+    assert v.min() == pytest.approx(0.8301, abs=0.01)
+    assert v.mean() == pytest.approx(0.9491, abs=0.01)
     assert v.max() == pytest.approx(1.0048, abs=0.005)
+
+
+def load_node_voltages_pu(ev):
+    """{load_name: [pu voltage of each node-phase the load connects to]}."""
+    ckt = ev.dss.ActiveCircuit
+    vpu = dict(zip((n.lower() for n in ckt.AllNodeNames), ckt.AllBusVmagPu))
+    out, idx = {}, ckt.Loads.First
+    while idx:
+        bus = ckt.ActiveCktElement.BusNames[0].lower()
+        base, *phases = bus.split(".")
+        phases = phases or ["1", "2", "3"]
+        out[ckt.Loads.Name] = [vpu.get(f"{base}.{ph}", 0.0) for ph in phases]
+        idx = ckt.Loads.Next
+    return out
+
+
+@pytest.mark.parametrize("skip_generators, oltc", [
+    (True, False),      # profile-driven build (what the sweeps use)
+    (True, True),       # profile-driven build with the zone RegControl
+    (False, False),     # full model: PV + generator-modelled batteries
+])
+def test_every_load_sits_on_an_energised_node_phase(ev, skip_generators, oltc):
+    """A load whose declared phase has no conductor reaching its bus is
+    silently floating: OpenDSS still reports Converged=True and
+    Topology.NumIsolatedLoads == 0 (that check is bus-level), but the load's
+    node-phase solves to 0 V. This is how 14 BlueGen CHP units with a GLM
+    phase mismatch zeroed V min in every post-2026-08-13 sweep. Guard the
+    per-node-phase invariant directly."""
+    ev.build_elermorevale(str(GLM_DIR), str(COMMON_DIR),
+                          skip_generators=skip_generators, oltc=oltc)
+    ev.dss.Text.Command = f"BatchEdit Load..* kW={REALISTIC_KW}"
+    solved(ev)
+    floating = {name: v for name, v in load_node_voltages_pu(ev).items()
+                if min(v) < 0.5}
+    assert not floating, (
+        f"{len(floating)} loads on de-energised node-phases: "
+        f"{sorted(floating)[:10]}")
 
 
 def test_full_model_snapshot_energises_network(ev):
@@ -166,7 +205,8 @@ def test_full_model_snapshot_energises_network(ev):
     assert ev.solve_snapshot()
     v = live_voltages_pu(ev)
     # 4,597 network node-phases live (measured 2026-08, after the explicit
-    # Line phases= fix removed ~1,900 phantom node-phases). The remaining
-    # dead ones are generator-bus phase padding with no network path.
+    # Line phases= fix removed ~1,900 phantom node-phases and the BlueGen
+    # CHP exclusion removed the last 13 floating ones). The remaining dead
+    # ones (~117) are generator-bus phase padding with no network path.
     assert v.size > 4500                # essentially all nodes energised
     assert v.min() > 0.5                # and at sane magnitudes
