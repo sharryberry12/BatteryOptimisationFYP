@@ -1,4 +1,9 @@
-# CLAUDE.md — QP Battery Scheduler with Dynamic Operating Envelopes
+# paper_context.md — QP Battery Scheduler with Dynamic Operating Envelopes
+
+> Base formulation, notation, invariants and modelling gaps for the Part A
+> scheduler. (This file was the project's original `CLAUDE.md`; the agent
+> context now lives in [CLAUDE.md](CLAUDE.md), and `VPP_EXTENSION.md`
+> cross-references sections of *this* file.)
 
 Context for Claude Code sessions on this repository. Derived from the FYP Part A paper
 *"A Quadratic-Programming Optimisation Approach for Virtual Power Plants Utilising Dynamic
@@ -122,7 +127,7 @@ Embedded as `H_cal = [[H, 0], [0, 0]]` with `H = diag(h_1..h_s)` — zeros on th
 
 > **⚠ This is a surrogate objective, not dollars.** Annual savings are computed *post hoc* under
 > the two metering topologies. Do not assume the QP is minimising the reported dollar figure.
-> This distinction becomes critical for market participation — see `docs/VPP_EXTENSION.md` §7.
+> This distinction becomes critical for market participation — see `VPP_EXTENSION.md` §7.
 
 ### Equality block `A2 x = b2`
 

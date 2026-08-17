@@ -14,15 +14,20 @@ Correctness splits into two independent claims:
 2. **Physical plausibility** — the resulting power flow behaves like a real
    11 kV feeder.
 
-The test suite currently proves (1) up to the documented approximations below.
-(2) is partially covered by the existing snapshot checks and is future work
-(Levels 3–4).
+The test suite proves (1) up to the documented approximations below (Levels
+1–2), and (2) through known-answer power flows (Level 3) and a measured
+cross-validation against GridLAB-D (Level 4). Two runtime guards back the
+tests: `solve_snapshot` rejects a converged-but-dead (all 0 V) solution, and
+every profile-driven day asserts all voltage monitors stayed energised
+(`assert_monitors_energised` → `DeadMonitorError`), because the engine's
+`Converged=True` has twice been shown to be necessary but not sufficient
+(defects #1 and #6).
 
 ## Running the tests
 
 ```bash
 pip install -r requirements.txt   # includes pytest
-python -m pytest                  # 73 tests, all pass (~4 s)
+python -m pytest                  # 101 tests, all pass (~7 s)
 ```
 
 `pytest.ini` disables pytest's faulthandler: dss-python's FreePascal engine
@@ -69,22 +74,24 @@ highest-value assertions and the silent failure they guard against:
 | `test_safe_name_injective_per_namespace` | two GLM names sanitising to the same DSS name → silently merged elements |
 | `test_referenced_impedances_are_physical` | every linecode actually used has 0 < r < 10, 0 ≤ x < 1 Ω/km, positive rating, 1 or 3 phases |
 | `test_all_loads_connect_to_the_network` | loads whose parent chain (load → meter → node) never reaches a branch endpoint |
+| `test_residential_load_phases_are_subset_of_service_point` | a load declaring a phase its parent meter/node does not carry (GridLAB-D's child-phase rule) — it would float at 0 V; the 25 BlueGen CHP `load`s are the pinned exception (14 mismatches) and are why the builder skips them (defect #6) |
 
 **Group 2 — engine reconciliation** (builds the DSS circuit, ~0.5 s, no solve):
 
 | Test | Guards against |
 |------|----------------|
-| `test_builder_stats_match_glm_census` | builder counters diverging from the GLM census |
+| `test_builder_stats_match_glm_census` | builder counters diverging from the GLM census (built loads + skipped CHP units = 1,810) |
 | `test_engine_element_counts_match_source` | `New` commands rejected or collided inside OpenDSS (engine count ≠ builder count) |
-| `test_engine_total_load_power` | dropped/merged loads: total connected load must be exactly 3 kW × 1,810 |
-| `test_engine_no_isolated_elements` | islanded subtrees — OpenDSS's topology processor must report **0** isolated branches and loads |
+| `test_engine_total_load_power` | dropped/merged loads: total connected load must be exactly 3 kW × 1,785 |
+| `test_zone_regcontrol_built_only_when_requested` / `test_zone_regcontrol_settings_target_one_pu` | the zone RegControl appearing in profile mode without `--oltc`, or regulating to the wrong target (pins vreg 120 / ptratio 52.92 / band 2.4 / ±16/10 taps at 1.25 %) |
+| `test_engine_no_isolated_elements` | islanded subtrees — OpenDSS's topology processor must report **0** isolated branches and loads (bus-level; it cannot see a load floating on a missing phase — that is Level 3's `test_every_load_sits_on_an_energised_node_phase`) |
 
 ### Measured ground truth (checked-in GLM sources)
 
 | Quantity | Value |
 |----------|-------|
 | Total GLM objects | 7,958 |
-| Loads | **1,810** (the module docstring originally said 1,785; corrected after measurement) |
+| GLM `load` objects | **1,810** = 1,785 residential loads (subs/*.glm) + 25 BlueGen CHP units (generators/Generators2.glm, excluded from the build — defect #6). The module docstring's original "~1,785" was right for households. |
 | PV systems (`solar`) | 155 |
 | Batteries | 40 |
 | Transformers | 24 (23 distribution + 1 zone sub) |
@@ -92,7 +99,7 @@ highest-value assertions and the silent failure they guard against:
 | Switches / fuses | 246 / 40 |
 | Line configurations / conductors | 3,834 / 395 (1,136 z-matrix) |
 | Configs referenced by lines | 82 — all resolve, 0 fallbacks |
-| DSS engine after build | 2,451 Lines, 1,810 Loads, 25 Transformers (+OLTC +zone sub), 195 Generators (155 PV + 40 batteries — see Known defects #1), 0 Storage |
+| DSS engine after build | 2,451 Lines, 1,785 Loads, 25 Transformers (+OLTC +zone sub), 195 Generators (155 PV + 40 batteries — see Known defects #1), 0 Storage, 1 RegControl (0 in profile mode unless `--oltc`); 4,597 network node-phases, all energised in the load-only model |
 
 If the GLM sources are ever regenerated, re-derive these numbers (parse with
 `parse_all_glm` and count by type) instead of deleting the assertions.
@@ -112,7 +119,18 @@ this approximation*, not to a perfect electromagnetic model:
 - **Default load power**: every load is created at 3 kW / 0.95 pf; real
   time-series enter via LoadShapes during profile-driven simulation.
 - **OLTC simplification**: the GridLAB-D LDC lookup-table regulator is
-  modelled as a unity-ratio autotransformer with a RegControl.
+  modelled as a unity-ratio autotransformer with a RegControl (vreg 120 V
+  on a 52.92 PT ratio = 1.0 pu at the 11 kV winding, ±1 % band, 16 raise /
+  10 lower taps of 1.25 %). It is built in the full model and, with
+  `--oltc`, in profile mode; every solve runs `controlmode=off` otherwise.
+  Measured 2026-08-16: with controls active on the representative days the
+  11 kV bus stays at 0.9955–1.0004 pu and the tap never leaves neutral, so
+  OLTC-on results equal OLTC-off (see [NETWORK_AWARE_DISPATCH.md](NETWORK_AWARE_DISPATCH.md)).
+- **BlueGen CHP units not modelled**: the 25 `object load`s in
+  `generators/Generators2.glm` are fuel-cell CHP units driven by a schedule
+  (`schedule_BlueGen0`) that no checked-in file defines; `main.glm` does not
+  include that file at all (only the 40 Redflow batteries from it are
+  translated). See defect #6.
 
 These bound the achievable agreement in Level 4: expect *close*, not exact.
 
@@ -130,8 +148,9 @@ losses, measured post-fix 2026-08), pushing constant-P loads below their
 | `test_energy_conservation` | source P = Σ actual load P + losses (0.1 %) |
 | `test_transformer_voltage_drop_matches_hand_calc` | solved 11 kV bus dip matches dV ≈ P·R + Q·X from the GLM's zone-transformer impedance (measured agreement ~2×10⁻⁴ pu) |
 | `test_losses_scale_superlinearly_with_load` | loads ×1.2 → min V falls, loss ratio in (1.2, 1.2³); measured 1.49 ≈ quadratic |
-| `test_golden_snapshot_regression` | frozen reference solve: source 1,871.1 kW, losses 75.1 kW, V min/mean/max 0.830/0.949/1.005 pu (dss-python 0.15.7 / DSS C-API 0.14.5, post fixes #3–#5 below) |
+| `test_golden_snapshot_regression` | frozen reference solve: source 1,859.5 kW, losses 74.5 kW, V min/mean/max 0.830/0.949/1.005 pu (dss-python 0.15.7 / DSS C-API 0.14.5, post fixes #3–#6 below; was 1,871.1 kW / 75.1 kW with the 11 energised BlueGen loads) |
 | `test_full_model_snapshot_energises_network` | full model (PV + generator-modelled batteries) solves and energises all 4,597 network node-phases — guards the Storage-defect workaround below |
+| `test_every_load_sits_on_an_energised_node_phase` | (×3: profile mode, profile mode + OLTC, full model) no Load connects to a node-phase that solves to < 0.5 pu — the per-node-phase check that `Topology.NumIsolatedLoads` cannot do; guards defect #6 |
 
 ## Known defects (found by this suite)
 
@@ -160,11 +179,17 @@ losses, measured post-fix 2026-08), pushing constant-P loads below their
    Storage, revert by swapping the generator block back and re-adding the
    engine-count expectations for Storage in the Level 2 tests.
 
-2. **`solve_snapshot` trusts `Converged` alone.** In the dead-circuit state
-   above it logs "converged: True", losses 0.0, and skips the voltage
-   summary (the >0.01 pu filter removes every bus), so the failure is
-   silent. A robust check should also require a non-empty energised-bus
-   set (see `live_voltages_pu` in the physics tests).
+2. **[FIXED 2026-08-16] `Converged` was trusted alone.** In the dead-circuit
+   state above `solve_snapshot` logged "converged: True", losses 0.0, and
+   skipped the voltage summary (the >0.01 pu filter removed every bus), so
+   the failure was silent; the daily path had no check at all, which is how
+   defect #6 reached the sweep CSVs. Now `solve_snapshot` returns False on
+   an empty energised-bus set, and `simulate_scenario` calls
+   `assert_monitors_energised`, which raises `DeadMonitorError` if any
+   monitor reads ≤ 0.01 pu at any interval (a floating load *or* a daily
+   run that aborted part-way and left zero-padded buffers).
+   `run_full_sweep` re-raises that error instead of logging-and-skipping the
+   day, and reports any other skipped days explicitly.
 
 3. **[FIXED] Bare GLM lengths misread as metres** — caught by the Level 4
    cross-validation. GridLAB-D's default length unit is FEET; all 62 of
@@ -198,6 +223,34 @@ losses, measured post-fix 2026-08), pushing constant-P loads below their
    (OpenDSS rebuilds Z for the declared count from the code's
    symmetrical components); guarded by the 100 % join-coverage bound and
    the re-pinned node census.
+
+6. **[FIXED 2026-08-16] BlueGen CHP "loads" floating at 0 V, zeroing every
+   sweep's V min** — surfaced when the OLTC investigation reported
+   `V min = 0.0000`, then traced to the plain model. `generators/Generators2.glm`
+   declares 25 `object load`s named `BLUEGEN_*` (fuel-cell CHP units driven
+   by `schedule_BlueGen0`, which no checked-in file defines); 14 of them
+   declare a phase (e.g. `CN`) that their parent service-point meter and
+   feeding line do not carry (`BN`). `parse_all_glm` globs every `.glm`
+   under `Elermorevale/` even though `main.glm` never includes this file,
+   so the builder created them as residential loads on their declared
+   phase — a node-phase with no conductor to it. Until fix #5, phantom
+   phases energised them anyway; after it they solved to 0 V while
+   `Converged=True` and `Topology.NumIsolatedLoads == 0` (bus-level) both
+   passed. Two of the fourteen (`bluegen_12926098`, `bluegen_5335434`) fell in
+   the every-18th monitored set, so **every post-2026-08-13 sweep row had
+   `v_min = 0.0` and +96 fake under-voltage violations per day**; the
+   representative-day summaries from 2026-08-13 17:22/17:39 (pre-#5) were
+   unaffected. Fixed by excluding CHP `load`s from the residential build in
+   every mode (`is_chp_load`, `stats["chp_units_skipped"] = 25`; the 40
+   Redflow batteries in the same file are still built), which also removes
+   11 spurious 1 kW loads from the Level 4 comparison (the harness only
+   ever processed `subs/*.glm`). Guarded by
+   `test_residential_load_phases_are_subset_of_service_point`,
+   `test_every_load_sits_on_an_energised_node_phase`, the dead-monitor
+   guard (#2) and the re-pinned goldens. **Network results generated
+   between 2026-08-13 and 2026-08-16 should be regenerated** (done for
+   `figures/` and `figures/net/`; the pre-fix files were kept as
+   `summaries.stale-20260813.txt`).
 
 ## Level 4 — cross-validation against GridLAB-D (results)
 
