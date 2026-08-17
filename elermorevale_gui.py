@@ -87,6 +87,23 @@ def gfloat(v, d=0.0):
     return float(m.group(0)) if m else float(d)
 
 
+def glm_length_m(v, d=1.0):
+    """GLM line length in metres: an explicit unit wins, a BARE number is
+    FEET (GridLAB-D's default) -- mirrors elermorevale_openDSS.glm_length_m,
+    kept local so the instant topology view needs no DSS import. All 11 kV
+    backbone lengths are bare; treating them as metres stretched the
+    dashboard's distance-from-substation axis 3.28x."""
+    if v is None:
+        return float(d)
+    m = re.match(r"([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s*([A-Za-z]*)",
+                 str(v).strip().rstrip(";").strip())
+    if not m:
+        return float(d)
+    qty, unit = float(m.group(1)), m.group(2).lower()
+    return qty * {"": 0.3048, "ft": 0.3048, "m": 1.0, "km": 1000.0,
+                  "mi": 1609.344, "mile": 1609.344}.get(unit, 1.0)
+
+
 def build_topology(glm_dir):
     """Parse all GLM files, return a NetworkX graph with attributes."""
     all_objs = []
@@ -130,7 +147,7 @@ def build_topology(glm_dir):
     for ot in ["overhead_line", "underground_line", "triplex_line"]:
         for p in by_type.get(ot, []):
             f, t = p.get("from", ""), p.get("to", "")
-            length = gfloat(p.get("length", "1"), 1.0)
+            length = glm_length_m(p.get("length", "1"), 1.0)
             if f and t:
                 G.add_edge(f, t, element=ot, length=length)
 
