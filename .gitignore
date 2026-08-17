@@ -1,5 +1,6 @@
 __pycache__/
 figures/
+figures_*/
 profiles/
 *.csv
 *.pdf

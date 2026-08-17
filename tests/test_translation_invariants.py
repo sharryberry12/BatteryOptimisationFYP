@@ -223,6 +223,41 @@ def test_engine_total_load_power(built_circuit):
     assert total_kw == pytest.approx(3.0 * stats["loads"], abs=1e-6)
 
 
+@pytest.mark.parametrize("skip_generators, oltc, expected", [
+    (False, False, 1),      # full model: regulator is part of the network
+    (True, False, 0),       # profile mode: skipped with the generators
+    (True, True, 1),        # profile mode with --oltc
+])
+def test_zone_regcontrol_built_only_when_requested(ev, skip_generators,
+                                                   oltc, expected):
+    ev.build_elermorevale(str(GLM_DIR), str(COMMON_DIR),
+                          skip_generators=skip_generators, oltc=oltc)
+    assert ev.dss.ActiveCircuit.RegControls.Count == expected
+
+
+def test_zone_regcontrol_settings_target_one_pu(ev):
+    """The RegControl must regulate the 11 kV winding to 1.0 pu on a 120 V
+    base: PT ratio = (11 kV / sqrt3) / 120 = 52.92, vreg = 120, band = 2.4 V
+    (+-1 %, mirroring the GLM band_width 128 V / 52.92). The pre-2026-08-14
+    values (vreg=110, ptratio=100) implied an 11,000 V L-N target and were
+    only harmless because every solve ran controlmode=off. Tap range mirrors
+    the GLM regulator_configuration (raise 16 / lower 10 at 1.25 %)."""
+    ev.build_elermorevale(str(GLM_DIR), str(COMMON_DIR),
+                          skip_generators=True, oltc=True)
+
+    def q(prop):
+        ev.dss.Text.Command = f"? {prop}"
+        return float(ev.dss.Text.Result)
+
+    assert q("RegControl.OLTC_ctrl.vreg") == pytest.approx(120.0)
+    assert q("RegControl.OLTC_ctrl.band") == pytest.approx(2.4)
+    assert q("RegControl.OLTC_ctrl.ptratio") == pytest.approx(
+        11000.0 / 3 ** 0.5 / 120.0, rel=1e-3)
+    assert q("Transformer.OLTC.maxtap") == pytest.approx(1.0 + 16 * 0.0125)
+    assert q("Transformer.OLTC.mintap") == pytest.approx(1.0 - 10 * 0.0125)
+    assert q("Transformer.OLTC.numtaps") == 26
+
+
 def test_engine_no_isolated_elements(built_circuit):
     """OpenDSS's own topology processor must find every branch and load
     connected to the energised source -- the definitive islanding check."""

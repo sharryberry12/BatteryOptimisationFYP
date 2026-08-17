@@ -34,6 +34,8 @@ Usage:
     python elermorevale_openDSS.py                                        # build + snapshot (original)
     python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv   # daily sim
     python elermorevale_openDSS.py --profiles ... --full --save           # full sweep
+    python elermorevale_openDSS.py --profiles ... --save --oltc           # zone RegControl active
+                                                                          #   (-> <output-dir>_oltc)
 
 Prerequisites:
     pip install dss-python numpy pandas matplotlib
@@ -240,7 +242,7 @@ def glm_length_m(value, default=1.0):
 # NETWORK BUILDER
 # ==================================================================
 
-def build_elermorevale(glm_dir, common_dir, skip_generators=False):
+def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
     """
     Parse all Elermorevale GLM files + common/Line Configs.glm,
     then build the complete OpenDSS model.
@@ -249,6 +251,10 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
         RegControl. Use this for profile-driven simulation where
         LoadShapes already carry the net grid profile p = l − g − b,
         so adding separate Generator/Storage elements would double-count.
+    oltc : if True, build the zone OLTC RegControl even in
+        skip_generators mode (profile-driven simulation with an active
+        regulator). The control only acts when the solve runs with
+        controlmode != off — see run_daily() and OLTC_ACTIVE.
 
     Returns a dict of element counts.
     """
@@ -357,7 +363,9 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
     )
 
     # OLTC: modelled as a unity-ratio autotransformer with RegControl
-    # Simplification of the GridLAB-D LDC lookup_table + aggregate_transform
+    # Simplification of the GridLAB-D LDC lookup_table + aggregate_transform.
+    # Tap range mirrors the GLM regulator_configuration: regulation 0.2 with
+    # raise 16 / lower 10 -> steps of 1.25 %, +20 % / -12.5 %.
     cmd.Command = (
         "New Transformer.OLTC phases=3 windings=2 "
         "buses=[BusZoneSubOLTC, BusZoneSub11kV] "
@@ -365,14 +373,21 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
         "kvs=[11, 11] "                       # unity ratio; taps do the work
         "kvas=[50000, 50000] "
         "%Rs=[0.001, 0.001] xhl=0.01 "        # near-zero impedance
-        "taps=[1.0, 1.0]"
+        "taps=[1.0, 1.0] "
+        "maxtap=1.2 mintap=0.875 numtaps=26"
     )
-    if not skip_generators:
+    if oltc or not skip_generators:
+        # PT ratio maps the regulated winding's L-N voltage (11 kV/sqrt(3)
+        # = 6350.85 V) onto the 120 V control base: 6350.85/120 = 52.92.
+        # vreg=120 targets 1.0 pu; band mirrors the GLM band_width 128 V
+        # (128/52.92 = 2.4 V). The pre-2026-08-14 values (vreg=110,
+        # ptratio=100) implied an 11,000 V L-N target -- dormant only
+        # because every solve ran controlmode=off.
         cmd.Command = (
             "New RegControl.OLTC_ctrl "
             "transformer=OLTC winding=2 "
-            "vreg=110 band=2 "                    # target voltage on 120V base
-            "ptratio=100 "                        # PT ratio for 11 kV
+            "vreg=120 band=2.4 "                  # 1.0 pu +/- 1 % on 120 V base
+            "ptratio=52.92 "                      # 6350.85 V L-N -> 120 V
             "delay=3 "                            # tap-change delay in seconds
             "maxtapchange=1 tapnum=0"
         )
@@ -535,8 +550,9 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False):
     # profile p = l − g − b. Adding Generator/Storage elements on top
     # would double-count PV generation and battery dispatch.
     if skip_generators:
-        logger.info("Skipping PV/batteries/RegControl (profile mode — "
-                    "net load already includes PV and battery effects)")
+        logger.info("Skipping PV/batteries (profile mode — net load already "
+                    "includes PV and battery effects); zone RegControl %s",
+                    "built (oltc=True)" if oltc else "not built")
     else:
         logger.info("Building %d PV systems ...", len(by_type.get("solar", [])))
 
@@ -714,6 +730,9 @@ V_LOWER_PU = 0.94       # statutory lower limit: −6 %
 
 # Module-level output directory for plots. None = interactive display.
 OUTPUT_DIR = None
+# Profile-mode OLTC switch (set from --oltc): builds the zone RegControl
+# and runs daily solves with controlmode=static instead of off.
+OLTC_ACTIVE = False
 
 
 # ==================================================================
@@ -930,10 +949,15 @@ def day_index_for_date(profiles, date_str):
 # ==================================================================
 
 def run_daily():
-    """Execute one full day of 48 sequential 30-minute power flows."""
+    """Execute one full day of 48 sequential 30-minute power flows.
+
+    With OLTC_ACTIVE, controls run in static mode so the zone RegControl
+    settles its taps at every interval; otherwise controls stay off
+    (the historical behaviour — warning #485 is downgraded either way).
+    """
     cmd = dss.Text
     cmd.Command = f"Set mode=daily stepsize=30m number={T}"
-    cmd.Command = "Set controlmode=off"
+    cmd.Command = f"Set controlmode={'static' if OLTC_ACTIVE else 'off'}"
     cmd.Command = "Set maxcontroliter=50"
     cmd.Command = "Set maxiterations=100"
     # Re-initialise voltage vector so Newton-Raphson starts from
@@ -1032,7 +1056,8 @@ def simulate_scenario(glm_dir, common_dir, load_customer_map,
 
     The network is rebuilt from scratch each call to avoid stale state.
     """
-    build_elermorevale(glm_dir, common_dir, skip_generators=True)
+    build_elermorevale(glm_dir, common_dir, skip_generators=True,
+                       oltc=OLTC_ACTIVE)
 
     add_monitors(monitored_loads)
 
@@ -1282,6 +1307,10 @@ def plot_daily_summary_table(base, qp, date_str=None):
     lines.append("=" * 60)
     if date_str:
         lines.append(f"  Day: {date_str}")
+    # summaries.txt is opened in append mode, so label every block with the
+    # network configuration it came from -- OLTC-on and OLTC-off runs into
+    # the same directory must never be mistaken for each other.
+    lines.append(f"  Zone OLTC: {'ACTIVE (controlmode=static)' if OLTC_ACTIVE else 'off'}")
     lines.append("=" * 60)
     lines.append(f"{'Metric':<30} {'Baseline':>12} {'QP':>12}")
     lines.append("-" * 60)
@@ -1335,6 +1364,7 @@ def run_full_sweep(glm_dir, common_dir, load_customer_map,
         records.append({
             "day_idx": d,
             "date": base["date"],
+            "oltc": OLTC_ACTIVE,
             "base_v_min": base["v_min_pu"],
             "base_v_max": base["v_max_pu"],
             "base_violations": base["n_violations"],
@@ -1414,7 +1444,7 @@ def plot_sweep_results(sweep_df):
 # ==================================================================
 
 def main():
-    global OUTPUT_DIR
+    global OUTPUT_DIR, OLTC_ACTIVE
 
     parser = argparse.ArgumentParser(
         description="Build the Elermore Vale OpenDSS model from "
@@ -1458,6 +1488,14 @@ def main():
     parser.add_argument(
         "--per-day-plots", action="store_true",
         help="With --full, generate per-day plots for every simulated day")
+    parser.add_argument(
+        "--oltc", action="store_true",
+        help="Enable the zone OLTC voltage regulator during profile-driven "
+             "simulation (RegControl built, daily solves use "
+             "controlmode=static instead of off). With --save, outputs go "
+             "to <output-dir>_oltc unless the directory name already "
+             "contains 'oltc'; the sweep CSV gains an 'oltc' column and "
+             "summaries.txt blocks are labelled.")
 
     args = parser.parse_args()
 
@@ -1486,9 +1524,23 @@ def main():
     # MODE 2: Profile-driven daily simulation (--profiles given)
     # =============================================================
 
+    OLTC_ACTIVE = args.oltc
+    if OLTC_ACTIVE:
+        logger.info("OLTC ACTIVE: zone RegControl built, "
+                    "daily solves with controlmode=static")
+
     # --- Configure plot output ---
     if args.save:
         OUTPUT_DIR = args.output_dir
+        # OLTC runs write the same file names as OLTC-off runs (PNGs, the
+        # sweep CSV, and an append-mode summaries.txt), so keep them in a
+        # separate directory unless the caller already named one.
+        if OLTC_ACTIVE and "oltc" not in os.path.basename(
+                os.path.normpath(OUTPUT_DIR)).lower():
+            OUTPUT_DIR = OUTPUT_DIR.rstrip("/\\") + "_oltc"
+            logger.info("--oltc: redirecting outputs to %s/ so they cannot "
+                        "overwrite or interleave with OLTC-off results",
+                        OUTPUT_DIR)
         os.makedirs(OUTPUT_DIR, exist_ok=True)
         logger.info("Plots will be saved to %s/", OUTPUT_DIR)
         import matplotlib
