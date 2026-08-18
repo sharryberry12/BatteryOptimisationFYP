@@ -36,17 +36,31 @@ CLI (2026-08-16):  --mode {fit,net}  --scenarios ...  --export-limit kW [kW ...]
 Outputs profiles/<mode>_doe_<scenario>[_cap<kW>].csv in the long format the
 network scripts read (elermorevale_openDSS.py --profiles ...).
 
-Constraint mechanics (2026-08-16 fix): the DOE rows are an identity block that
-is part of the persistent OSQP workspace from setup and are switched on per
-day by updating their bounds. Before this fix the rows were passed to
-solver.update(A=...), which osqp silently ignores, so no DOE result generated
-earlier actually had the envelope enforced (all scenarios gave identical
-dispatch). Days whose envelope is infeasible for the battery fall back to
-the unconstrained dispatch and are flagged (doe_compliant=False, doe_slack>0)
--- PV curtailment is NOT modelled. Regression tests: tests/test_doe_constraints.py.
+Formulation (2026-08-19): decision vector x = [b | c | s]
+    b  battery kW (+ discharge)                    -- osqp_daily's variable
+    c  curtailed PV kW, 0 <= c <= pv               -- export-side relief
+    s  import shortfall kW, >= 0                   -- import-side slack
+grid flow p = load - pv + c - b, and
+    minimise  sum_k h_k p_k^2 + PENALTY_KW * sum_k h_k (c_k + s_k)
+    s.t.  battery rate / SOC / daily neutrality on b,
+          doe_min <= p            (export cap, HARD -- always feasible via c),
+          p <= doe_max + s        (import cap, SOFT -- load cannot be shed).
+The penalties exceed any flattening benefit, so c and s are used only when
+the battery cannot meet the envelope; the bill charges curtailment through
+pv - c. Without an envelope c and s are pinned to zero and the result equals
+osqp_daily.solve_battery exactly. --import-limit adds a flat import cap to
+any scenario (label suffix _imp<kW>). Profiles gain curtail_kw and
+import_shortfall_kw columns.
+
+Constraint mechanics (2026-08-16 fix): all rows live in the persistent OSQP
+workspace from setup and are switched per day by updating bounds (and P/q).
+Before that fix the DOE rows were passed to solver.update(A=...), which osqp
+silently ignores, so no DOE result generated earlier actually had the
+envelope enforced. Regression tests: tests/test_doe_constraints.py.
 """
 
 import logging
+from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
 
 import matplotlib.pyplot as plt
@@ -89,28 +103,37 @@ GG_CAT3_EARLY_LIMIT  = 10
 # NEW: DOE GENERATION AND UTILITY FUNCTIONS
 # ==========================================================
 
-def generate_doe_envelope(scenario="conservative", base_export_limit=3.0):
+def generate_doe_envelope(scenario="conservative", base_export_limit=3.0,
+                          base_import_limit=np.inf):
     """
     Generate a time-varying DOE envelope for testing.
-    
+
     Parameters:
     -----------
-    scenario : str
-        'none'         -> no constraint (p_min = -inf, p_max = +inf)
+    scenario : str   (shapes the EXPORT side)
+        'none'         -> no export constraint (p_min = -inf)
         'conservative' -> moderate export limits (80% of baseline)
         'tight'        -> strict limits (30% of baseline), worst during peak
         'rolling'      -> realistic day-ahead forecast + ±10% uncertainty
-    
+
     base_export_limit : float
         Maximum export (negative p) the feeder can accept (kW)
         E.g., 3.0 means we won't send more than 3 kW back to grid
-    
+
+    base_import_limit : float
+        Flat cap on IMPORT (positive p), kW; inf = unconstrained. This is
+        the import-side envelope: it targets the synchronised off-peak
+        charging that the price-only QP produces (NETWORK_AWARE_DISPATCH.md
+        section 5, item 1). Load cannot be shed, so an import cap the
+        battery cannot honour is met best-effort and the shortfall is
+        reported (see solve_battery).
+
     Returns:
     --------
     doe_min, doe_max : np.ndarray of shape (T,)
         Lower and upper bounds on p_k for each interval k
         doe_min_k is the most negative p can go (export limit)
-        doe_max_k is the most positive p can go (import limit, usually unbound)
+        doe_max_k is the most positive p can go (import limit)
     """
     if scenario == "none":
         # Baseline: no DOE constraint
@@ -159,7 +182,10 @@ def generate_doe_envelope(scenario="conservative", base_export_limit=3.0):
     
     else:
         raise ValueError(f"Unknown DOE scenario: {scenario}")
-    
+
+    if np.isfinite(base_import_limit):
+        doe_max = float(base_import_limit) * np.ones(T)
+
     return doe_min, doe_max
 
 
@@ -190,79 +216,118 @@ def load_doe_from_csv(path, scenario_col="scenario", doe_min_col="p_min_kw",
 # MODIFIED: BUILD CONSTRAINTS WITH DOE BOUNDS
 # ==========================================================
 
+# Decision vector x = [b | c | s], each of length T:
+#   b  battery power (kW, > 0 discharge, < 0 charge)          -- as in osqp_daily
+#   c  curtailed PV (kW, 0 <= c <= pv)                          -- export-side relief
+#   s  import shortfall (kW, >= 0)                              -- import-side slack
+# Grid flow  p = load - pv + c - b = net + c - b.
+IDX_B = slice(0, T)
+IDX_C = slice(T, 2 * T)
+IDX_S = slice(2 * T, 3 * T)
+N_VAR = 3 * T
+N_BASE_ROWS = 2 * T + 1                    # [b bounds][SOC][sum=0]
+N_ROWS = N_BASE_ROWS + 4 * T               # + [c box][s box][export][import]
+
+# Linear penalties on the relief variables, PER UNIT WEIGHT h_k: curtailing or
+# falling short by 1 kW in interval k costs PENALTY_KW * h_k in the objective.
+# The marginal benefit a kW of relief can ever bring to the flattening term is
+# |d(h p^2)/dp| = 2 h_k |p_k|, so with PENALTY_KW = 100 relief is never worth
+# it below |p| = 50 kW -- i.e. curtailment and import shortfall are used ONLY
+# when the battery cannot meet the envelope (feasibility), never to flatten.
+# Scaling by h_k (rather than one huge constant) keeps the QP well
+# conditioned whatever the heuristic does to the weights. The bill still sees
+# the true cost of curtailment (lost FiT / self-consumption) through pv - c.
+PENALTY_KW = 100.0
+
+
+@dataclass
+class DispatchResult:
+    """One day's DOE-constrained dispatch."""
+    b: np.ndarray               # battery kW (+ discharge)
+    curtail: np.ndarray         # curtailed PV kW (>= 0); non-zero only under a finite export cap
+    import_slack: np.ndarray    # import-cap shortfall kW (>= 0); load cannot be shed
+    status: str                 # OSQP status string
+
+    @property
+    def doe_feasible(self):
+        """Envelope met exactly? Export is always met (curtailment); import
+        is met iff no shortfall was needed."""
+        return bool(np.max(self.import_slack, initial=0.0) <= 1e-4)
+
+
 def build_constraints(e_max, soc_init_frac=0.5, p_max=P_MAX,
                       doe_min=None, doe_max=None):
     """
-    Build the stacked (A, l, u) constraint block for OSQP.
-    
-    Decision variable: b in R^T (battery discharge, >0 discharge, <0 charge)
-    Grid flow is p = l - g - b.
-    
-    Constraints:
-    1. |b_k| <= p_max                              (charge/discharge rate limit)
-    2. 0 <= SOC_k <= e_max                         (state of charge bounds)
-    3. sum(b) = 0                                  (energy conservation: start/end SOC equal)
-    4. [NEW] doe_min_k <= p_k <= doe_max_k        (Dynamic Operating Envelope)
-    
-    For constraint 4, we express p_k = l_k - g_k - b_k, so:
-        doe_min_k <= l_k - g_k - b_k <= doe_max_k
-        doe_min_k - l_k + g_k <= -b_k <= doe_max_k - l_k + g_k
-        l_k - g_k - doe_max_k <= b_k <= l_k - g_k - doe_min_k
-    
-    The DOE rows are an identity block that is ALWAYS part of A, so the
-    persistent OSQP workspace keeps one sparsity pattern for the whole run
-    (paper_context.md §4 invariant): with no envelope they are inactive
-    (l = -inf, u = +inf); with an envelope only the bounds change, per day,
-    via solver.update(l=, u=). Passing a differently-shaped A to
-    solver.update() is NOT supported by osqp -- osqp 1.x silently ignores an
-    `A=` keyword -- and that is exactly how the DOE constraint was a no-op
-    in every result generated before 2026-08-16 (see NETWORK_AWARE_DISPATCH.md).
+    Build the stacked (A, l, u) constraint block for OSQP over x = [b, c, s].
+
+    Rows (fixed sparsity; only bounds change per day):
+      1. |b_k| <= p_max                          rate limit            (T)
+      2. 0 <= SOC_k <= e_max                     via cumulative sum    (T)
+      3. sum(b) = 0                              daily neutrality      (1)
+      4. 0 <= c_k <= pv_k                        curtail only real PV  (T)
+      5. s_k >= 0                                shortfall slack       (T)
+      6. c_k - b_k >= doe_min_k - net_k          export cap, HARD      (T)
+         (p = net + c - b >= doe_min; always feasible: curtail c = pv,
+          b = 0 gives p = load >= doe_min since doe_min <= 0)
+      7. c_k - b_k - s_k <= doe_max_k - net_k    import cap, SOFT      (T)
+         (p <= doe_max + s; s > 0 only when the battery cannot supply
+          load - doe_max, e.g. load - doe_max > P_MAX or the SOC runs out)
+
+    The persistent OSQP workspace keeps ONE sparsity pattern for the whole
+    run (paper_context.md section 4 invariant); with no envelope rows 6-7
+    are inactive (+-inf) and row 4 pins c = 0, so the problem is exactly
+    osqp_daily's. Passing a differently-shaped A to solver.update() is not
+    supported (osqp 1.x silently ignores an `A=` keyword) -- that is how the
+    DOE constraint was a no-op before 2026-08-16.
     """
     soc_init = soc_init_frac * e_max
-    A_soc = np.tril(np.ones((T, T))) * DT
     I_T = sp.eye(T, format="csc")
-    A_soc_sp = sp.csc_matrix(A_soc)
-    A_eq = sp.csc_matrix(np.ones((1, T)))
+    Z_T = sp.csc_matrix((T, T))
+    A_soc = sp.csc_matrix(np.tril(np.ones((T, T))) * DT)
+    ones_row = sp.csc_matrix(np.ones((1, T)))
+    Z_row = sp.csc_matrix((1, T))
 
-    # Stack: [b bounds] [SOC bounds] [sum=0] [DOE rows on b]
-    A = sp.vstack([I_T, -A_soc_sp, A_eq, I_T]).tocsc()
+    A = sp.vstack([
+        sp.hstack([I_T, Z_T, Z_T]),          # 1 rate
+        sp.hstack([-A_soc, Z_T, Z_T]),       # 2 SOC
+        sp.hstack([ones_row, Z_row, Z_row]),  # 3 neutrality
+        sp.hstack([Z_T, I_T, Z_T]),          # 4 curtail box
+        sp.hstack([Z_T, Z_T, I_T]),          # 5 slack box
+        sp.hstack([-I_T, I_T, Z_T]),         # 6 export: c - b
+        sp.hstack([-I_T, I_T, -I_T]),        # 7 import: c - b - s
+    ]).tocsc()
 
-    l = np.hstack([
-        -p_max * np.ones(T),
-        -soc_init * np.ones(T),
-        np.array([0.0]),
-        -np.inf * np.ones(T),             # DOE rows: inactive until set
-    ])
-    u = np.hstack([
-        p_max * np.ones(T),
-        (e_max - soc_init) * np.ones(T),
-        np.array([0.0]),
-        np.inf * np.ones(T),
-    ])
+    inf = np.inf * np.ones(T)
+    l = np.hstack([-p_max * np.ones(T), -soc_init * np.ones(T), [0.0],
+                   np.zeros(T), np.zeros(T), -inf, -inf])
+    u = np.hstack([p_max * np.ones(T), (e_max - soc_init) * np.ones(T), [0.0],
+                   np.zeros(T), inf, inf, inf])
 
-    doe_info = {
-        "doe_min": doe_min,
-        "doe_max": doe_max,
-    }
-
+    doe_info = {"doe_min": doe_min, "doe_max": doe_max}
     return A, l, u, doe_info
 
 
-N_BASE_ROWS = 2 * T + 1                    # [b bounds][SOC][sum=0]
-
-
-def doe_row_bounds(net, doe_min=None, doe_max=None):
+def envelope_row_bounds(net, pv, doe_min=None, doe_max=None):
     """
-    Bounds for the DOE identity rows on b for one day.
+    Per-day bounds for rows 4-7 (curtail box, slack box, export, import).
 
-    doe_min_k <= p_k <= doe_max_k with p = net - b  <=>
-        net_k - doe_max_k <= b_k <= net_k - doe_min_k
-    With no envelope the rows are inactive (-inf, +inf).
+    With no envelope: c pinned to 0, export/import rows inactive. With an
+    envelope: c may take up to pv where an export cap is finite; export row
+    l = doe_min - net; import row u = doe_max - net.
     """
+    inf = np.inf * np.ones(T)
     if doe_min is None or doe_max is None:
-        return -np.inf * np.ones(T), np.inf * np.ones(T)
-    return net - np.asarray(doe_max, dtype=float), \
-        net - np.asarray(doe_min, dtype=float)
+        return (np.zeros(T), np.zeros(T),      # c box
+                np.zeros(T), inf,              # s box
+                -inf, inf,                     # export
+                -inf, inf)                     # import
+    doe_min = np.asarray(doe_min, dtype=float)
+    doe_max = np.asarray(doe_max, dtype=float)
+    c_upper = np.where(np.isfinite(doe_min), np.maximum(pv, 0.0), 0.0)
+    return (np.zeros(T), c_upper,
+            np.zeros(T), inf,
+            doe_min - net, inf,
+            -inf, doe_max - net)
 
 
 # ==========================================================
@@ -272,25 +337,55 @@ def doe_row_bounds(net, doe_min=None, doe_max=None):
 _SOLVER_CACHE = {"solver": None, "e_max": None}
 
 
+# Tiny quadratic regularisation on the relief variables (relative to h):
+# without it P is singular along the (b, c) direction wherever the envelope
+# pins p exactly (e.g. a zero-export cap), and OSQP's ADMM crawls like on an
+# LP. 1e-3 keeps P strictly convex and shifts the answer by < 0.1 %.
+RELIEF_REG = 1e-3
+
+
+def build_P(h_diag):
+    """
+    Upper-triangular P for  sum_k h_k (net_k + c_k - b_k)^2  (+ linear
+    penalties, which live in q). Expanding the square:
+        P_bb = 2h,  P_cc = 2h (1 + reg),  P_bc = -2h,  P_ss = 2h reg.
+    Returned as CSC upper triangle so `.data` has a fixed order for
+    solver.update(Px=...).
+    """
+    h = np.asarray(h_diag, dtype=float)
+    D = sp.diags(2.0 * h, format="csc")
+    Dc = sp.diags(2.0 * h * (1.0 + RELIEF_REG), format="csc")
+    Ds = sp.diags(2.0 * h * RELIEF_REG, format="csc")
+    Z = sp.csc_matrix((T, T))
+    P = sp.bmat([[D, -D, Z],
+                 [None, Dc, Z],
+                 [None, None, Ds]], format="csc")
+    return sp.triu(P, format="csc")
+
+
 def _get_solver(e_max, doe_info=None):
     """
-    Build OSQP solver. doe_info is stored but constraints are updated dynamically
-    in solve_battery since DOE depends on the day.
+    Build the OSQP workspace once per e_max; the day-specific numbers enter
+    through solver.update(Px=, q=, l=, u=) with a fixed sparsity pattern.
     """
     cache = _SOLVER_CACHE
     if cache["solver"] is not None and cache["e_max"] == e_max:
         return cache["solver"]
-    
+
     A, l, u, _ = build_constraints(e_max, doe_min=None, doe_max=None)
-    P0 = sp.diags(2.0 * np.ones(T), format="csc")
-    q0 = np.zeros(T)
-    
+    P0 = build_P(np.ones(T))
+    q0 = np.zeros(N_VAR)
+
     solver = osqp.OSQP()
     solver.setup(
         P=P0, q=q0, A=A, l=l, u=u,
         verbose=False,
         eps_abs=1e-6, eps_rel=1e-6,
         polish=True, warm_start=True,
+        # a zero-export cap pins p = 0 over the PV window, where the
+        # flattening term is flat in (b, c) and OSQP's ADMM converges slowly;
+        # give it room rather than accept an unpolished iterate
+        max_iter=40000,
     )
     cache["solver"] = solver
     cache["e_max"] = e_max
@@ -300,52 +395,42 @@ def _get_solver(e_max, doe_info=None):
 
 def solve_battery(load, pv, h_diag, e_max, doe_min=None, doe_max=None):
     """
-    Solve the QP for a given day with optional DOE constraints.
-    
-    If doe_min/doe_max are provided, they constrain the grid flow p_k:
-        doe_min_k <= p_k <= doe_max_k
-    
-    Since p_k = l_k - g_k - b_k, this becomes:
-        l_k - g_k - doe_max_k <= b_k <= l_k - g_k - doe_min_k
-    
-    The DOE rows already exist in the workspace (build_constraints); only
-    their bounds are updated here, so the sparsity pattern never changes.
+    Solve the QP for a given day with optional DOE constraints on the grid
+    flow p = load - pv + c - b:
 
-    If the envelope is infeasible for this day (the battery cannot absorb /
-    supply enough -- typically a sunny day whose forced charging exceeds the
-    SOC headroom), OSQP reports primal infeasibility and its iterate is not
-    a valid dispatch. We then re-solve WITHOUT the envelope and return that
-    (SOC- and rate-feasible) dispatch; simulate_day() records the resulting
-    envelope breach in doe_slack / doe_compliant. Returns (b, doe_feasible).
+        doe_min_k <= p_k             hard  (curtailment c makes it feasible)
+        p_k <= doe_max_k + s_k       soft  (shortfall s reported, penalised)
+
+    minimise  sum_k h_k p_k^2 + PENALTY_KW * sum_k h_k (c_k + s_k)
+
+    Returns a DispatchResult (b, curtail, import_slack, status). Without an
+    envelope c and s are pinned to zero and the result equals
+    osqp_daily.solve_battery.
     """
     solver = _get_solver(e_max)
-    net = load - pv                       # p when b = 0
+    net = load - pv                       # p when b = c = 0
+    h = np.asarray(h_diag, dtype=float)
 
-    P_data = 2.0 * h_diag
-    q = -2.0 * h_diag * net
+    q = np.concatenate([-2.0 * h * net,                          # b
+                        2.0 * h * net + PENALTY_KW * h,           # c
+                        PENALTY_KW * h])                          # s
 
     _, l_base, u_base, _ = build_constraints(e_max)
     l_base, u_base = l_base[:N_BASE_ROWS], u_base[:N_BASE_ROWS]
+    lc, uc, ls, us, lx, ux, li, ui = envelope_row_bounds(net, pv, doe_min, doe_max)
 
-    def _solve(l_doe, u_doe):
-        solver.update(Px=P_data, q=q,
-                      l=np.hstack([l_base, l_doe]),
-                      u=np.hstack([u_base, u_doe]))
-        return solver.solve()
-
-    have_doe = doe_min is not None and doe_max is not None
-    res = _solve(*doe_row_bounds(net, doe_min, doe_max))
-    doe_feasible = True
+    solver.update(Px=build_P(h).data, q=q,
+                  l=np.hstack([l_base, lc, ls, lx, li]),
+                  u=np.hstack([u_base, uc, us, ux, ui]))
+    res = solver.solve()
     if res.info.status_val not in (1, 2):
-        if have_doe:
-            # envelope cannot be met today: fall back to the unconstrained
-            # dispatch and let the caller measure the breach
-            doe_feasible = False
-            res = _solve(*doe_row_bounds(net))
-        if res.info.status_val not in (1, 2):
-            logger.warning("OSQP status: %s", res.info.status)
+        logger.warning("OSQP status: %s", res.info.status)
 
-    return res.x, doe_feasible
+    x = np.asarray(res.x, dtype=float)
+    return DispatchResult(b=x[IDX_B].copy(),
+                         curtail=np.maximum(x[IDX_C], 0.0),
+                         import_slack=np.maximum(x[IDX_S], 0.0),
+                         status=res.info.status)
 
 
 # ==========================================================
@@ -405,17 +490,19 @@ def optimise_H(load, pv, tariff, e_max, mode, doe_min=None, doe_max=None):
     """
     h = build_H0_diag(tariff)
     base_cost = bill(load, pv, np.zeros(T), tariff, mode)
-    
+
     def savings_for(h_vec):
-        b, _ = solve_battery(load, pv, h_vec, e_max, doe_min, doe_max)
-        return base_cost - bill(load, pv, b, tariff, mode), b
-    
-    best_s, best_b = savings_for(h)
+        res = solve_battery(load, pv, h_vec, e_max, doe_min, doe_max)
+        # curtailed PV is not generated: the FiT / self-consumption it
+        # would have earned is lost, so the bill sees pv - c
+        return base_cost - bill(load, pv - res.curtail, res.b, tariff, mode), res
+
+    best_s, best_res = savings_for(h)
     best_h = h.copy()
-    
+
     unique_levels = np.unique(h)[::-1]
     tiers = [np.where(h == lvl)[0] for lvl in unique_levels]
-    
+
     current = h.copy()
     for _ in range(HEURISTIC_MAX_ITERS):
         improved_this_round = False
@@ -424,60 +511,61 @@ def optimise_H(load, pv, tariff, e_max, mode, doe_min=None, doe_max=None):
             trial[idx] = np.minimum(trial[idx] * 2.0, H_BAR)
             if np.allclose(trial, current):
                 continue
-            s, b = savings_for(trial)
+            s, res = savings_for(trial)
             if s > best_s + 1e-12:
-                best_s, best_b, best_h = s, b, trial.copy()
+                best_s, best_res, best_h = s, res, trial.copy()
                 current = trial
                 improved_this_round = True
         if not improved_this_round:
             break
-    
-    return best_h, best_b, best_s
+
+    return best_h, best_res, best_s
 
 
 # ==========================================================
 # MODIFIED: SINGLE-DAY SIMULATION WITH DOE
 # ==========================================================
 
-def simulate_day(load, pv, tariff, mode, e_max=E_MAX_DEFAULT, 
+@dataclass
+class DayResult:
+    """simulate_day() output for one customer-day."""
+    savings: float              # $ vs the no-battery baseline (curtailment costed)
+    b: np.ndarray               # battery kW (+ discharge)
+    p: np.ndarray               # grid flow kW = load - pv + curtail - b
+    h: np.ndarray               # heuristic weights used
+    doe_compliant: bool         # p inside [doe_min, doe_max] everywhere
+    doe_slack: np.ndarray       # post-hoc breach of the envelope, kW (>= 0)
+    curtail: np.ndarray         # curtailed PV kW
+    import_slack: np.ndarray    # import-cap shortfall kW (solver's slack)
+
+
+def simulate_day(load, pv, tariff, mode, e_max=E_MAX_DEFAULT,
                  doe_min=None, doe_max=None):
     """
-    Simulate a single day with optional DOE constraints.
-    
-    Returns:
-    --------
-    savings : float
-        Daily operational savings ($)
-    b : ndarray
-        Battery discharge profile (kW)
-    p : ndarray
-        Grid flow profile (kW)
-    h : ndarray
-        Optimized weight vector
-    doe_compliant : bool
-        True if solution respects all DOE bounds
-    doe_slack : ndarray
-        Positive values where constraint is violated (for debugging)
+    Simulate a single day with optional DOE constraints. Returns a DayResult.
+
+    The export side is always met (curtailment absorbs what the battery
+    cannot); the import side is met unless load - doe_max exceeds what the
+    battery can supply, in which case doe_compliant is False and doe_slack /
+    import_slack carry the shortfall.
     """
-    h, b, savings = optimise_H(load, pv, tariff, e_max, mode, doe_min, doe_max)
-    p = load - pv - b
-    
-    # Check DOE compliance
+    h, res, savings = optimise_H(load, pv, tariff, e_max, mode, doe_min, doe_max)
+    p = load - pv + res.curtail - res.b
+
     doe_compliant = True
     doe_slack = np.zeros(T)
     if doe_min is not None and doe_max is not None:
-        # Check if p_k is within bounds (within numerical tolerance)
-        tol = 1e-5
+        tol = 1e-4
         below_min = p < (doe_min - tol)
         above_max = p > (doe_max + tol)
-        
         doe_slack[below_min] = doe_min[below_min] - p[below_min]
         doe_slack[above_max] = p[above_max] - doe_max[above_max]
-        
         if np.any(below_min) or np.any(above_max):
             doe_compliant = False
-    
-    return savings, b, p, h, doe_compliant, doe_slack
+
+    return DayResult(savings=savings, b=res.b, p=p, h=h,
+                     doe_compliant=doe_compliant, doe_slack=doe_slack,
+                     curtail=res.curtail, import_slack=res.import_slack)
 
 
 # ==========================================================
@@ -489,90 +577,108 @@ def _worker(args):
     Worker function for multiprocessing. Now tracks DOE compliance.
     """
     (customer, days, tariff, mode, e_max,
-     doe_scenario, base_export_limit) = args
+     doe_scenario, base_export_limit, base_import_limit) = args
 
     total = 0.0
     day_profiles = []
     soc_init = 0.5 * e_max
 
     # Generate DOE envelope (same for all days of this customer)
-    doe_min, doe_max = generate_doe_envelope(doe_scenario, base_export_limit)
-    
+    doe_min, doe_max = generate_doe_envelope(doe_scenario, base_export_limit,
+                                            base_import_limit)
+
     for date, load, pv in days:
-        s, b, p, _, doe_compliant, doe_slack = simulate_day(
-            load, pv, tariff, mode, e_max, doe_min, doe_max)
-        
-        total += s
-        soc = soc_init - np.cumsum(b) * DT
-        
+        r = simulate_day(load, pv, tariff, mode, e_max, doe_min, doe_max)
+
+        total += r.savings
+        soc = soc_init - np.cumsum(r.b) * DT
+
         day_profiles.append({
             "date": date,
             "load": load,
             "pv": pv,
-            "battery": b,
-            "grid": p,
+            "battery": r.b,
+            "grid": r.p,
             "soc": soc,
-            "savings": s,
-            "doe_compliant": doe_compliant,
-            "doe_slack": doe_slack,
-            "doe_slack_total": np.sum(doe_slack),
+            "savings": r.savings,
+            "doe_compliant": r.doe_compliant,
+            "doe_slack": r.doe_slack,
+            "doe_slack_total": float(np.sum(r.doe_slack)),
+            "curtail": r.curtail,
+            "curtail_kwh": float(np.sum(r.curtail) * DT),
+            "import_shortfall": r.import_slack,
+            "import_shortfall_kwh": float(np.sum(r.import_slack) * DT),
         })
-    
+
     return customer, total, day_profiles
 
 
 def run_all(day_arrays, mode, e_max=E_MAX_DEFAULT, doe_scenario="none",
-            base_export_limit=3.0):
+            base_export_limit=3.0, base_import_limit=np.inf):
     """
     Run simulation for every customer with DOE support.
 
     Parameters:
     -----------
     doe_scenario : str
-        'none', 'conservative', 'tight', 'rolling'
+        'none', 'conservative', 'tight', 'rolling'   (export-side shape)
     base_export_limit : float
         Feeder export headroom (kW) the scenario scales -- see
         generate_doe_envelope(). Sweep it to ask "how tight must the
         envelope be before the network sees zero over-voltage?"
+    base_import_limit : float
+        Flat import cap (kW), inf = none. Targets the synchronised off-peak
+        charging; shortfall (load the battery cannot cover) is reported.
     """
     tariff = build_tariff()
-    jobs = [(cust, days, tariff, mode, e_max, doe_scenario, base_export_limit)
+    jobs = [(cust, days, tariff, mode, e_max, doe_scenario,
+             base_export_limit, base_import_limit)
             for cust, days in day_arrays.items()]
     n_proc = min(cpu_count(), len(jobs)) or 1
 
     logger.info(
         "Running %s simulations on %d cores (E_max=%.1f kWh, DOE=%s, "
-        "base export limit=%.2f kW)",
-        mode, n_proc, e_max, doe_scenario, base_export_limit)
-    
+        "base export limit=%.2f kW, import limit=%s kW)",
+        mode, n_proc, e_max, doe_scenario, base_export_limit,
+        f"{base_import_limit:.2f}" if np.isfinite(base_import_limit) else "inf")
+
     customers, savings = [], []
     all_profiles = {}
-    doe_stats = {"compliant_days": 0, "violating_days": 0}
-    
+    doe_stats = {"compliant_days": 0, "violating_days": 0,
+                 "curtail_kwh": 0.0, "import_shortfall_kwh": 0.0,
+                 "days_with_curtail": 0, "days_with_shortfall": 0}
+
     with Pool(processes=n_proc) as pool:
         for cust, total, profiles in pool.imap_unordered(_worker, jobs, chunksize=1):
             compliant = sum(1 for p in profiles if p["doe_compliant"])
             violating = len(profiles) - compliant
             doe_stats["compliant_days"] += compliant
             doe_stats["violating_days"] += violating
-            
+            doe_stats["curtail_kwh"] += sum(p["curtail_kwh"] for p in profiles)
+            doe_stats["import_shortfall_kwh"] += sum(p["import_shortfall_kwh"] for p in profiles)
+            doe_stats["days_with_curtail"] += sum(1 for p in profiles if p["curtail_kwh"] > 1e-3)
+            doe_stats["days_with_shortfall"] += sum(1 for p in profiles if p["import_shortfall_kwh"] > 1e-3)
+
             logger.info("Customer %s: $%.2f/yr (%d/%d days DOE-compliant)",
-                       cust, total, compliant, len(profiles))
+                        cust, total, compliant, len(profiles))
             customers.append(cust)
             savings.append(total)
             all_profiles[cust] = profiles
-    
+
     order = np.argsort(customers)
-    
+    n_days = doe_stats["compliant_days"] + doe_stats["violating_days"]
+
     logger.info("=== DOE Compliance Summary ===")
-    logger.info("  Total days simulated: %d", 
-               doe_stats["compliant_days"] + doe_stats["violating_days"])
-    logger.info("  DOE-compliant days:   %d (%.1f%%)",
-               doe_stats["compliant_days"],
-               100.0 * doe_stats["compliant_days"] / 
-               (doe_stats["compliant_days"] + doe_stats["violating_days"] + 1e-6))
-    logger.info("  DOE-violating days:   %d", doe_stats["violating_days"])
-    
+    logger.info("  Total days simulated: %d", n_days)
+    logger.info("  DOE-compliant days:   %d (%.1f%%)", doe_stats["compliant_days"],
+                100.0 * doe_stats["compliant_days"] / (n_days + 1e-6))
+    logger.info("  DOE-violating days:   %d (import shortfall only -- export is "
+                "always met via curtailment)", doe_stats["violating_days"])
+    logger.info("  PV curtailed:         %.1f kWh over %d customer-days",
+                doe_stats["curtail_kwh"], doe_stats["days_with_curtail"])
+    logger.info("  Import shortfall:     %.1f kWh over %d customer-days",
+                doe_stats["import_shortfall_kwh"], doe_stats["days_with_shortfall"])
+
     return (np.array(customers)[order],
             np.array(savings)[order],
             all_profiles)
@@ -666,10 +772,12 @@ def save_profiles(all_profiles, mode, doe_scenario="none", out_dir="profiles"):
             sav = day_prof["savings"]
             doe_compliant = day_prof["doe_compliant"]
             doe_slack = day_prof["doe_slack"]
-            
+            curtail = day_prof.get("curtail", np.zeros(T))
+            shortfall = day_prof.get("import_shortfall", np.zeros(T))
+
             fname = os.path.join(cust_dir, f"{date}.csv")
             np.savetxt(fname, grid, fmt="%.6f", delimiter=",")
-            
+
             for k in range(T):
                 rows.append({
                     "customer": int(cust),
@@ -677,13 +785,15 @@ def save_profiles(all_profiles, mode, doe_scenario="none", out_dir="profiles"):
                     "interval": int(intervals[k]),
                     "hour": float(hours[k]),
                     "load_kw": float(load[k]),
-                    "pv_kw": float(pv[k]),
+                    "pv_kw": float(pv[k]),          # raw PV; curtailment is separate
                     "battery_kw": float(batt[k]),
-                    "grid_kw": float(grid[k]),
+                    "grid_kw": float(grid[k]),      # = load - pv + curtail - battery
                     "soc_kwh": float(soc[k]),
                     "daily_savings": float(sav),
                     "doe_compliant": int(doe_compliant),
                     "doe_slack_kw": float(doe_slack[k]),
+                    "curtail_kw": float(curtail[k]),
+                    "import_shortfall_kw": float(shortfall[k]),
                 })
     
     df = pd.DataFrame(rows)
@@ -725,18 +835,22 @@ def plot_doe_impact(day_arrays, customer_id, date_str, mode="fit",
         ax_p = axes[idx // 2, idx % 2]
         
         doe_min, doe_max = generate_doe_envelope(scenario)
-        s, b, p, _, compliant, slack = simulate_day(
-            found_load, found_pv, tariff, mode, e_max, doe_min, doe_max)
-        
-        ax_p.fill_between(hours, doe_min, doe_max, alpha=0.2, 
+        r = simulate_day(found_load, found_pv, tariff, mode, e_max,
+                         doe_min, doe_max)
+
+        ax_p.fill_between(hours, doe_min, doe_max, alpha=0.2,
                           color="green", label="DOE envelope")
-        ax_p.plot(hours, p, color="steelblue", marker="o", 
-                 label=f"grid flow (${s:.2f}/day)", linewidth=2)
+        ax_p.plot(hours, r.p, color="steelblue", marker="o",
+                  label=f"grid flow (${r.savings:.2f}/day)", linewidth=2)
+        if r.curtail.max() > 1e-6:
+            ax_p.plot(hours, r.curtail, color="orange", linestyle=":",
+                      label="curtailed PV")
         ax_p.axhline(0, color="black", lw=0.5, linestyle="--")
         ax_p.set_ylabel("Power (kW)")
         ax_p.set_title(
-            f"Scenario: {scenario.upper()} | Compliant: {compliant} | "
-            f"Slack: {np.sum(slack):.3f} kWh")
+            f"Scenario: {scenario.upper()} | Compliant: {r.doe_compliant} | "
+            f"Curtailed: {np.sum(r.curtail) * DT:.2f} kWh | "
+            f"Shortfall: {np.sum(r.import_slack) * DT:.2f} kWh")
         ax_p.grid(alpha=0.3)
         ax_p.legend()
     
@@ -940,6 +1054,11 @@ def main():
                         help="base_export_limit values (kW) to run each "
                              "scenario at; more than one value labels the "
                              "outputs <scenario>_cap<value> (default: 3.0)")
+    parser.add_argument("--import-limit", type=float, default=np.inf,
+                        help="Flat per-household IMPORT cap (kW) applied on "
+                             "top of every scenario; the label gains "
+                             "_imp<kW>. Targets the synchronised off-peak "
+                             "charging (default: none)")
     parser.add_argument("--no-compare", action="store_true",
                         help="Skip the none/conservative/tight comparison "
                              "table (which re-runs all three scenarios)")
@@ -951,17 +1070,20 @@ def main():
     logger.info("Extracted %d customers", len(day_arrays))
 
     label_with_cap = len(args.export_limit) > 1
+    imp_suffix = (f"_imp{args.import_limit:g}"
+                  if np.isfinite(args.import_limit) else "")
     baseline_savings = None
     for cap in args.export_limit:
         for scenario in args.scenarios:
-            label = f"{scenario}_cap{cap:g}" if label_with_cap else scenario
+            label = (f"{scenario}_cap{cap:g}" if label_with_cap else scenario) + imp_suffix
             logger.info("\n" + "=" * 60)
-            logger.info("SCENARIO %s (mode=%s, base export limit %.2f kW)",
-                        label.upper(), args.mode, cap)
+            logger.info("SCENARIO %s (mode=%s, base export limit %.2f kW, "
+                        "import limit %s)", label.upper(), args.mode, cap,
+                        f"{args.import_limit:g} kW" if np.isfinite(args.import_limit) else "none")
             logger.info("=" * 60)
             _, savings, profiles = run_all(
                 day_arrays, mode=args.mode, doe_scenario=scenario,
-                base_export_limit=cap)
+                base_export_limit=cap, base_import_limit=args.import_limit)
             logger.info("Mean annual savings (%s): $%.2f", label,
                         np.mean(savings))
             if scenario == "none":

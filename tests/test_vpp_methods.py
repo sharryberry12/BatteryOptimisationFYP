@@ -205,9 +205,9 @@ def test_household_solver_reproduces_part_a_doe_solve(ensemble):
     households, _t, _dmin, _dmax = ensemble
     hh = households[0]
     doe_min, doe_max = D.generate_doe_envelope("conservative", base_export_limit=3.0)
-    b_a, feasible = D.solve_battery(hh.load, hh.pv, hh.h, hh.e_max, doe_min, doe_max)
-    assert feasible
+    res = D.solve_battery(hh.load, hh.pv, hh.h, hh.e_max, doe_min, doe_max)
+    assert res.doe_feasible and res.curtail.max() < 1e-4   # battery alone meets it
     solver = vc.HouseholdSolver(hh, d_min=doe_min, d_max=doe_max)
     b_b, status = solver.solve()
     assert "solved" in status
-    assert np.allclose(b_a, b_b, atol=1e-4)
+    assert np.allclose(res.b, b_b, atol=1e-4)
