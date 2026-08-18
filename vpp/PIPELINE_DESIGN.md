@@ -10,7 +10,7 @@ interfaces below.
 match `vpp_common.py`, instead of the `registry.py` / `export.py` names used
 below), plus the two refactors inside `elermorevale_openDSS.py`. Stage 4/5
 re-runs use the `resume` subcommand (`run_vpp_network.py resume --run-dir
-runs/...`) rather than a `--skip-solve` flag; `--skip-network` stops after
+outputs/runs/...`) rather than a `--skip-solve` flag; `--skip-network` stops after
 stage 3. Implementation note: the zone-substation monitor sign in
 `collect_tx_power()` was found inverted relative to its documented
 "+import" convention and fixed, since the envelope overlay depends on it.
@@ -61,7 +61,7 @@ run_vpp_network.py  (orchestrator, repo root)
 │           → VPPDispatch(B, converged, iters, solve_time, extras)
 │
 ├─ Stage 3  Artifact export       vpp/export.py
-│           writes runs/<run_id>/dispatch_{nobatt,uncoupled,coupled}.csv
+│           writes outputs/runs/<run_id>/dispatch_{nobatt,uncoupled,coupled}.csv
 │           (exact schema load_profiles_from_csv() already reads)
 │           + manifest.json (all args, date, method params, git SHA)
 │
@@ -131,7 +131,7 @@ reusing the option set of `vpp_common.standard_argparser`.
 The CSV file is deliberately the boundary rather than passing arrays in memory:
 
 - `load_profiles_from_csv()` in the network script works **unchanged**.
-- Every run leaves a durable artifact (`runs/<run_id>/`) — every thesis figure
+- Every run leaves a durable artifact (`outputs/runs/<run_id>/`) — every thesis figure
   becomes reproducible from the manifest.
 - The (slow) network stage can be re-run against an old dispatch without
   re-solving the VPP stage.
@@ -162,13 +162,13 @@ Details:
 Run directory layout:
 
 ```
-runs/<method>_<scenario>_<date>_<timestamp>/
+outputs/runs/<method>_<scenario>_<date>_<timestamp>/
 ├── manifest.json
 ├── dispatch_nobatt.csv
 ├── dispatch_uncoupled.csv
 ├── dispatch_coupled.csv
 ├── network_summary.csv        # stage 5
-└── figures/
+└── outputs/figures/
 ```
 
 ### 3.3 Stage 4 — network adapter
@@ -246,7 +246,7 @@ the comparison self-consistent.
 - **Runtime budget.** Each network scenario rebuilds the full GLM → DSS model.
   Three scenarios × one day is fine; date sweeps multiply fast. The orchestrator
   must support consuming previously exported artifacts
-  (`--skip-solve --run-dir runs/...`) so Stage 4/5 can re-run alone.
+  (`--skip-solve --run-dir outputs/runs/...`) so Stage 4/5 can re-run alone.
 - **Validation before injection.** Run `vpp_common.validate_ensemble` on `B`
   before export (Section 10 invariants: SOC neutrality, SOC bounds, rate limit).
 - **NaN hygiene.** Recent history (pro-rata surplus NaN bug) says: exporter
@@ -263,7 +263,7 @@ Each step leaves the repo in a working state:
 
 1. **`vpp/registry.py`** — `VPPDispatch`, `MethodSpec`, adapters for all six
    methods (pure wrapping, no method-file changes).
-2. **`vpp/export.py`** — three-CSV export + `runs/` layout + manifest.
+2. **`vpp/export.py`** — three-CSV export + `outputs/runs/` layout + manifest.
 3. **Orchestrator Stages 1–3** — verify end-to-end by feeding the exported CSV
    to the *unmodified* `elermorevale_openDSS.py --profiles ...` by hand.
 4. **Network-side refactors + Stages 4–5** — generic shape attachment,

@@ -38,7 +38,7 @@ python vpp/price_based_control/price_based_control.py --gamma 200 --save   # str
 ```
 
 Outputs: per-signal table (objective, gap %, envelope violation kW/kWh, peak
-export) and `figures/price_response.png` — aggregate profiles against the
+export) and `outputs/figures/vpp/price_based_control/price_response.png` — aggregate profiles against the
 (unenforced) envelope.
 
 ## Assessment (from VPP_EXTENSION.md §7)

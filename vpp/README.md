@@ -1,11 +1,21 @@
 # VPP Extension — Coupling Method Implementations
 
 Implementations of the multi-household VPP coupling methodologies designed in
-[../VPP_EXTENSION.md](../VPP_EXTENSION.md), built on the Part A single-household
-QP scheduler ([../osqp_daily.py](../osqp_daily.py)). Read
-[../paper_context.md](../paper_context.md) for notation and the base formulation.
+[VPP_EXTENSION.md](VPP_EXTENSION.md), built on the Part A single-household
+QP scheduler ([../dispatch/osqp_daily.py](../dispatch/osqp_daily.py)). Read
+[../dispatch/FORMULATION.md](../dispatch/FORMULATION.md) for notation and the base formulation.
+The VPP is not separate from Part A: every household's local problem *is* the
+Part A QP (same weights `h`, same constraint block); this layer adds one thing —
+the feeder-head coupling `D_min ≤ Σᵢ pᵢ ≤ D_max` — and six ways of enforcing it.
 
 ## Layout
+
+| Path | What |
+|---|---|
+| [`vpp_common.py`](vpp_common.py) | Shared infrastructure: `HouseholdDay` ensemble assembly (`assemble_ensemble`), feeder envelope scenarios (`feeder_envelope`), the centralised benchmark (`solve_centralised`), persistent per-household workspaces (`HouseholdSolver`), validation and savings/fairness metrics, the common CLI. |
+| [`vpp_registry.py`](vpp_registry.py), [`vpp_export.py`](vpp_export.py) | Uniform method interface + the three-CSV/manifest exporter used by the pipeline. |
+| [`run_vpp_network.py`](run_vpp_network.py) | **The end-to-end pipeline**: solve any method → export `dispatch_{nobatt,uncoupled,coupled}.csv` → replay on Elermore Vale → report; artefacts in `outputs/runs/<method>_<scenario>_<date>_<stamp>/` (manifests tracked). Design in [PIPELINE_DESIGN.md](PIPELINE_DESIGN.md). |
+| method folders (below) | one script + README each; figures → `outputs/figures/vpp/<method>/`. |
 
 | Folder | Method (VPP_EXTENSION.md §) | One-liner |
 |---|---|---|
@@ -22,7 +32,7 @@ once a coupling method is chosen.
 
 `vpp_common.py` holds everything shared: ensemble assembly, feeder envelope
 scenarios, the centralised benchmark solve, persistent per-household OSQP
-workspaces, validation invariants (paper_context.md §10) and savings/fairness
+workspaces, validation invariants (dispatch/FORMULATION.md §10) and savings/fairness
 metrics. It **imports** `osqp_daily.py` rather than copying it — the data
 pipeline, tariff, billing and heuristic live in exactly one place.
 
@@ -42,9 +52,10 @@ heuristic), so optimality gaps between methods are well defined.
 
 ## Running
 
-All scripts run from the **repo root** and share a common CLI
-(`--n-households`, `--date`, `--scenario {none,static,tight_tou,dynamic_solar}`,
-`--export-limit`, `--mode {fit,net}`, `--save`):
+All scripts run from the **repo root** (or anywhere — they locate the repo
+themselves) and share a common CLI (`--n-households`, `--date`,
+`--scenario {none,static,tight_tou,dynamic_solar}`, `--export-limit`,
+`--import-limit`, `--mode {fit,net}`, `--save`, `--output-dir`):
 
 ```bash
 python vpp/centralised_qp/centralised_qp.py --n-households 20 --save
@@ -53,12 +64,22 @@ python vpp/dual_decomposition/dual_decomposition.py --save
 python vpp/sharing_admm/sharing_admm.py --save
 python vpp/price_based_control/price_based_control.py --save
 python vpp/fcas_cooptimisation/fcas_cooptimisation.py --save
+python vpp/run_vpp_network.py admm --n-households 20 --scenario static           # -> outputs/runs/<id>/
+python vpp/run_vpp_network.py resume --run-dir outputs/runs/sharing_admm_static_...
 ```
 
 The first run cleans the full Ausgrid CSV (~1 min) and caches the day arrays in
-`vpp/cache/` (delete to force a rebuild). Subsequent runs start in seconds. The
-default day is the highest-PV day covered by every clean customer — the regime
-where export envelopes actually bind.
+`outputs/cache/` (delete to force a rebuild). Subsequent runs start in seconds.
+The default day is the highest-PV day covered by every clean customer — the
+regime where export envelopes actually bind. On this dataset the *import* side
+is where the coupling bites hardest (the uncoupled QP herds every battery into
+22:00 charging): try `--date 2010-07-01 --export-limit inf --import-limit 2`
+(docs/WALKTHROUGH.md Part 3, `tests/test_vpp_methods.py`).
+
+Verification: `tests/test_vpp_methods.py` pins the cross-method invariants
+(A hard = A soft when feasible; shadow-price broadcast = A; FCAS at zero price
+= A; ADMM → A; dual prices → −y; two-stage feasible and never better than A;
+`HouseholdSolver` with a per-household DOE = `dispatch/osqp_daily_with_DOE`).
 
 Recommended experiment order (VPP_EXTENSION.md §11): centralised first (ground
 truth + scaling curve), two-stage second (the policy-relevant efficiency/fairness
@@ -74,7 +95,7 @@ cautionary baseline, FCAS as the headline static-vs-dynamic result.
 - **Weights are frozen** from the uncoupled heuristic. Re-running the greedy
   heuristic inside a coupled loop would make the objective method-dependent and
   the gap numbers meaningless.
-- Modelling gaps from paper_context.md §9 (no round-trip efficiency, perfect
+- Modelling gaps from dispatch/FORMULATION.md §9 (no round-trip efficiency, perfect
   foresight, daily SOC neutrality) are inherited untouched — close them there
   before publishing numbers from here.
 - Everything is single-day. Annual sweeps are a loop over `--date` away, but

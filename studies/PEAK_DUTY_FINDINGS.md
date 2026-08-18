@@ -4,8 +4,8 @@ Context and results for the Part B reframe: the VPP as a *virtual peaker
 plant* whose value is firm capacity, not bill savings. Produced by
 [peak_duty_analysis.py](peak_duty_analysis.py) (dataset-wide duty cycle) and
 [replay_peak_event.py](replay_peak_event.py) (worst-event replay on the
-Elermore Vale OpenDSS model). Figures in `figures/peak_duty/` and
-`runs/peak_replay_*/figures/`.
+Elermore Vale OpenDSS model). Figures in `outputs/figures/peak_duty/` and
+`outputs/runs/peak_replay_*/figures/`.
 
 ## 1. Why this analysis exists
 
@@ -34,7 +34,7 @@ buys firm capacity with a tiny duty cycle. The numbers below test that.
 - **Aggregate series**: per-interval sum of net demand (GC + CL − GG),
   rescaled to a constant 300-household panel via the per-household mean
   (reporting count never drops below 299, so the rescale is cosmetic).
-  Cached under `vpp/cache/peak_agg_data_3_years.csv`.
+  Cached under `outputs/cache/peak_agg_data_3_years.csv`.
 - **Events**: contiguous half-hour runs above a threshold *f* × peak.
   Gaps in the record (dropped DST days) break contiguity.
 - **Fleet sizing** at each threshold, using the repo's battery model
@@ -45,7 +45,7 @@ buys firm capacity with a tiny duty cycle. The numbers below test that.
 - **Peaker assumptions** (deliberate, stated): fleet is pre-charged before
   an event (full 10 kWh usable; `--usable-frac 0.5` models the QP resting
   SOC instead); full recharge between events (violations counted and
-  warned); no round-trip losses, consistent with `paper_context.md` §9.
+  warned); no round-trip losses, consistent with `dispatch/FORMULATION.md` §9.
 
 ## 3. The peak condition
 
@@ -70,7 +70,7 @@ Two observations that matter downstream:
 
 - **PV is structurally absent at the peak.** Every top event is an evening;
   on the peak day gross load tops 840 kW at 18:00 while PV is already ~0
-  (`figures/peak_duty/peak_day.png`). Solar alone cannot touch this peak —
+  (`outputs/figures/peak_duty/peak_day.png`). Solar alone cannot touch this peak —
   it must come from storage (or shedding).
 - **Both seasons contribute.** Summer heatwave evenings dominate the
   extreme tail, but winter evenings (Jul–Aug) fill the top-10. A
@@ -78,7 +78,7 @@ Two observations that matter downstream:
 
 ## 4. Duty cycle vs firm-capacity threshold
 
-Full sweep in `figures/peak_duty/duty_cycle_summary.csv`; selected rows:
+Full sweep in `outputs/figures/peak_duty/duty_cycle_summary.csv`; selected rows:
 
 | Threshold | kW | Hours/yr above | Events/yr | Worst event | Fleet needed | Binding | Cycles/yr/battery |
 |---|---|---|---|---|---|---|---|
@@ -108,7 +108,7 @@ Headline findings:
    household financial incentives (daily tariff arbitrage) and the VPP
    capability can coexist on the same battery.
 4. **Events cluster hard.** Every required run falls between 16:00 and
-   23:30 (`figures/peak_duty/event_calendar.png`), concentrated in
+   23:30 (`outputs/figures/peak_duty/event_calendar.png`), concentrated in
    Feb 2011, Jan 2013, and the mid-2010/2011 winters. FY 2011-12 has
    almost no events — a fleet sized on a mild year would be badly
    undersized, so multi-year (ideally heatwave-inclusive) data is a
@@ -136,7 +136,7 @@ are solved as 48-step daily power flows. Threshold at feeder scale:
 | VPP peaker fleet | 3,644 kW | +383 kW | 0.781 p.u. | 820 of 4,800 |
 
 **Max measured shave: 1,438 kW** — the evening profile is flat-topped for
-the full 7.5 h event (`runs/peak_replay_*/figures/feeder_head_relief.png`),
+the full 7.5 h event (`outputs/runs/peak_replay_*/figures/feeder_head_relief.png`),
 which is exactly the visual signature of a peaker plant holding a firm limit.
 
 Three physical findings the kW-bookkeeping could not show:
@@ -168,7 +168,7 @@ Three physical findings the kW-bookkeeping could not show:
    result.
 
 Run artifacts (dispatch CSVs, `replay_summary.csv`, `manifest.json` with
-fleet IDs and sizing provenance) are under `runs/peak_replay_2011-02-05_*/`.
+fleet IDs and sizing provenance) are under `outputs/runs/peak_replay_2011-02-05_*/`.
 
 ## 6. Limitations & next steps
 
@@ -191,4 +191,4 @@ fleet IDs and sizing provenance) are under `runs/peak_replay_2011-02-05_*/`.
   *trigger* VPP-mode, closing the loop on "VPP as a power plant that turns
   on to offset grid faults".
 - **Perfect foresight & lossless batteries** inherited from the Part A
-  formulation (`paper_context.md` §9).
+  formulation (`dispatch/FORMULATION.md` §9).

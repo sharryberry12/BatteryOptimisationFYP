@@ -1,7 +1,7 @@
 # VPP Extension — Coupling Methodologies
 
 Design context for extending the single-household QP scheduler to **coordinated multi-household
-Virtual Power Plant dispatch**. Read `paper_context.md` first for notation and the base formulation.
+Virtual Power Plant dispatch**. Read `dispatch/FORMULATION.md` first for notation and the base formulation.
 
 Everything below preserves the core property that makes the existing code fast: **the per-household
 QP keeps the same sparsity pattern, so OSQP stays warm-startable.** Any method that destroys that
@@ -303,7 +303,7 @@ actual load and PV are realised:
 at interval k:  solve over [k, k+H], apply only interval k, advance, repeat
 ```
 
-- Directly addresses the **perfect forecast** assumption flagged in `paper_context.md` §9
+- Directly addresses the **perfect forecast** assumption flagged in `dispatch/FORMULATION.md` §9
 - 48 solves per day instead of 1 — but each is smaller, and warm-starting makes this cheap
 - The `1^T beta = 0` neutrality constraint must be reworked into a **terminal SOC target or band**;
   otherwise the shrinking horizon makes it progressively infeasible
@@ -370,7 +370,7 @@ straight into Method A or D. Bid the aggregate; disaggregate the dispatch instru
 households.
 
 ### Practical notes
-- NEM dispatch interval is **5 minutes**, not 30. Don't hardcode `s = 48` (see `paper_context.md` §11).
+- NEM dispatch interval is **5 minutes**, not 30. Don't hardcode `s = 48` (see `dispatch/FORMULATION.md` §11).
 - 8 contingency FCAS markets plus 2 regulation markets. Start with **contingency raise only** — one
   service, one price series, clean story.
 - FCAS prices are extremely spiky. Expected-value optimisation over historical prices will be
@@ -394,7 +394,7 @@ households.
 
 ## 11. Recommended implementation sequence
 
-1. **Close the modelling gaps first** (`paper_context.md` §9). Add round-trip efficiency and relax
+1. **Close the modelling gaps first** (`dispatch/FORMULATION.md` §9). Add round-trip efficiency and relax
    `1^T beta = 0` to a terminal SOC band. Both are small edits and both change every downstream
    number — do them before generating results you'd have to regenerate.
 2. **Method A on a small ensemble** (N = 10, 50, 145). Establishes the ground-truth optimum and the
@@ -425,7 +425,7 @@ households.
 - **Three-phase reality.** OpenDSS is unbalanced; the QP layer is single-phase. A feeder envelope
   allocated without regard to phase can be satisfied at the QP layer and still cause a phase-specific
   voltage excursion in OpenDSS. Either allocate per-phase or state the limitation explicitly.
-- **Profile-to-bus mapping** (`paper_context.md` §7). 145 profiles onto ~1,785 loads. Whatever the
+- **Profile-to-bus mapping** (`dispatch/FORMULATION.md` §7). 145 profiles onto ~1,785 loads. Whatever the
   replication strategy is, it dominates the network results. Seed it and document it.
 - **Reproducibility.** Once ADMM and CPU pooling are combined, floating-point non-determinism from
   reduction ordering can make results non-bitwise-reproducible. Fix the reduction order or accept

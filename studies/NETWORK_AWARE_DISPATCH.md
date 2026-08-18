@@ -3,7 +3,7 @@
 *Working note, 2026-08-16. Answers the question raised after the 2026-08-13
 sweeps: "how can I enforce 0 voltage violations? or do some violations occur
 in real life?" Every number below comes from the model as fixed on
-2026-08-16 (MODEL_VERIFICATION.md defects #2 and #6 closed; DOE constraint
+2026-08-16 (network/MODEL_VERIFICATION.md defects #2 and #6 closed; DOE constraint
 actually enforced — see §4.1). Numbers from earlier runs are not comparable.*
 
 ## 0. TL;DR
@@ -58,7 +58,7 @@ no battery) and **QP** (grid = load − PV − b with b from `osqp_daily.py`,
 
 ## 2. Ground truth after the model fixes (full year, 2010-07 → 2011-06)
 
-`python elermorevale_openDSS.py --profiles profiles/{fit,net}_profiles.csv --full --save`
+`python network/elermorevale_openDSS.py --profiles outputs/profiles/{fit,net}_profiles.csv --full --save`
 
 | Metric (per day unless noted) | Baseline | QP (fit) | QP (net) |
 |---|---|---|---|
@@ -91,8 +91,8 @@ mechanism is verified: in the 3 kW-placeholder snapshot the tap moves to
 With real profiles it never moves. On both representative days the 11 kV
 bus stays between **0.9955 and 1.0004 pu** for all 48 intervals — the 132 kV
 source is stiff and the zone transformer drop at 4 MW is < 0.5 % — so the
-regulator sits at neutral and every metric in `figures/net_oltc/summaries.txt`
-is byte-identical to `figures/net/summaries.txt`. The violations live across
+regulator sits at neutral and every metric in `outputs/figures/net_oltc/summaries.txt`
+is byte-identical to `outputs/figures/net/summaries.txt`. The violations live across
 the distribution transformers and LV feeders (2–3 % drop each way), out of
 the zone regulator's reach. Real DNSPs fix that with off-load tap boosts on
 the distribution transformers (typically +2.5 / +5 %) — a static offset the
@@ -137,7 +137,7 @@ constraint mostly re-times charging within the same tariff block.
 
 ### 4.3 What the network sees
 
-`python elermorevale_openDSS.py --profiles profiles/fit_doe_<scenario>.csv --full --save --output-dir figures/doe_<scenario>`
+`python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_doe_<scenario>.csv --full --save --output-dir outputs/figures/doe_<scenario>`
 
 Full year, 100 monitors × 48 intervals × 365 days; baseline (no battery)
 is the same in every row: **132,170** violation-points = 120,698 over +
@@ -244,7 +244,7 @@ The attribution numbers (91 % / 82 %) come from
   every battery makes the same decision at the same minute.
 - Distribution-transformer taps are at nominal; Ausgrid boosts them.
 - LV reactances are estimates (0.25 / 0.08 Ω/km); the balanced-line
-  reduction discards mutual coupling (MODEL_VERIFICATION.md "Known
+  reduction discards mutual coupling (network/MODEL_VERIFICATION.md "Known
   approximations"). Level 4 puts the LV agreement with GridLAB-D at ~1 %.
 - No inverter volt-var / volt-watt, no curtailment, no OLTC on the
   distribution transformers.
@@ -255,18 +255,18 @@ The attribution numbers (91 % / 82 %) come from
 
 ```bash
 python -m pytest                                        # 101 tests incl. tests/test_doe_constraints.py
-python osqp_daily_with_DOE.py --scenarios conservative tight --no-compare
-python osqp_daily_with_DOE.py --scenarios conservative --export-limit 1.5 0.75 --no-compare
-python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv --full --save
-python elermorevale_openDSS.py --profiles profiles/net_profiles.csv --full --save --output-dir figures/net
-python elermorevale_openDSS.py --profiles profiles/net_profiles.csv --save --output-dir figures/net --oltc
+python dispatch/osqp_daily_with_DOE.py --scenarios conservative tight --no-compare
+python dispatch/osqp_daily_with_DOE.py --scenarios conservative --export-limit 1.5 0.75 --no-compare
+python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_profiles.csv --full --save
+python network/elermorevale_openDSS.py --profiles outputs/profiles/net_profiles.csv --full --save --output-dir outputs/figures/net
+python network/elermorevale_openDSS.py --profiles outputs/profiles/net_profiles.csv --save --output-dir outputs/figures/net --oltc
 for s in conservative tight conservative_cap1.5 conservative_cap0.75; do
-  python elermorevale_openDSS.py --profiles profiles/fit_doe_$s.csv --save --output-dir figures/doe_$s
-  python elermorevale_openDSS.py --profiles profiles/fit_doe_$s.csv --save --output-dir figures/doe_$s --full
+  python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_doe_$s.csv --save --output-dir outputs/figures/doe_$s
+  python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_doe_$s.csv --save --output-dir outputs/figures/doe_$s --full
 done
 ```
 
-Outputs: `figures/<dir>/summaries.txt` (representative days, over/under
-split, OLTC state in every block header), `figures/<dir>/opendss_sweep_results.csv`
+Outputs: `outputs/figures/<dir>/summaries.txt` (representative days, over/under
+split, OLTC state in every block header), `outputs/figures/<dir>/opendss_sweep_results.csv`
 (one row per day: `oltc, base_/qp_ v_min, v_max, violations, over, under,
 peak_tx_kw, loss_kw`), `sweep_summary.png`.

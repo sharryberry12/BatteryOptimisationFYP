@@ -1,4 +1,4 @@
-# paper_context.md — QP Battery Scheduler with Dynamic Operating Envelopes
+# dispatch/FORMULATION.md — QP Battery Scheduler with Dynamic Operating Envelopes
 
 > Base formulation, notation, invariants and modelling gaps for the Part A
 > scheduler. (This file was the project's original `CLAUDE.md`; the agent

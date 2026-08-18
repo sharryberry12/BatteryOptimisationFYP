@@ -35,7 +35,7 @@ python vpp/centralised_qp/centralised_qp.py --scaling 10,20,50,145 --save   # so
 ```
 
 Outputs: the standard result block (objective, solve time, violation, savings),
-per-household invariant validation, and `figures/centralised_aggregate.png`
+per-household invariant validation, and `outputs/figures/vpp/centralised_qp/centralised_aggregate.png`
 (uncoupled behaviour vs coupled optimum vs envelope). `--scaling` produces the
 empirical solve-time curve recommended in VPP_EXTENSION.md §3.
 

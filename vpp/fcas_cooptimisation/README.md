@@ -50,6 +50,6 @@ python vpp/fcas_cooptimisation/fcas_cooptimisation.py \
 ```
 
 Outputs: per-envelope table (total enabled raise kWh, midday mean kW, revenue,
-energy savings) and `figures/fcas_enablement.png` — aggregate `R_k` profiles
+energy savings) and `outputs/figures/vpp/fcas_cooptimisation/fcas_enablement.png` — aggregate `R_k` profiles
 side by side with the envelope shapes. The static-vs-`dynamic_solar` midday
 ratio is the number to quote against the SAPN finding.

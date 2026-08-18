@@ -43,7 +43,7 @@ python vpp/sharing_admm/sharing_admm.py --rho 5 --iters 100 --save
 ```
 
 Outputs: iterations to convergence, gap vs centralised, envelope violation,
-savings, `figures/admm_convergence.png` (residuals + aggregate profile).
+savings, `outputs/figures/vpp/sharing_admm/admm_convergence.png` (residuals + aggregate profile).
 
 ## Tuning
 

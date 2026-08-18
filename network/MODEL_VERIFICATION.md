@@ -3,8 +3,8 @@
 How we establish that the GLM → OpenDSS translation in
 [elermorevale_openDSS.py](elermorevale_openDSS.py) is correct, and what
 "correct" can mean for it. The feeder model is translated **at runtime** from
-the GridLAB-D sources ([Elermorevale/](Elermorevale/) +
-[common/Line Configs.glm](common/Line%20Configs.glm)) — there are no static
+the GridLAB-D sources ([glm/Elermorevale/](glm/Elermorevale/) +
+[glm/common/Line Configs.glm](glm/common/Line%20Configs.glm)) — there are no static
 `.dss` files to inspect, so the translation itself must be verified.
 
 Correctness splits into two independent claims:
@@ -39,10 +39,10 @@ faulthandler would otherwise print as a scary-but-benign
 
 | Level | What | Status |
 |-------|------|--------|
-| 1 | Unit tests on the pure translation functions | ✅ [tests/test_glm_translation.py](tests/test_glm_translation.py) |
-| 2 | Invariants: GLM source vs built DSS circuit | ✅ [tests/test_translation_invariants.py](tests/test_translation_invariants.py) |
-| 3 | Physics sanity tests (known-answer power flows) | ✅ [tests/test_physics_sanity.py](tests/test_physics_sanity.py) |
-| 4 | Cross-validation against GridLAB-D | ✅ [validation/](validation/) + [tests/test_validation_harness.py](tests/test_validation_harness.py) — measured agreement ~1.0 % mean at 11 kV, ~1.1 % at LV, 3.9 % max at one feeder tail (results below) |
+| 1 | Unit tests on the pure translation functions | ✅ [../tests/test_glm_translation.py](../tests/test_glm_translation.py) |
+| 2 | Invariants: GLM source vs built DSS circuit | ✅ [../tests/test_translation_invariants.py](../tests/test_translation_invariants.py) |
+| 3 | Physics sanity tests (known-answer power flows) | ✅ [../tests/test_physics_sanity.py](../tests/test_physics_sanity.py) |
+| 4 | Cross-validation against GridLAB-D | ✅ [validation/](validation/) + [../tests/test_validation_harness.py](../tests/test_validation_harness.py) — measured agreement ~1.0 % mean at 11 kV, ~1.1 % at LV, 3.9 % max at one feeder tail (results below) |
 
 ## Level 1 — unit tests (synthetic inputs, no repo data)
 
@@ -125,7 +125,7 @@ this approximation*, not to a perfect electromagnetic model:
   `--oltc`, in profile mode; every solve runs `controlmode=off` otherwise.
   Measured 2026-08-16: with controls active on the representative days the
   11 kV bus stays at 0.9955–1.0004 pu and the tap never leaves neutral, so
-  OLTC-on results equal OLTC-off (see [NETWORK_AWARE_DISPATCH.md](NETWORK_AWARE_DISPATCH.md)).
+  OLTC-on results equal OLTC-off (see [../studies/NETWORK_AWARE_DISPATCH.md](../studies/NETWORK_AWARE_DISPATCH.md)).
 - **BlueGen CHP units not modelled**: the 25 `object load`s in
   `generators/Generators2.glm` are fuel-cell CHP units driven by a schedule
   (`schedule_BlueGen0`) that no checked-in file defines; `main.glm` does not
@@ -249,7 +249,7 @@ losses, measured post-fix 2026-08), pushing constant-P loads below their
    `test_every_load_sits_on_an_energised_node_phase`, the dead-monitor
    guard (#2) and the re-pinned goldens. **Network results generated
    between 2026-08-13 and 2026-08-16 should be regenerated** (done for
-   `figures/` and `figures/net/`; the pre-fix files were kept as
+   `outputs/figures/` and `outputs/figures/net/`; the pre-fix files were kept as
    `summaries.stale-20260813.txt`).
 
 ## Level 4 — cross-validation against GridLAB-D (results)
@@ -260,9 +260,9 @@ GridLAB-D 5.3.0 (full 3×3 z-matrices, NR) and by the OpenDSS translation.
 Reproduce from the repo root:
 
 ```bash
-python validation/gen_harness.py       # strip GLM sources -> validation/stripped/ + harness.glm
-gridlabd validation/harness.glm        # -> validation/voltages_gld.csv (4,252 nodes)
-python validation/compare_voltages.py  # -> validation/voltage_comparison.csv + report
+python network/validation/gen_harness.py       # strip GLM sources -> validation/stripped/ + harness.glm
+gridlabd network/validation/harness.glm        # -> validation/voltages_gld.csv (4,252 nodes)
+python network/validation/compare_voltages.py  # -> validation/voltage_comparison.csv + report
 ```
 
 The harness strips what the comparison must not contain: solar/inverter

@@ -3,9 +3,9 @@
 A guided tour of the three layers with snippets you can paste into a Python
 session started at the repo root (`python`, or `ipython`). Every snippet was
 run against the code as of 2026-08-18. Prerequisites: `data.csv` at the
-root, `profiles/fit_profiles.csv` (from `python osqp_daily.py`), and the
+root, `outputs/profiles/fit_profiles.csv` (from `python dispatch/osqp_daily.py`), and the
 usual `pip install -r requirements.txt`. Figures land in
-`figures/walkthrough/` (gitignored). Read `paper_context.md` §2–4 next to
+`outputs/figures/walkthrough/` (gitignored). Read `dispatch/FORMULATION.md` §2–4 next to
 Part 1, `MODEL_VERIFICATION.md` next to Part 2, `VPP_EXTENSION.md` §2/§6
 next to Part 3.
 
@@ -20,12 +20,12 @@ discharge, b < 0 charge; **net = load − pv**; grid flow **p = net − b**
 ### 1.1 Get one day of data (uses the vpp cache, ~1 s after the first run)
 
 ```python
-import sys; sys.path.insert(0, "vpp")
-import numpy as np, matplotlib.pyplot as plt, os
-import osqp_daily as B          # the Part A scheduler
-import vpp_common as vc         # imports osqp_daily; caches cleaned day arrays
+import numpy as np, matplotlib.pyplot as plt
+from paths import PROFILES, FIGURES, GLM_DIR, GLM_COMMON   # every location in the repo
+from dispatch import osqp_daily as B         # the Part A scheduler
+from vpp import vpp_common as vc             # imports dispatch.osqp_daily; caches cleaned day arrays
 
-os.makedirs("figures/walkthrough", exist_ok=True)
+OUT = FIGURES / "walkthrough"; OUT.mkdir(parents=True, exist_ok=True)
 day_arrays = vc.load_day_arrays()            # {customer: [(date, load, pv), ...]}
 cust = sorted(day_arrays)[0]
 date, load, pv = next(d for d in day_arrays[cust] if d[0] == "7-Jan-11")
@@ -63,7 +63,7 @@ ax[0].plot(hrs, net, label="net = load - pv"); ax[0].plot(hrs, p, label="grid p 
 ax[0].plot(hrs, b, label="battery b (+ discharge)"); ax[0].axhline(0, c="k", lw=.5); ax[0].legend()
 ax[1].plot(hrs, soc, label="SOC kWh"); ax[1].step(hrs, tariff * 30, where="post", label="tariff x30")
 ax[1].legend(); ax[1].set_xlabel("hour")
-fig.savefig("figures/walkthrough/p1_one_day.png", dpi=110); plt.show()
+fig.savefig(OUT / "p1_one_day.png", dpi=110); plt.show()
 ```
 
 Things to notice: p is flatter than net (that is the objective); charging
@@ -103,7 +103,7 @@ paid regardless and charging is bought at the shoulder rate on the load
 meter, so on a sunny day the battery only *costs*. The heuristic can
 re-weight tiers (watch the off-peak/shoulder weights climb towards
 `H_BAR`) but it can never choose b = 0; annual savings are positive because
-winter days dominate. `paper_context.md` §9 lists this "surrogate objective,
+winter days dominate. `dispatch/FORMULATION.md` §9 lists this "surrogate objective,
 not settlement dollars" gap.
 
 `bill_topology1` (fit): PV credited flat at `FIT_RATE` on the gross meter,
@@ -111,7 +111,7 @@ not settlement dollars" gap.
 imports at TOU, exports credited. Read both (`osqp_daily.py:389-408`) —
 they are the whole economic model.
 
-### 1.4 Where this becomes `profiles/*.csv`
+### 1.4 Where this becomes `outputs/profiles/*.csv`
 
 `run_all` runs `simulate_day` (= `optimise_H` + p) for every customer-day in
 a `multiprocessing.Pool` (per-customer jobs, persistent OSQP workspace per
@@ -122,28 +122,47 @@ computed:
 
 ```python
 import pandas as pd
-df = pd.read_csv("profiles/fit_profiles.csv")
+df = pd.read_csv(PROFILES / "fit_profiles.csv")
 row = df[(df.customer == cust) & (df.date == "7-Jan-11")].sort_values("interval")
 print("stored battery == optimise_H result:", np.allclose(row.battery_kw.values, b_best, atol=1e-4))
 ```
 
 (If this prints False the profiles were generated with different
-E_MAX/tariff settings than the defaults — regenerate with `python osqp_daily.py`.)
+E_MAX/tariff settings than the defaults — regenerate with `python dispatch/osqp_daily.py`.)
 
 ### 1.5 The DOE extension (`osqp_daily_with_DOE.py`)
 
-Same QP plus per-interval bounds on p, `doe_min ≤ p ≤ doe_max`, kept in the
-OSQP workspace as an identity block on b (rows 2T+1..3T) whose bounds are
-switched per day — never a new `A` (see `tests/test_doe_constraints.py`
-for the bug that taught us that).
+Same QP over `x = [b | c | s]` — battery, **curtailed PV** (0 ≤ c ≤ pv) and an
+**import-shortfall** slack (s ≥ 0) — with `p = load − pv + c − b` and per-interval
+bounds `doe_min ≤ p` (export cap, hard: curtailment always makes it feasible)
+and `p ≤ doe_max + s` (import cap, soft: you cannot shed load, so the shortfall
+is reported). All rows live in the OSQP workspace from setup and only their
+bounds change per day — never a new `A` (see `tests/test_doe_constraints.py`
+for the bug that taught us that). The h-scaled penalties on c and s exceed
+any flattening gain, so relief is used only when the battery cannot comply.
 
 ```python
-import osqp_daily_with_DOE as D
-dmin, dmax = D.generate_doe_envelope("conservative", base_export_limit=3.0)   # p >= -2.4 kW
-b_doe, feasible = D.solve_battery(load, pv, h0, D.E_MAX_DEFAULT, dmin, dmax)
-print("feasible:", feasible, " min p no battery / QP / QP+cap:",
-      round(net.min(), 2), round(p.min(), 2), round((net - b_doe).min(), 2))
+from dispatch import osqp_daily_with_DOE as D
+dmin, dmax = D.generate_doe_envelope("conservative", base_export_limit=3.0)   # export cap 2.4 kW
+r = D.solve_battery(load, pv, h0, D.E_MAX_DEFAULT, dmin, dmax)               # DispatchResult
+print("export cap 2.4: min p no-battery / QP / QP+cap:", round(net.min(), 2), round(p.min(), 2),
+      round((load - pv + r.curtail - r.b).min(), 2), "| curtailed kWh", round(r.curtail.sum() * B.DT, 3))
+for cap in (0.4, 0.0):                                       # tighten until the battery cannot cope
+    r2 = D.solve_battery(load, pv, h0, D.E_MAX_DEFAULT, -cap * np.ones(B.T), np.inf * np.ones(B.T))
+    print(f"export cap {cap}: min p", round((load - pv + r2.curtail - r2.b).min(), 3), "| curtailed kWh",
+          round(r2.curtail.sum() * B.DT, 3), "| SOC max", round((5 - B.DT * np.cumsum(r2.b)).max(), 2))
+r3 = D.solve_battery(load, pv, h0, D.E_MAX_DEFAULT, *D.generate_doe_envelope("none", base_import_limit=1.0))
+print("import cap 1.0: max p", round((load - pv - r3.b).max(), 3), "| shortfall kWh",
+      round(r3.import_slack.sum() * B.DT, 3), "| feasible", r3.doe_feasible)
 ```
+
+On this customer-day the QP already keeps export under 2.4 kW and the
+battery alone can hold a 0.4 kW cap; curtailment appears only when the cap
+goes to zero and the SOC headroom is exhausted (curtailment is a last
+resort by construction). A 1 kW import cap is met by the battery unless the
+evening load exceeds what it can supply — then `import_slack` says by how
+much. `simulate_day()` wraps this with the heuristic and returns a
+`DayResult` (`savings`, `p`, `curtail`, `import_slack`, `doe_compliant`).
 
 ---
 
@@ -152,8 +171,8 @@ print("feasible:", feasible, " min p no battery / QP / QP+cap:",
 ### 2.1 Build it and look inside (~1 s)
 
 ```python
-import elermorevale_openDSS as ev
-stats = ev.build_elermorevale("Elermorevale", "common")      # full model: PV + batteries as Generators
+from network import elermorevale_openDSS as ev
+stats = ev.build_elermorevale(str(GLM_DIR), str(GLM_COMMON))   # full model: PV + batteries as Generators
 print(stats)
 ckt = ev.dss.ActiveCircuit
 print("Lines", ckt.Lines.Count, "Loads", ckt.Loads.Count, "Transformers", ckt.Transformers.Count,
@@ -182,7 +201,7 @@ Snapshot solve and the sanity numbers the tests pin (`test_golden_snapshot_regre
 uses the load-only model at 1 kW/household):
 
 ```python
-ev.build_elermorevale("Elermorevale", "common", skip_generators=True)
+ev.build_elermorevale(str(GLM_DIR), str(GLM_COMMON), skip_generators=True)
 ev.dss.Text.Command = "BatchEdit Load..* kW=1.0"
 assert ev.solve_snapshot()
 v = np.array(ckt.AllBusVmagPu); v = v[v > 0.01]
@@ -194,14 +213,14 @@ print(f"source {-p_src:.1f} kW, losses {ckt.Losses[0]/1000:.2f} kW, V min/mean/m
 ### 2.2 One profile-driven day, baseline vs QP (~30 s incl. CSV load)
 
 ```python
-profiles = ev.load_profiles_from_csv("profiles/fit_profiles.csv")        # {customer: [day dicts]}
-ev.build_elermorevale("Elermorevale", "common", skip_generators=True)
+profiles = ev.load_profiles_from_csv(str(PROFILES / "fit_profiles.csv"))          # {customer: [day dicts]}
+ev.build_elermorevale(str(GLM_DIR), str(GLM_COMMON), skip_generators=True)
 lcm = ev.map_customers_to_network_loads(sorted(profiles), ev.get_network_load_names())  # 152 -> 1,785 round-robin
 mon = ev.select_monitored_loads(lcm, n_monitors=100)                                    # every 18th load
 day = ev.day_index_for_date(profiles, "2011-01-07")
 
-base = ev.simulate_scenario("Elermorevale", "common", lcm, mon, profiles, day, use_baseline=True)
-qp   = ev.simulate_scenario("Elermorevale", "common", lcm, mon, profiles, day, use_baseline=False)
+base = ev.simulate_scenario(str(GLM_DIR), str(GLM_COMMON), lcm, mon, profiles, day, use_baseline=True)
+qp   = ev.simulate_scenario(str(GLM_DIR), str(GLM_COMMON), lcm, mon, profiles, day, use_baseline=False)
 for lbl, r in (("baseline", base), ("QP", qp)):
     print(f"{lbl:9s} Vmin {r['v_min_pu']:.3f} Vmax {r['v_max_pu']:.3f} over {r['n_over']:4d} under {r['n_under']:4d} "
           f"peak TX {np.max(np.abs(r['tx_p_kw'])):.0f} kW  losses {r['loss_kw']:.1f} kW")
@@ -218,7 +237,7 @@ V = np.array(list(qp["voltages"].values()))                 # (100 monitors, 48)
 over_by_hour = (V > ev.V_UPPER_PU).sum(axis=0); under_by_hour = (V < ev.V_LOWER_PU).sum(axis=0)
 print("QP over-voltage points by hour :", {h/2: int(n) for h, n in enumerate(over_by_hour) if n})
 print("QP under-voltage points by hour:", {h/2: int(n) for h, n in enumerate(under_by_hour) if n})
-ev.OUTPUT_DIR = "figures/walkthrough"; import matplotlib; matplotlib.use("Agg", force=True)
+ev.OUTPUT_DIR = str(OUT); import matplotlib; matplotlib.use("Agg", force=True)
 ev.plot_voltage_envelope(base, qp, "2011-01-07")
 ev.plot_voltage_heatmap(qp, "2011-01-07", title_prefix="QP: ")
 ```
@@ -227,7 +246,7 @@ Then run the attribution across the year (about a minute) and see the two
 mechanisms `NETWORK_AWARE_DISPATCH.md` is built on:
 
 ```bash
-python diag_violation_attribution.py --every 30
+python network/diagnostics/diag_violation_attribution.py --every 30
 ```
 
 ### 2.3 Where to read next
@@ -298,7 +317,7 @@ by how much.
 ### 3.3 Method D — sharing ADMM (the same answer, one household QP at a time)
 
 ```python
-sys.path.insert(0, "vpp/sharing_admm"); import sharing_admm as admm
+from vpp.sharing_admm import sharing_admm as admm
 B_admm, hist, n_it = admm.run_admm(households, d_min, d_max, rho=50.0, iters=300, tol_kw=0.05)
 gap = vc.objective_surrogate(households, B_admm) / vc.objective_surrogate(households, res.B) - 1
 print(f"ADMM converged in {n_it} iterations; objective gap vs centralised {100*gap:.3f} %; "
@@ -318,7 +337,7 @@ uncoupled QP per household and why the sparsity/warm start survive. Expect
 ### 3.4 Method B — two-stage DOE allocation (deployed practice) and fairness
 
 ```python
-sys.path.insert(0, "vpp/two_stage_doe_allocation"); import two_stage_doe_allocation as ts
+from vpp.two_stage_doe_allocation import two_stage_doe_allocation as ts
 for rule in ts.RULES:
     B_rule, curtail_kwh, n_failed = ts.run_rule(rule, households, d_min, d_max)
     gap = vc.objective_surrogate(households, B_rule) / vc.objective_surrogate(households, res.B) - 1
@@ -353,7 +372,7 @@ python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --n-households 2
 python vpp/dual_decomposition/dual_decomposition.py --n-households 20 --save
 python vpp/price_based_control/price_based_control.py --n-households 20 --save
 python vpp/fcas_cooptimisation/fcas_cooptimisation.py --n-households 20 --save
-python run_vpp_network.py admm --n-households 20 --scenario static     # solve -> export 3 CSVs -> Elermore Vale -> runs/<id>/
+python vpp/run_vpp_network.py admm --n-households 20 --scenario static     # solve -> export 3 CSVs -> Elermore Vale -> outputs/runs/<id>/
 ```
 
 `run_vpp_network.py` is the join between Parts 1–3: `vpp_export` writes

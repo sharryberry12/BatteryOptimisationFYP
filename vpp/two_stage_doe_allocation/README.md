@@ -38,7 +38,7 @@ allocate-then-solve with hard envelopes, but the zero fallback is
 *pessimistic*: a deployed inverter would curtail (export) or the household
 would simply exceed the cap with the battery still helping (import). A
 best-effort fallback (soft per-household DOE with a slack penalty, or a PV
-curtailment variable) is the natural next step — see NETWORK_AWARE_DISPATCH.md §5.
+curtailment variable) is the natural next step — see studies/NETWORK_AWARE_DISPATCH.md §5.
 Note also that all four rules split the *import* side equally, so under a
 pure import cap they coincide.
 
@@ -59,8 +59,8 @@ python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py \
 ```
 
 Outputs: per-rule table (objective, gap %, savings, Jain, Gini, violation,
-curtailment, failed solves), `figures/two_stage_aggregate.png` and
-`figures/two_stage_tradeoff.png`.
+curtailment, failed solves), `outputs/figures/vpp/two_stage_doe_allocation/two_stage_aggregate.png` and
+`outputs/figures/vpp/two_stage_doe_allocation/two_stage_tradeoff.png`.
 
 ## Assessment (from VPP_EXTENSION.md §4)
 

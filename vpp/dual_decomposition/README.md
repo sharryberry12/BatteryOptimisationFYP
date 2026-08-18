@@ -61,7 +61,7 @@ python vpp/dual_decomposition/dual_decomposition.py --iters 500 --alpha0 20 --sa
 ```
 
 Outputs: violation-vs-iteration (last iterate and ergodic average), gap vs
-centralised, the recovered price profile, `figures/dual_convergence.png`.
+centralised, the recovered price profile, `outputs/figures/vpp/dual_decomposition/dual_convergence.png`.
 
 ## Assessment (from VPP_EXTENSION.md §5)
 
