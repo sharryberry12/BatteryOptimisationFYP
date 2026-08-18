@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-Final-year project: QP-based residential battery scheduling on the Ausgrid solar-home dataset, validated on three OpenDSS distribution-network models. Reproduces the algorithm of Ratnam, Weller & Kellett (*Renewable Energy 75*, 2015 — "[R15]") using OSQP, then injects the resulting dispatch profiles into power-flow simulations of a synthetic LV feeder, the IEEE 13-bus feeder, and the real Elermore Vale 11 kV feeder (Wallsend, NSW). The README.md documents the full pipeline and paper references; keep it in sync when changing CLI surfaces or outputs.
+Final-year project: QP-based residential battery scheduling on the Ausgrid solar-home dataset, validated on an OpenDSS model of the real Elermore Vale 11 kV feeder (Wallsend, NSW). Reproduces the algorithm of Ratnam, Weller & Kellett (*Renewable Energy 75*, 2015 — "[R15]") using OSQP, then injects the resulting dispatch profiles into power-flow simulations of that feeder. (The synthetic LV feeder and IEEE 13-bus models were removed on 2026-08-19.) The README.md documents the full pipeline and paper references; keep it in sync when changing CLI surfaces or outputs.
 
 ## Commands
 
@@ -22,8 +22,6 @@ python osqp_daily_with_DOE.py --scenarios conservative tight --no-compare
 # Step 2 — network validation (all three share the same plotting CLI:
 #          --save, --output-dir, --full, --max-days, --summer-day, --winter-day;
 #          Elermore Vale also takes --oltc = zone RegControl active, outputs -> <output-dir>_oltc)
-python openDSS_LV_feeder_model.py --save                                  # synthetic LV feeder (fastest smoke test)
-python ieee_13_bus_openDSS.py --save                                      # IEEE 13-bus benchmark
 python elermorevale_openDSS.py                                            # snapshot build+solve only
 python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv --save        # representative days
 python elermorevale_openDSS.py --profiles profiles/fit_profiles.csv --full --save # full-year sweep
@@ -55,14 +53,11 @@ Standalone top-level scripts — no shared package, no cross-imports among the c
 data.csv (Ausgrid, kWh per half-hour)
    └─ osqp_daily.py / osqp_daily_with_DOE.py   (clean → per-customer-day QP via OSQP)
         └─ profiles/{fit,net}_profiles.csv     (long-format, half-hourly kW)
-             ├─ openDSS_LV_feeder_model.py ─┐
-             ├─ ieee_13_bus_openDSS.py      ├─ figures/ (voltage envelopes, heatmaps, substation P/Q)
-             ├─ elermorevale_openDSS.py    ─┘
+             ├─ elermorevale_openDSS.py → figures/ (voltage envelopes, heatmaps, substation P/Q)
              └─ elermorevale_gui.py → elermorevale_dashboard_v2.html
 ```
 
-- **`osqp_daily_with_DOE.py` is a copy-extension of `osqp_daily.py`**, not an import. The cleaning rules, constants, heuristic, and QP core are duplicated — a fix to one usually needs mirroring in the other. Its docstring lists exactly what it adds (DOE envelope generation, extra constraint rows, slack metrics).
-- **The three network scripts are also siblings, not layers**: each builds its network in-Python via `dss-python`, applies the same customer-to-load mapping idea, and exposes the same plotting CLI, but shares no code.
+- **`osqp_daily_with_DOE.py` is a copy-extension of `osqp_daily.py`**, not an import. The cleaning rules, constants, heuristic, and QP core are duplicated — a fix to one usually needs mirroring in the other. Its docstring lists exactly what it adds (DOE envelope generation, curtailment / import-shortfall variables, extra constraint rows, slack metrics).
 - **Elermore Vale model is translated at runtime** from GridLAB-D sources (`Elermorevale/*.glm` + `common/Line Configs.glm`) — there are no static `.dss` files. `parse_glm()` / `extract_impedances()` / `gfloat()` in `elermorevale_openDSS.py` do the translation; `elermorevale_gui.py` re-parses the same GLM files independently to build its topology graph.
 - **`vpp/` is the Part B multi-household extension** and breaks the no-shared-code convention deliberately: `vpp/vpp_common.py` *imports* `osqp_daily` (data pipeline, tariff, billing, heuristic, constraint blocks) and each coupling method lives in its own subfolder (`centralised_qp`, `two_stage_doe_allocation`, `dual_decomposition`, `sharing_admm`, `price_based_control`, `fcas_cooptimisation`) with a script named after the approach plus a README. Scripts run from the repo root (`python vpp/<approach>/<approach>.py`), share a common CLI, and benchmark against `vpp_common.solve_centralised`. Design docs: `VPP_EXTENSION.md` (methods) and `paper_context.md` (base formulation, invariants, modelling gaps — it was the project's original CLAUDE.md, and `VPP_EXTENSION.md`'s "§9/§11" cross-references point into it). First run caches cleaned day arrays in `vpp/cache/*.pkl`.
 - **`osqp_daily_with_DOE.py` → network**: its `profiles/<mode>_doe_<scenario>.csv` output has the same columns `load_profiles_from_csv()` reads, so any network script can replay DOE-constrained dispatch (`--profiles profiles/fit_doe_tight.csv`). Findings in `NETWORK_AWARE_DISPATCH.md`.

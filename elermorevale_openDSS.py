@@ -21,8 +21,7 @@ Line impedances are extracted from common/Line Configs.glm:
   - 11 kV configs use z-matrix format (z11..z33 in Ohm/mile)
   - LV configs reference named conductors with per-mile resistance
 
-This version adds profile-driven daily simulation and plotting,
-matching the interface of openDSS_LV_feeder_model.py. It reads the
+This version adds profile-driven daily simulation and plotting. It reads the
 half-hourly CSV produced by osqp_daily.save_profiles(), maps all
 QP-scheduled customers onto a subset of network loads, and compares
 baseline (no battery) vs QP-dispatched scenarios with:
@@ -749,8 +748,8 @@ def export_dss_summary(path="elermorevale_summary.txt"):
 # PROFILE-DRIVEN SIMULATION
 # ==================================================================
 #
-# Everything below this line makes the Elermore Vale model accept
-# the same QP-dispatched profile inputs as openDSS_LV_feeder_model.py.
+# Everything below this line makes the Elermore Vale model accept the
+# QP-dispatched profile inputs written by osqp_daily*.save_profiles().
 #
 # The workflow is:
 #   1. Build the full Elermore Vale network (all ~1,785 loads)

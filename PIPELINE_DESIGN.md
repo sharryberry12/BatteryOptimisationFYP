@@ -190,12 +190,10 @@ are worth doing:
    end-to-end so there is no off-by-one between what was optimised and what was
    simulated.
 
-**Network backend selection:** `--network elermorevale|ieee13|lv_feeder` as a
-flag, but target **Elermore Vale first**. The three network scripts share a CLI
-surface but not code; unifying them behind a real `NetworkModel` protocol
-(`build / attach / run_day / collect`) is a separate refactor that should not be
-coupled to this pipeline. The synthetic LV feeder serves as the fast smoke-test
-backend while iterating.
+**Network backend:** Elermore Vale only. (The design originally allowed
+`--network elermorevale|ieee13|lv_feeder`; the synthetic LV feeder and IEEE-13
+models were removed from the repository on 2026-08-19, so the flag and the
+`NetworkModel` protocol idea are moot.)
 
 ### 3.4 Stage 5 — reporting
 
@@ -274,5 +272,4 @@ Each step leaves the repo in a working state:
 
 Later extensions (explicitly out of scope for v1): multi-method comparison in
 one run reusing the same ensemble (`--methods a,b,c`), date/N/scenario sweeps
-with aggregated reporting, the subset-mapping penetration study, and a unified
-`NetworkModel` protocol across the three network scripts.
+with aggregated reporting, and the subset-mapping penetration study.

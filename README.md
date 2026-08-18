@@ -1,6 +1,6 @@
 # Battery Optimisation FYP
 
-QP-based residential battery scheduling on the Ausgrid solar-home dataset, validated on three OpenDSS distribution-network models (synthetic LV feeder, IEEE 13-bus, and the real Elermore Vale 11 kV feeder).
+QP-based residential battery scheduling on the Ausgrid solar-home dataset, validated on an OpenDSS model of the real Elermore Vale 11 kV feeder (Wallsend, NSW).
 
 The project reproduces the algorithm of Ratnam, Weller & Kellett (*Renewable Energy 75*, 2015) and assesses how the resulting battery dispatches behave when injected into a power-flow simulation of an actual Ausgrid feeder.
 
@@ -18,8 +18,6 @@ The papers themselves are not redistributed here (`*.pdf` is gitignored); see th
 |------|---------|
 | [osqp_daily.py](osqp_daily.py) | QP battery scheduler — implements [R15] Sections 4-5 with a persistent OSQP workspace. Produces the half-hourly dispatch profiles consumed by every network model. |
 | [osqp_daily_with_DOE.py](osqp_daily_with_DOE.py) | Copy-extension of `osqp_daily.py` that adds Dynamic Operating Envelope rows (per-interval export/import bounds on the grid flow) to the QP. Writes `profiles/<mode>_doe_<scenario>.csv` in the same long format, so the network scripts can replay DOE-constrained dispatch. |
-| [openDSS_LV_feeder_model.py](openDSS_LV_feeder_model.py) | Synthetic 10-node Australian LV feeder built in-Python via dss-python. Quick smoke-test of the dispatch profiles. |
-| [ieee_13_bus_openDSS.py](ieee_13_bus_openDSS.py) | IEEE 13 Node Test Feeder with five LV stubs added. Standardised benchmark network. |
 | [elermorevale_openDSS.py](elermorevale_openDSS.py) | Port of the Elermore Vale (Wallsend, NSW) GridLAB-D model to OpenDSS. Translates [Elermorevale/](Elermorevale/) and [common/Line Configs.glm](common/Line%20Configs.glm) at runtime — no static `.dss` files. |
 | [elermorevale_gui.py](elermorevale_gui.py) | Self-contained HTML dashboard for the Elermore Vale network: static topology view + animated live-flow view with synced Plotly charts. |
 | [Elermorevale/](Elermorevale/) | GridLAB-D source for the Elermore Vale 11 kV feeder (zone substation, 23 distribution transformers, 1,810 GLM `load` objects = 1,785 households + 25 BlueGen CHP units, 155 PV systems, 40 Redflow batteries). The CHP units are excluded from the OpenDSS model — see [MODEL_VERIFICATION.md](MODEL_VERIFICATION.md) known defect #6. |
@@ -72,21 +70,10 @@ python osqp_daily_with_DOE.py --scenarios conservative --export-limit 3 1.5 0.75
 
 Writes `profiles/fit_doe_<scenario>.csv` (`<scenario>_cap<kW>` when several export limits are given) and `doe_scenario_comparison.csv`.
 
-### 2. Network validation — three options
+### 2. Network validation — the Elermore Vale feeder
 
-All three scripts share the same CLI surface for plotting (`--save`, `--output-dir`, `--full`, `--max-days`, `--summer-day`, `--winter-day`); the Elermore Vale script additionally accepts `--oltc` (activate the zone-substation voltage regulator; outputs are redirected to `<output-dir>_oltc`).
+Plotting CLI: `--save`, `--output-dir`, `--full`, `--max-days`, `--summer-day`, `--winter-day`, plus `--oltc` (activate the zone-substation voltage regulator; outputs are redirected to `<output-dir>_oltc`).
 
-**Synthetic LV feeder (fastest):**
-```bash
-python openDSS_LV_feeder_model.py --save
-```
-
-**IEEE 13-bus:**
-```bash
-python ieee_13_bus_openDSS.py --save
-```
-
-**Real Elermore Vale feeder:**
 ```bash
 # Snapshot only (no profiles, just builds + solves):
 python elermorevale_openDSS.py
