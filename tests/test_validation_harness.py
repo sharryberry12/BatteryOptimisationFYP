@@ -28,7 +28,7 @@ import pytest
 
 from conftest import REPO_ROOT, requires_glm_sources
 
-VALIDATION_DIR = REPO_ROOT / "validation"
+VALIDATION_DIR = REPO_ROOT / "network" / "validation"
 if str(VALIDATION_DIR) not in sys.path:
     sys.path.insert(0, str(VALIDATION_DIR))
 

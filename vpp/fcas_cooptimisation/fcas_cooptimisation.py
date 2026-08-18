@@ -40,9 +40,9 @@ import scipy.sparse as sp
 
 import osqp
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import vpp_common as vc  # noqa: E402
-import osqp_daily as base  # noqa: E402  (path set by vpp_common)
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from vpp import vpp_common as vc  # noqa: E402
+from dispatch import osqp_daily as base  # noqa: E402
 
 logger = logging.getLogger("vpp.fcas")
 

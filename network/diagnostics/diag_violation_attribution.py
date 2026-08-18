@@ -26,7 +26,11 @@ import logging
 
 import numpy as np
 
-import elermorevale_openDSS as ev
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from paths import GLM_COMMON, GLM_DIR, PROFILES  # noqa: E402
+from network import elermorevale_openDSS as ev  # noqa: E402
 
 logging.disable(logging.INFO)
 
@@ -38,14 +42,14 @@ def load_bus(name):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("--profiles", default="profiles/fit_profiles.csv")
+    ap.add_argument("--profiles", default=str(PROFILES / "fit_profiles.csv"))
     ap.add_argument("--every", type=int, default=15,
                     help="simulate every N-th day (default 15 -> 25 days)")
     ap.add_argument("--feeder", default="7159",
                     help="LV feeder id whose over-voltage share to report "
                          "(bus names fdr_<id>_lv_...; default 7159 = HP00007159)")
-    ap.add_argument("--glm-dir", default="Elermorevale")
-    ap.add_argument("--common-dir", default="common")
+    ap.add_argument("--glm-dir", default=str(GLM_DIR))
+    ap.add_argument("--common-dir", default=str(GLM_COMMON))
     args = ap.parse_args()
 
     profiles = ev.load_profiles_from_csv(args.profiles)

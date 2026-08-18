@@ -33,7 +33,7 @@ This script maintains backward compatibility with the baseline (doe_envelope=Non
 
 CLI (2026-08-16):  --mode {fit,net}  --scenarios ...  --export-limit kW [kW ...]
                    --no-compare  --data
-Outputs profiles/<mode>_doe_<scenario>[_cap<kW>].csv in the long format the
+Outputs outputs/profiles/<mode>_doe_<scenario>[_cap<kW>].csv in the long format the
 network scripts read (elermorevale_openDSS.py --profiles ...).
 
 Formulation (2026-08-19): decision vector x = [b | c | s]
@@ -60,8 +60,10 @@ envelope enforced. Regression tests: tests/test_doe_constraints.py.
 """
 
 import logging
+import sys
 from dataclasses import dataclass
 from multiprocessing import Pool, cpu_count
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -69,6 +71,10 @@ import numpy as np
 import osqp
 import pandas as pd
 import scipy.sparse as sp
+
+# repo root on sys.path so `paths` imports from any cwd
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import DATA_CSV, OUTPUTS, PROFILES  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -744,7 +750,7 @@ def compare_scenarios(day_arrays, mode, e_max=E_MAX_DEFAULT):
 # SAVE PROFILES (modified for DOE)
 # ==========================================================
 
-def save_profiles(all_profiles, mode, doe_scenario="none", out_dir="profiles"):
+def save_profiles(all_profiles, mode, doe_scenario="none", out_dir=str(PROFILES)):
     """
     Save half-hourly simulation results, including DOE compliance flags.
     """
@@ -1028,7 +1034,7 @@ def extract_day_arrays(df):
 def main():
     """
     Load data, run the requested DOE scenarios, save network-ready profile
-    CSVs (profiles/<mode>_doe_<label>.csv, the same long format
+    CSVs (outputs/profiles/<mode>_doe_<label>.csv, the same long format
     elermorevale_openDSS.py --profiles reads), and optionally the
     scenario-comparison table.
 
@@ -1040,10 +1046,10 @@ def main():
 
     parser = argparse.ArgumentParser(
         description="DOE-constrained QP battery dispatch (extension of "
-                    "osqp_daily.py). Writes profiles/<mode>_doe_<label>.csv "
+                    "osqp_daily.py). Writes outputs/profiles/<mode>_doe_<label>.csv "
                     "for each scenario, consumable by the network scripts.")
-    parser.add_argument("--data", default="data.csv",
-                        help="Ausgrid CSV (default: data.csv)")
+    parser.add_argument("--data", default=str(DATA_CSV),
+                        help="Ausgrid CSV (default: data/data.csv)")
     parser.add_argument("--mode", choices=["fit", "net"], default="fit",
                         help="Tariff mode passed to the QP (default: fit)")
     parser.add_argument("--scenarios", nargs="+",
@@ -1099,7 +1105,8 @@ def main():
         logger.info("SCENARIO COMPARISON SUMMARY")
         logger.info("=" * 60)
         df_comp = compare_scenarios(day_arrays, mode=args.mode)
-        df_comp.to_csv("doe_scenario_comparison.csv", index=False)
+        OUTPUTS.mkdir(parents=True, exist_ok=True)
+        df_comp.to_csv(OUTPUTS / "doe_scenario_comparison.csv", index=False)
 
 
 if __name__ == "__main__":

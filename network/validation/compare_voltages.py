@@ -37,7 +37,8 @@ import numpy as np
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-import elermorevale_openDSS as ev  # noqa: E402
+from paths import GLM_COMMON, GLM_DIR  # noqa: E402
+from network import elermorevale_openDSS as ev  # noqa: E402
 
 GLD_DUMP = REPO / "validation" / "voltages_gld.csv"
 OUT_CSV = REPO / "validation" / "voltage_comparison.csv"
@@ -60,7 +61,7 @@ MIN_DSS_COVERAGE = 0.99   # live DSS node-phases that must find a GLD partner
 def subs_load_names():
     """Names of the loads present in the GridLAB-D harness (subs/ files)."""
     names = set()
-    for fp in sorted((REPO / "Elermorevale" / "subs").glob("*.glm")):
+    for fp in sorted((GLM_DIR / "subs").glob("*.glm")):
         for otype, props in ev.parse_glm(str(fp)):
             if otype == "load" and props.get("name"):
                 names.add(props["name"])
@@ -68,7 +69,7 @@ def subs_load_names():
 
 
 def solve_opendss(harness_loads):
-    ev.build_elermorevale(str(REPO / "Elermorevale"), str(REPO / "common"),
+    ev.build_elermorevale(str(GLM_DIR), str(GLM_COMMON),
                           skip_generators=True)
     ev.dss.Text.Command = f"BatchEdit Load..* kW={LOAD_KW}"
     ckt = ev.dss.ActiveCircuit

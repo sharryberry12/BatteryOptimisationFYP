@@ -15,16 +15,15 @@ Stages:
     4. network simulation  (elermorevale_openDSS, one run per scenario)
     5. reporting           (3-way figures + network_summary.csv)
 
-Figures and CSVs land in runs/<method>_<scenario>_<date>_<timestamp>/.
+Figures and CSVs land in outputs/runs/<method>_<scenario>_<date>_<timestamp>/.
 Every run is reproducible from its manifest.json.
 
-Examples (repo root):
-    python run_vpp_network.py sharing_admm --data data1.csv
-    python run_vpp_network.py admm --rho 5 --n-households 40 --data data1.csv
-    python run_vpp_network.py centralised_qp --soft --scenario tight_tou \
-        --data data1.csv
-    python run_vpp_network.py fcas --skip-network --data data1.csv
-    python run_vpp_network.py resume --run-dir runs/sharing_admm_static_...
+Examples (repo root; --data defaults to data/data.csv):
+    python vpp/run_vpp_network.py sharing_admm
+    python vpp/run_vpp_network.py admm --rho 5 --n-households 40
+    python vpp/run_vpp_network.py centralised_qp --soft --scenario tight_tou
+    python vpp/run_vpp_network.py fcas --skip-network
+    python vpp/run_vpp_network.py resume --run-dir outputs/runs/sharing_admm_static_...
 
 The method subcommands accept short aliases: centralised, two_stage,
 dual, admm, price, fcas.
@@ -42,15 +41,16 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parent
+REPO_ROOT = Path(__file__).resolve().parents[1]
 VPP_DIR = REPO_ROOT / "vpp"
-for _p in (str(REPO_ROOT), str(VPP_DIR)):
+for _p in (str(REPO_ROOT),):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 
-import vpp_common as vc  # noqa: E402
-import vpp_export as vexport  # noqa: E402
-import vpp_registry as vreg  # noqa: E402
+from paths import GLM_COMMON, GLM_DIR, RUNS  # noqa: E402
+from vpp import vpp_common as vc  # noqa: E402
+from vpp import vpp_export as vexport  # noqa: E402
+from vpp import vpp_registry as vreg  # noqa: E402
 
 logger = logging.getLogger("pipeline")
 
@@ -92,20 +92,20 @@ def build_parser():
     n.add_argument("--network", choices=["elermorevale"],
                    default="elermorevale",
                    help="Network backend (Elermore Vale only for now)")
-    n.add_argument("--glm-dir", default=str(REPO_ROOT / "Elermorevale"),
+    n.add_argument("--glm-dir", default=str(GLM_DIR),
                    help="GridLAB-D source directory")
-    n.add_argument("--common-dir", default=str(REPO_ROOT / "common"),
+    n.add_argument("--common-dir", default=str(GLM_COMMON),
                    help="Shared GLM includes directory")
     n.add_argument("--n-monitors", type=int, default=100,
                    help="Number of voltage-monitored loads")
     n.add_argument("--skip-network", action="store_true",
                    help="Stop after stage 3 (export only); resume later "
                         "with the 'resume' subcommand")
-    n.add_argument("--runs-root", default=str(REPO_ROOT / "runs"),
+    n.add_argument("--runs-root", default=str(RUNS),
                    help="Parent directory for run artifacts")
 
     parser = argparse.ArgumentParser(
-        prog="run_vpp_network.py",
+        prog="vpp/run_vpp_network.py",
         description="End-to-end VPP -> OpenDSS pipeline "
                     "(see PIPELINE_DESIGN.md)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -229,7 +229,7 @@ def network_stage(run_dir, manifest, args):
         raise vreg.PipelineError(
             f"network backend {args.network!r} is not wired into the "
             "pipeline yet (elermorevale only)")
-    import elermorevale_openDSS as ev
+    from network import elermorevale_openDSS as ev
 
     run_dir = Path(run_dir)
     fig_dir = run_dir / "figures"
@@ -477,7 +477,7 @@ def main(argv=None):
     run_dir, manifest = solve_and_export(args)
     if args.skip_network:
         logger.info("--skip-network set; stopping after export. Resume "
-                    "later with: python run_vpp_network.py resume "
+                    "later with: python vpp/run_vpp_network.py resume "
                     "--run-dir \"%s\"", run_dir)
         return
     network_stage(run_dir, manifest, args)

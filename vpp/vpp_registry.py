@@ -26,10 +26,11 @@ from typing import Any, Callable
 import numpy as np
 
 VPP_DIR = Path(__file__).resolve().parent
-if str(VPP_DIR) not in sys.path:
-    sys.path.insert(0, str(VPP_DIR))
+REPO_ROOT = VPP_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-import vpp_common as vc  # noqa: E402
+from vpp import vpp_common as vc  # noqa: E402
 
 logger = logging.getLogger("vpp.registry")
 
@@ -71,10 +72,7 @@ class MethodSpec:
 
 def _module(subdir):
     """Import vpp/<subdir>/<subdir>.py (module name equals folder name)."""
-    d = str(VPP_DIR / subdir)
-    if d not in sys.path:
-        sys.path.insert(0, d)
-    return importlib.import_module(subdir)
+    return importlib.import_module(f"vpp.{subdir}.{subdir}")
 
 
 def _require_solved(status, what):

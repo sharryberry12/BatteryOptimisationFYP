@@ -25,10 +25,15 @@ Then: gridlabd validation/harness.glm   (from the repo root)
 import cmath
 import math
 import re
+import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
-GLM = REPO / "Elermorevale"
+REPO = Path(__file__).resolve().parents[2]
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+from paths import GLM_COMMON, GLM_DIR  # noqa: E402
+
+GLM = GLM_DIR
 OUT = Path(__file__).resolve().parent
 STRIPPED = OUT / "stripped"
 
@@ -111,7 +116,7 @@ def write_line_configs_stripped():
                              if not SHIELD_PROP.match(ln)) + "\n"
         return head + body + tail
 
-    text = (REPO / "common" / "Line Configs.glm").read_text(
+    text = (GLM_COMMON / "Line Configs.glm").read_text(
         encoding="utf-8", errors="replace")
     text, n = UG_COND_BLOCK.subn(fix, text)
     (STRIPPED / "line_configs_stripped.glm").write_text(text, encoding="utf-8")

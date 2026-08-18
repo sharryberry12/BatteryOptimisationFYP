@@ -4,14 +4,18 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from paths import PROFILES, FIGURES  # noqa: E402
 
-import osqp_daily as base
-from peak_duty_analysis import C_BLUE, C_ORANGE, C_AQUA, INK_2, MUTED
+from dispatch import osqp_daily as base  # noqa: E402
+from studies.peak_duty_analysis import C_BLUE, C_ORANGE, C_AQUA, INK_2, MUTED
 
 DT, T = base.DT, base.T
 tariff = base.build_tariff()
 
-df = pd.read_csv("profiles/fit_profiles.csv", nrows=48 * 400)
+df = pd.read_csv(PROFILES / "fit_profiles.csv", nrows=48 * 400)
 g = df[(df["customer"] == 1) & (df["date"] == "22-Nov-10")]
 g = g.sort_values("interval")
 load, pv = g["load_kw"].to_numpy(), g["pv_kw"].to_numpy()
@@ -51,6 +55,7 @@ ax2.set_title("… so the BATTERY mirrors every wiggle of net load, offset "
 ax2.legend(fontsize=9)
 
 fig.tight_layout()
-fig.savefig("figures/qp_dispatch_anatomy.png", dpi=150,
+FIGURES.mkdir(parents=True, exist_ok=True)
+fig.savefig(FIGURES / "qp_dispatch_anatomy.png", dpi=150,
             bbox_inches="tight")
 print("saved figures/qp_dispatch_anatomy.png")

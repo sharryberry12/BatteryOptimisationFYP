@@ -17,8 +17,8 @@ could not cover). These tests use synthetic days only.
 import numpy as np
 import pytest
 
-D = pytest.importorskip("osqp_daily_with_DOE")
-BASE = pytest.importorskip("osqp_daily")
+D = pytest.importorskip("dispatch.osqp_daily_with_DOE")
+BASE = pytest.importorskip("dispatch.osqp_daily")
 
 T = D.T
 E_MAX = 10.0

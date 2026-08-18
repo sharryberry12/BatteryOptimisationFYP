@@ -46,7 +46,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-import osqp_daily as base  # noqa: E402  (root-level module, path set above)
+from paths import DATA_CSV as _DATA_CSV, CACHE as _CACHE, FIGURES as _FIGURES  # noqa: E402
+from dispatch import osqp_daily as base  # noqa: E402
 
 logger = logging.getLogger("vpp")
 
@@ -56,8 +57,8 @@ P_MAX = base.P_MAX
 E_MAX_DEFAULT = base.E_MAX_DEFAULT
 SOC_INIT_FRAC = 0.5  # must match base.build_constraints default
 
-DATA_CSV = REPO_ROOT / "data.csv"
-CACHE_DIR = Path(__file__).resolve().parent / "cache"
+DATA_CSV = _DATA_CSV
+CACHE_DIR = _CACHE
 
 OSQP_SETTINGS = dict(
     verbose=False, eps_abs=1e-6, eps_rel=1e-6, polish=True, warm_start=True,
@@ -87,11 +88,11 @@ def load_day_arrays(data_path=DATA_CSV, use_cache=True):
     """
     Load + clean the Ausgrid CSV via osqp_daily and collapse to day arrays.
     The cleaning pass over the full CSV takes ~a minute, so the result is
-    pickled into vpp/cache/ keyed on the CSV's mtime and size.
+    pickled into outputs/cache/ keyed on the CSV's mtime and size.
 
     Pickle safety: the cache is written and read only by this module on
     the local machine (never downloaded / untrusted input). Delete
-    vpp/cache/ to force a rebuild.
+    outputs/cache/ to force a rebuild.
     """
     data_path = Path(data_path)
     if not data_path.is_file():
@@ -557,11 +558,11 @@ def uncoupled_baseline(households):
 
 
 def finish_figure(fig, args, name, script_file):
-    """Save under <script dir>/figures (or --output-dir), else show."""
+    """Save under outputs/figures/vpp/<method> (or --output-dir), else show."""
     import matplotlib.pyplot as plt
     if args.save:
         outdir = Path(args.output_dir) if args.output_dir \
-            else Path(script_file).resolve().parent / "figures"
+            else _FIGURES / "vpp" / Path(script_file).resolve().parent.name
         outdir.mkdir(parents=True, exist_ok=True)
         path = outdir / name
         fig.savefig(path, dpi=150, bbox_inches="tight")

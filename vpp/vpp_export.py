@@ -37,10 +37,11 @@ import numpy as np
 import pandas as pd
 
 VPP_DIR = Path(__file__).resolve().parent
-if str(VPP_DIR) not in sys.path:
-    sys.path.insert(0, str(VPP_DIR))
+REPO_ROOT = VPP_DIR.parent
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
-import vpp_common as vc  # noqa: E402
+from vpp import vpp_common as vc  # noqa: E402
 
 logger = logging.getLogger("vpp.export")
 

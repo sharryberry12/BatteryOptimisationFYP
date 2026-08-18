@@ -22,8 +22,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-GLM_DIR = REPO_ROOT / "Elermorevale"
-COMMON_DIR = REPO_ROOT / "common"
+from paths import GLM_COMMON as COMMON_DIR, GLM_DIR  # noqa: E402
 
 requires_glm_sources = pytest.mark.skipif(
     not GLM_DIR.is_dir() or not (COMMON_DIR / "Line Configs.glm").is_file(),
@@ -35,7 +34,7 @@ requires_glm_sources = pytest.mark.skipif(
 def ev():
     """The module under test (import deferred so a missing dss-python
     dependency skips the suite instead of erroring at collection)."""
-    return pytest.importorskip("elermorevale_openDSS")
+    return pytest.importorskip("network.elermorevale_openDSS")
 
 
 @pytest.fixture(scope="session")

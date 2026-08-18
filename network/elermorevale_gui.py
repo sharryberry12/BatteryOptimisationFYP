@@ -55,6 +55,12 @@ from collections import defaultdict, deque
 import networkx as nx
 import numpy as np
 
+# repo root on sys.path so `paths` and `network.*` import from any cwd
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import DASHBOARD_HTML, GLM_COMMON, GLM_DIR, PROFILES  # noqa: E402
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(levelname)s: %(message)s",
@@ -386,7 +392,7 @@ def run_simulation(glm_dir, common_dir, profiles_csv, day_idx,
     Run baseline + QP for one day. Returns a dict including health
     indicators so the frontend can show whether the data is trustworthy.
     """
-    from elermorevale_openDSS import (
+    from network.elermorevale_openDSS import (
         build_elermorevale, get_network_load_names,
         map_customers_to_network_loads, select_monitored_loads,
         add_monitors, attach_baseline_shapes, attach_loadshapes,
@@ -1687,11 +1693,11 @@ window.addEventListener('load',()=>{
 def main():
     p = argparse.ArgumentParser(
         description="Elermore Vale dashboard v2 — improved")
-    p.add_argument("--glm-dir", default="Elermorevale")
-    p.add_argument("--common-dir", default="common")
-    p.add_argument("--output", default="elermorevale_dashboard_v2.html")
+    p.add_argument("--glm-dir", default=str(GLM_DIR))
+    p.add_argument("--common-dir", default=str(GLM_COMMON))
+    p.add_argument("--output", default=str(DASHBOARD_HTML))
     p.add_argument("--simulate", action="store_true")
-    p.add_argument("--profiles", default="profiles/fit_profiles.csv")
+    p.add_argument("--profiles", default=str(PROFILES / "fit_profiles.csv"))
     p.add_argument("--day", type=int, default=190)
     p.add_argument("--open", action="store_true")
     p.add_argument("--layout", choices=["hierarchical", "spring"],

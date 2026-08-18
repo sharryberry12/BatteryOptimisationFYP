@@ -53,8 +53,13 @@ import os
 import re
 import sys
 from collections import defaultdict
+from pathlib import Path
 
 import numpy as np
+
+# repo root on sys.path so `paths` imports from any cwd
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import FIGURES, GLM_COMMON, GLM_DIR  # noqa: E402
 
 # --- OpenDSS engine (dss-python) ---
 try:
@@ -1568,10 +1573,10 @@ def main():
 
     # --- Original arguments (network build) ---
     parser.add_argument(
-        "--glm-dir", default="Elermorevale",
+        "--glm-dir", default=str(GLM_DIR),
         help="Path to the Elermorevale/ directory containing .glm files")
     parser.add_argument(
-        "--common-dir", default="common",
+        "--common-dir", default=str(GLM_COMMON),
         help="Path to the common/ directory containing Line Configs.glm")
     parser.add_argument(
         "--export", action="store_true",
@@ -1598,7 +1603,7 @@ def main():
         "--save", action="store_true",
         help="Save figures to disk instead of opening interactive windows")
     parser.add_argument(
-        "--output-dir", default="figures",
+        "--output-dir", default=str(FIGURES),
         help="Directory to save figures into when --save is set")
     parser.add_argument(
         "--per-day-plots", action="store_true",

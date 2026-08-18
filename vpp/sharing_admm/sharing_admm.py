@@ -32,8 +32,8 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-import vpp_common as vc  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from vpp import vpp_common as vc  # noqa: E402
 
 logger = logging.getLogger("vpp.admm")
 

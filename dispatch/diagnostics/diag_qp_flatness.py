@@ -12,8 +12,12 @@ Checks, in order:
 """
 import numpy as np
 import pandas as pd
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from paths import PROFILES  # noqa: E402
 
-import osqp_daily as base
+from dispatch import osqp_daily as base  # noqa: E402
 
 DT, T = base.DT, base.T
 tariff = base.build_tariff()
@@ -21,7 +25,7 @@ tier_idx = {lvl: np.where(tariff == lvl)[0] for lvl in np.unique(tariff)}
 
 # ---- 1+2: statistics over a sample of the exported profiles ----------
 N_ROWS = 48 * 365 * 30          # ~30 customer-years
-df = pd.read_csv("profiles/fit_profiles.csv", nrows=N_ROWS)
+df = pd.read_csv(PROFILES / "fit_profiles.csv", nrows=N_ROWS)
 print(f"rows: {len(df)}, customers: {df['customer'].nunique()}")
 
 recs = []

@@ -44,7 +44,9 @@ Changes from the previous revision
 """
 
 import logging
+import sys
 from multiprocessing import Pool, cpu_count
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -52,6 +54,10 @@ import numpy as np
 import osqp
 import pandas as pd
 import scipy.sparse as sp
+
+# repo root on sys.path so `paths` (and sibling packages) import from any cwd
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import DATA_CSV, PROFILES  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -536,15 +542,15 @@ def run_all(day_arrays, mode, e_max=E_MAX_DEFAULT):
             all_profiles)
 
 
-def save_profiles(all_profiles, mode, out_dir="profiles"):
+def save_profiles(all_profiles, mode, out_dir=str(PROFILES)):
     """
     Save half-hourly simulation results to disk.
 
     Produces two outputs:
-      1. A single long-format CSV:  profiles/{mode}_profiles.csv
+      1. A single long-format CSV:  outputs/profiles/{mode}_profiles.csv
          with columns: customer, date, interval, hour, load_kw, pv_kw,
                        battery_kw, grid_kw, soc_kwh, daily_savings
-      2. Per-customer CSVs in profiles/{mode}/cust_{id}/:
+      2. Per-customer CSVs in outputs/profiles/{mode}/cust_{id}/:
          one file per day, containing only the 48-row grid profile p_k.
          These are directly consumable as OpenDSS LoadShape mult files.
     """
@@ -786,7 +792,7 @@ def figure8_capacity_sweep(day_arrays, customers=(75, 200), mode="fit",
 # ==========================================================
 
 def main():
-    df_raw = load_dataset("data.csv")
+    df_raw = load_dataset(str(DATA_CSV))
     df_clean = clean_dataset(df_raw)
     day_arrays = extract_day_arrays(df_clean)
     logger.info("Extracted %d customers", len(day_arrays))

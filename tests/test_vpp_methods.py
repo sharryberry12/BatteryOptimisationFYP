@@ -29,21 +29,17 @@ import numpy as np
 import pytest
 
 REPO = Path(__file__).resolve().parents[1]
-for sub in ("vpp", "vpp/sharing_admm", "vpp/dual_decomposition",
-            "vpp/two_stage_doe_allocation", "vpp/price_based_control",
-            "vpp/fcas_cooptimisation"):
-    p = str(REPO / sub)
-    if p not in sys.path:
-        sys.path.insert(0, p)
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
 
-vc = pytest.importorskip("vpp_common")
-base = pytest.importorskip("osqp_daily")
-D = pytest.importorskip("osqp_daily_with_DOE")
-admm = pytest.importorskip("sharing_admm")
-dd = pytest.importorskip("dual_decomposition")
-ts = pytest.importorskip("two_stage_doe_allocation")
-pbc = pytest.importorskip("price_based_control")
-fc = pytest.importorskip("fcas_cooptimisation")
+vc = pytest.importorskip("vpp.vpp_common")
+base = pytest.importorskip("dispatch.osqp_daily")
+D = pytest.importorskip("dispatch.osqp_daily_with_DOE")
+admm = pytest.importorskip("vpp.sharing_admm.sharing_admm")
+dd = pytest.importorskip("vpp.dual_decomposition.dual_decomposition")
+ts = pytest.importorskip("vpp.two_stage_doe_allocation.two_stage_doe_allocation")
+pbc = pytest.importorskip("vpp.price_based_control.price_based_control")
+fc = pytest.importorskip("vpp.fcas_cooptimisation.fcas_cooptimisation")
 
 T = vc.T
 E_MAX = 10.0

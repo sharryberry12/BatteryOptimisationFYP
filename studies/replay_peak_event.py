@@ -42,8 +42,13 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
-import osqp_daily as base  # noqa: E402
-from peak_duty_analysis import (  # noqa: E402
+# repo root on sys.path so `paths`, `dispatch.*`, `network.*`, `studies.*` import from any cwd
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import DATA_3Y_CSV, GLM_COMMON, GLM_DIR, RUNS  # noqa: E402
+from dispatch import osqp_daily as base  # noqa: E402
+from studies.peak_duty_analysis import (  # noqa: E402
     build_aggregate, demand_series, find_events,
     C_BLUE, C_ORANGE, C_RED, INK_2, MUTED, CACHE_DIR,
 )
@@ -229,7 +234,7 @@ def injected_aggregate(lc_map, profiles):
 
 
 def simulate(run_dir, csvs, args):
-    import elermorevale_openDSS as ev
+    from network import elermorevale_openDSS as ev
     fig_dir = os.path.join(run_dir, "figures")
     os.makedirs(fig_dir, exist_ok=True)
     ev.OUTPUT_DIR = fig_dir
@@ -328,7 +333,7 @@ def parse_args():
         description="Replay the worst peak event on the Elermore Vale "
                     "feeder with a peaker-mode battery fleet",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument("--data", default="data_3_years.csv")
+    p.add_argument("--data", default=str(DATA_3Y_CSV))
     p.add_argument("--focus", type=float, default=0.70,
                    help="Firm-capacity threshold as fraction of peak")
     p.add_argument("--date", default=None,
@@ -337,10 +342,10 @@ def parse_args():
     p.add_argument("--battery-kw", type=float, default=base.P_MAX)
     p.add_argument("--battery-kwh", type=float, default=base.E_MAX_DEFAULT)
     p.add_argument("--usable-frac", type=float, default=1.0)
-    p.add_argument("--glm-dir", default="Elermorevale")
-    p.add_argument("--common-dir", default="common")
+    p.add_argument("--glm-dir", default=str(GLM_DIR))
+    p.add_argument("--common-dir", default=str(GLM_COMMON))
     p.add_argument("--n-monitors", type=int, default=100)
-    p.add_argument("--runs-root", default="runs")
+    p.add_argument("--runs-root", default=str(RUNS))
     p.add_argument("--skip-network", action="store_true",
                    help="Stop after exporting the dispatch CSVs")
     return p.parse_args()

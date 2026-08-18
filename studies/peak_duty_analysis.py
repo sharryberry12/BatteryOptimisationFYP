@@ -34,7 +34,7 @@ Usage:
     python peak_duty_analysis.py --data data1.csv --focus 0.8 --save
 
 The first run aggregates the raw CSV (~minutes for the 3-year file) and
-caches the half-hourly aggregate under vpp/cache/; later runs start in
+caches the half-hourly aggregate under outputs/cache/; later runs start in
 seconds. Figures land in --output-dir (default figures/peak_duty/), along
 with duty_cycle_summary.csv and events_focus.csv.
 """
@@ -49,7 +49,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-import osqp_daily as base
+# repo root on sys.path so `paths` and `dispatch.*` import from any cwd
+import sys  # noqa: E402
+from pathlib import Path  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from paths import CACHE as _CACHE, DATA_3Y_CSV, FIGURES  # noqa: E402
+from dispatch import osqp_daily as base  # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,
@@ -62,7 +67,7 @@ DT = base.DT           # 0.5 h per interval
 T = base.T             # 48 intervals per day
 HOURS_PER_YEAR = 8766.0
 
-CACHE_DIR = os.path.join("vpp", "cache")
+CACHE_DIR = str(_CACHE)
 
 # Palette (validated reference palette, light mode)
 C_BLUE = "#2a78d6"     # primary series (net demand)
@@ -423,7 +428,7 @@ def fig_event_calendar(agg, demand, thr, focus, outdir, save):
 def parse_args():
     p = argparse.ArgumentParser(description=__doc__.split("\n")[3],
                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    p.add_argument("--data", default="data_3_years.csv",
+    p.add_argument("--data", default=str(DATA_3Y_CSV),
                    help="Ausgrid solar-home CSV")
     p.add_argument("--clean", action="store_true",
                    help="Apply the Ratnam et al. 2017 cleaning rules first")
@@ -442,7 +447,7 @@ def parse_args():
                    help="Fraction of capacity available at event start "
                         "(1.0 = pre-charged peaker; 0.5 = QP resting SOC)")
     p.add_argument("--save", action="store_true", help="Write figures + CSVs")
-    p.add_argument("--output-dir", default=os.path.join("figures", "peak_duty"))
+    p.add_argument("--output-dir", default=str(FIGURES / "peak_duty"))
     p.add_argument("--rebuild-cache", action="store_true")
     p.add_argument("--no-show", action="store_true",
                    help="Skip plt.show() (e.g. headless run)")

@@ -3,14 +3,18 @@ profiles, and does a fresh re-solve reproduce them (solver issue) or not
 (stale export)?"""
 import numpy as np
 import pandas as pd
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from paths import PROFILES  # noqa: E402
 
-import osqp_daily as base
+from dispatch import osqp_daily as base  # noqa: E402
 
 DT, T = base.DT, base.T
 E = base.E_MAX_DEFAULT
 tariff = base.build_tariff()
 
-df = pd.read_csv("profiles/fit_profiles.csv", nrows=48 * 365 * 30)
+df = pd.read_csv(PROFILES / "fit_profiles.csv", nrows=48 * 365 * 30)
 
 viol = []
 for (c, d), g in df.groupby(["customer", "date"]):
