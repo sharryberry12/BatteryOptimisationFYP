@@ -23,9 +23,15 @@ Subgradient iterates are not feasible in general; the ergodic (running
 average) primal iterate is also tracked, which converges for convex
 problems and is what gets reported.
 
+Step size: alpha0 must be commensurate with the dual scale (~50-120 on the
+Ausgrid instances). Measured 2026-08-18 on 8 households: alpha0=0.5 left
+|mu| at 36 of 68 (winter import cap) and 7 of 66 (summer export cap) after
+300 iterations; alpha0=10-50 recovers the centralised duals to ~1 %. The
+ergodic PRIMAL is the slow part (O(1/sqrt t)); the prices are not.
+
 Run from the repo root, e.g.:
     python vpp/dual_decomposition/dual_decomposition.py --save
-    python vpp/dual_decomposition/dual_decomposition.py --iters 500 --alpha0 1.0
+    python vpp/dual_decomposition/dual_decomposition.py --iters 500 --alpha0 20
 """
 
 import logging
@@ -90,8 +96,13 @@ def main():
         "Method C: dual decomposition via projected subgradient")
     parser.add_argument("--iters", type=int, default=300,
                         help="Subgradient iterations")
-    parser.add_argument("--alpha0", type=float, default=0.5,
-                        help="Initial step size (alpha_t = alpha0/sqrt(t))")
+    parser.add_argument("--alpha0", type=float, default=10.0,
+                        help="Initial step size (alpha_t = alpha0/sqrt(t)). "
+                             "Scale it with the dual magnitude: on the "
+                             "Ausgrid instances the binding coupling duals "
+                             "are ~50-120 $/kW-interval and 0.5 leaves the "
+                             "prices at half their value after 300 "
+                             "iterations; 10-50 converges (README)")
     parser.add_argument("--no-benchmark", action="store_true",
                         help="Skip the centralised ground-truth solve")
     args = parser.parse_args()

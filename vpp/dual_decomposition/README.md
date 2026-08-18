@@ -29,11 +29,35 @@ convex problems. The convergence figure also overlays the final `mu` against
 the centralised solve's coupling duals (`-y`) — at convergence they coincide,
 which is the cleanest correctness check available.
 
+## Tuning the step (measured 2026-08-18)
+
+`alpha0` has to be commensurate with the size of the duals it is trying to
+find. On 8-household Ausgrid instances the binding coupling duals are
+~68 $/kW-interval (winter, 2 kW/household import cap) and ~66 (summer,
+0.05 kW/household export cap):
+
+| alpha0 | winter: avg-primal violation / gap / \|mu\| after 300 it | summer: violation / gap / \|mu\| |
+|---|---|---|
+| 0.5 (old default) | 1.46 kW / −0.66 % / 36 | 0.39 kW / −3.3 % / 7 |
+| 5 | 0.15 kW / −0.12 % / 66 | 0.22 kW / −2.5 % / 43 |
+| 10 (default) | 0.08 kW / −0.01 % / 73 | — |
+| 20 | 0.00 kW / +0.17 % / 82 | 0.05 kW / −0.7 % / 65 |
+| 50 | — | 0.01 kW / −0.15 % / 66 |
+
+The prices converge quickly once the step is right; the **ergodic primal**
+is what converges at O(1/√t) (a negative "gap" means the averaged dispatch
+still slightly violates the cap — on a strongly binding cap a 0.1 kW
+residual is worth several % of the objective). Too large a step makes the
+last iterate oscillate (18–27 kW violation at alpha0 10–20 on the winter
+case) while the average is fine, which is why `--iterate avg` is the
+default. `tests/test_vpp_methods.py` pins mu → −y and the improvement with
+iterations on a synthetic ensemble.
+
 ## Run
 
 ```bash
 python vpp/dual_decomposition/dual_decomposition.py --save
-python vpp/dual_decomposition/dual_decomposition.py --iters 500 --alpha0 1.0 --save
+python vpp/dual_decomposition/dual_decomposition.py --iters 500 --alpha0 20 --save
 ```
 
 Outputs: violation-vs-iteration (last iterate and ergodic average), gap vs

@@ -155,8 +155,11 @@ def _run_two_stage(ctx, args):
 def _args_dual(p):
     p.add_argument("--iters", type=int, default=300,
                    help="Subgradient iterations")
-    p.add_argument("--alpha0", type=float, default=0.5,
-                   help="Initial step size (alpha_t = alpha0/sqrt(t))")
+    p.add_argument("--alpha0", type=float, default=10.0,
+                   help="Initial step size (alpha_t = alpha0/sqrt(t)); scale "
+                        "with the dual magnitude (~50-120 on the Ausgrid "
+                        "instances -- 0.5 under-converges, see the method "
+                        "README)")
     p.add_argument("--iterate", choices=["avg", "last"], default="avg",
                    help="Report the ergodic average (converges) or the "
                         "last iterate")

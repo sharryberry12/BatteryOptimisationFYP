@@ -144,7 +144,9 @@ def main():
     axes[1].plot(hours, agg_unc, color="tab:gray", label="uncoupled")
     axes[1].plot(hours, agg_pi, color="tab:blue", label="ADMM")
     if np.isfinite(d_min).any():
-        axes[1].plot(hours, d_min, "r--", label="envelope")
+        axes[1].plot(hours, d_min, "r--", label="envelope (export)")
+    if np.isfinite(d_max).any():
+        axes[1].plot(hours, d_max, "r--", label="envelope (import)")
     axes[1].set_xlabel("hour of day")
     axes[1].set_ylabel("feeder-head power (kW)")
     axes[1].legend()

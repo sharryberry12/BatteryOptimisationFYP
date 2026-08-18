@@ -119,6 +119,9 @@ def main():
 
     if np.isfinite(d_min).any():
         ax.plot(hours, d_min, "r--", label="feeder envelope (not enforced)")
+    if np.isfinite(d_max).any():
+        ax.plot(hours, d_max, "r--",
+                label=None if np.isfinite(d_min).any() else "feeder envelope (not enforced)")
     ax.axhline(0.0, color="k", lw=0.5)
     ax.set_xlabel("hour of day")
     ax.set_ylabel("feeder-head power (kW, +import)")
