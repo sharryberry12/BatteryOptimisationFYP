@@ -36,9 +36,12 @@ export cap (summer, aggregate violation 2.6 kW), while every rule shows a
 300–900 % objective gap versus Method A. That is a real property of
 allocate-then-solve with hard envelopes, but the zero fallback is
 *pessimistic*: a deployed inverter would curtail (export) or the household
-would simply exceed the cap with the battery still helping (import). A
-best-effort fallback (soft per-household DOE with a slack penalty, or a PV
-curtailment variable) is the natural next step — see studies/NETWORK_AWARE_DISPATCH.md §5.
+would simply exceed the cap with the battery still helping (import). The
+Part A DOE scheduler (`dispatch/osqp_daily_with_DOE.py`, since 2026-08-19)
+does exactly that — a PV-curtailment variable makes the export cap always
+feasible and an import-shortfall slack makes the import cap soft (see
+studies/NETWORK_AWARE_DISPATCH.md §4.1); porting those two variables into
+`vpp_common.HouseholdSolver` is the natural next step for this method.
 Note also that all four rules split the *import* side equally, so under a
 pure import cap they coincide.
 

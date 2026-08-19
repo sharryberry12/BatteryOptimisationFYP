@@ -17,8 +17,8 @@ Companion to NETWORK_AWARE_DISPATCH.md ("91 % of the QP's residual
 over-voltage is one transformer; 82 % of its under-voltage is 22:00-24:00").
 
 Usage (repo root):
-    python diag_violation_attribution.py [--profiles profiles/fit_profiles.csv]
-                                         [--every 15] [--feeder 7159]
+    python network/diagnostics/diag_violation_attribution.py \
+        [--profiles outputs/profiles/fit_profiles.csv] [--every 15] [--feeder 7159]
 """
 
 import argparse
