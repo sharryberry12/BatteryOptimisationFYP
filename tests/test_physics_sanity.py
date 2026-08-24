@@ -136,25 +136,28 @@ def test_losses_scale_superlinearly_with_load(ev):
 
 
 def test_golden_snapshot_regression(ev):
-    """Frozen reference solve (load-only, 1 kW/household), measured 2026-08
-    with dss-python 0.15.7 / DSS C-API 0.14.5, after four corrections:
-    three the Level 4 GridLAB-D cross-validation forced (bare-length=feet,
-    3-phase load kv = line-to-line, explicit Line phases= -- a 1-phase GLM
-    line with a shared 3-phase linecode used to energise phantom phases)
-    and the 2026-08-16 exclusion of the 25 BlueGen CHP `load` objects from
-    Generators2.glm (11 of them were energised 1 kW loads here, 14 floated
-    at 0 V; previous golden 1871.1 kW / 75.07 kW). Guards the whole
-    translation against silent regressions; re-derive deliberately if the
-    model or the engine version changes (see MODEL_VERIFICATION.md)."""
+    """Frozen reference solve (load-only, 1 kW/household), measured
+    2026-08-24 with dss-python 0.15.7 / DSS C-API 0.14.5, after the
+    GridLAB-D-faithful impedance rework (network/line_impedance.py):
+    modified-Carson matrices for the conductor-reference configs, exact
+    z1 = z11 - z12 sequence reduction for the z-matrix configs, the zone
+    transformer on GridLAB-D's L-N impedance base (xhl 35.8 -> 11.93) and
+    an ideal 132 kV source. Previous golden (z11-only + estimated LV
+    reactance): 1859.5 kW / 74.53 kW / 0.8301 / 0.9491 / 1.0048 -- that
+    model overstated line impedance ~2x on the backbone and measured
+    1.0-3.9% off GridLAB-D at Level 4; this one measures <= 0.02%.
+    Guards the whole translation against silent regressions; re-derive
+    deliberately if the model or the engine version changes (see
+    MODEL_VERIFICATION.md)."""
     build_load_only(ev, kw=REALISTIC_KW)
     solved(ev)
     v = live_voltages_pu(ev)
     p_source, _ = source_pq_kw(ev)
-    assert p_source == pytest.approx(1859.5, rel=0.01)
-    assert losses_kw(ev) == pytest.approx(74.53, rel=0.02)
-    assert v.min() == pytest.approx(0.8301, abs=0.01)
-    assert v.mean() == pytest.approx(0.9491, abs=0.01)
-    assert v.max() == pytest.approx(1.0048, abs=0.005)
+    assert p_source == pytest.approx(1849.4, rel=0.01)
+    assert losses_kw(ev) == pytest.approx(64.38, rel=0.02)
+    assert v.min() == pytest.approx(0.8619, abs=0.01)
+    assert v.mean() == pytest.approx(0.9600, abs=0.01)
+    assert v.max() == pytest.approx(1.0109, abs=0.005)
 
 
 def load_node_voltages_pu(ev):

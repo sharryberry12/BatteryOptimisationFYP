@@ -178,7 +178,13 @@ object line_configuration {
 object line_configuration {
     name Elermore_line_config_1;
     z11 0.306+0.627j;
+    z12 0.101+0.209j;
+    z13 0.101+0.209j;
+    z21 0.101+0.209j;
     z22 0.306+0.627j;
+    z23 0.101+0.209j;
+    z31 0.101+0.209j;
+    z32 0.101+0.209j;
     z33 0.306+0.627j;
 }
 """
@@ -192,23 +198,54 @@ def parsed_line_tables(ev, tmp_path):
 
 
 def test_parse_line_configs_conductors(parsed_line_tables):
-    conductors, configs = parsed_line_tables
+    conductors, configs, conductors_full, spacings = parsed_line_tables
     assert conductors["cond_OH_7/.064CU"] == (1.503, 149.0)
     # underground conductors use the 'resistance' property alias
     assert conductors["cond_UG_25mm"] == (0.884, 110.0)
     assert set(configs) == {"conf_OHLine_1ph", "Elermore_line_config_1"}
+    # full props keep the object type for the Carson OH/UG dispatch
+    assert conductors_full["cond_OH_7/.064CU"]["__type"] ==         "overhead_line_conductor"
+    assert conductors_full["cond_UG_25mm"]["__type"] ==         "underground_line_conductor"
+    assert spacings == {}
 
 
 # ==========================================================
-# extract_impedances -- the unit-conversion core
+# extract_impedances -- linecode spec table
 # ==========================================================
 
-def test_zmatrix_ohm_per_mile_to_km(ev):
-    configs = {"E1": {"z11": "0.306+0.627j"}}
-    r, x, rating, nph = ev.extract_impedances({}, configs)["E1"]
-    assert r == pytest.approx(0.306 / MI_TO_KM, abs=1e-5)
-    assert x == pytest.approx(0.627 / MI_TO_KM, abs=1e-5)
-    assert nph == 3
+def test_zmatrix_sequence_ohm_per_mile_to_km(ev):
+    """z1 = z11 - z12, z0 = z11 + 2 z12, Ohm/mile -> Ohm/km. Keeping only
+    z11 (the pre-2026-08 reduction) overstated the balanced impedance ~2x
+    wherever the source matrices carry mutual terms."""
+    configs = {"E1": {"z11": "0.306+0.627j", "z12": "0.101+0.209j",
+                      "z13": "0.101+0.209j", "z21": "0.101+0.209j",
+                      "z22": "0.306+0.627j", "z23": "0.101+0.209j",
+                      "z31": "0.101+0.209j", "z32": "0.101+0.209j",
+                      "z33": "0.306+0.627j"}}
+    spec = ev.extract_impedances({}, configs)["E1"]
+    assert spec["kind"] == "seq"
+    assert spec["r1"] == pytest.approx((0.306 - 0.101) / MI_TO_KM, abs=1e-5)
+    assert spec["x1"] == pytest.approx((0.627 - 0.209) / MI_TO_KM, abs=1e-5)
+    assert spec["r0"] == pytest.approx((0.306 + 2 * 0.101) / MI_TO_KM,
+                                       abs=1e-5)
+    assert spec["x0"] == pytest.approx((0.627 + 2 * 0.209) / MI_TO_KM,
+                                       abs=1e-5)
+    assert spec["nph"] == 3
+
+
+def test_zmatrix_implied_one_phase_diagonal_is_z11(ev):
+    """OpenDSS rebuilds a 1-phase line from a seq code as (z0 + 2 z1)/3 --
+    with the balanced reduction that is exactly z11, matching GridLAB-D's
+    declared-phase submatrix behaviour."""
+    configs = {"E1": {"z11": "0.306+0.627j", "z12": "0.101+0.209j",
+                      "z13": "0.101+0.209j", "z21": "0.101+0.209j",
+                      "z22": "0.306+0.627j", "z23": "0.101+0.209j",
+                      "z31": "0.101+0.209j", "z32": "0.101+0.209j",
+                      "z33": "0.306+0.627j"}}
+    spec = ev.extract_impedances({}, configs)["E1"]
+    zs = complex(spec["r0"] + 2 * spec["r1"], spec["x0"] + 2 * spec["x1"]) / 3
+    assert zs.real == pytest.approx(0.306 / MI_TO_KM, abs=1e-5)
+    assert zs.imag == pytest.approx(0.627 / MI_TO_KM, abs=1e-5)
 
 
 @pytest.mark.parametrize("z11, expected_rating", [
@@ -219,31 +256,42 @@ def test_zmatrix_ohm_per_mile_to_km(ev):
 ])
 def test_zmatrix_rating_tiers(ev, z11, expected_rating):
     result = ev.extract_impedances({}, {"cfg": {"z11": z11}})
-    assert result["cfg"][2] == expected_rating
+    assert result["cfg"]["amps"] == expected_rating
 
 
 def test_zmatrix_malformed_z11_degrades_to_zero(ev):
-    r, x, rating, nph = ev.extract_impedances(
+    spec = ev.extract_impedances(
         {}, {"cfg": {"z11": "not-a-number"}})["cfg"]
-    assert (r, x) == (0.0, 0.0)
+    assert (spec["r1"], spec["x1"]) == (0.0, 0.0)
 
 
-def test_conductor_reference_single_phase_overhead(ev):
+def test_conductor_reference_becomes_carson_spec(ev):
+    """Conductor-reference configs defer to the GridLAB-D-faithful Carson
+    computation (per line phase set, at line-emission time); the spec
+    carries the config, the OH/UG dispatch and the rating."""
     conductors = {"c_oh": (0.5, 150.0)}
-    configs = {"conf_OHLine_x": {"conductor_A": "c_oh"}}
-    r, x, rating, nph = ev.extract_impedances(conductors, configs)["conf_OHLine_x"]
-    assert r == pytest.approx(0.5 / MI_TO_KM, abs=1e-4)
-    assert x == 0.25              # estimated overhead reactance (documented)
-    assert rating == 150.0
-    assert nph == 1
+    full = {"c_oh": {"geometric_mean_radius": "0.03", "resistance": "0.5",
+                     "__type": "overhead_line_conductor"}}
+    configs = {"conf_OHLine_x": {"conductor_A": "c_oh",
+                                 "spacing": "sp"}}
+    spec = ev.extract_impedances(conductors, configs, full, {})["conf_OHLine_x"]
+    assert spec["kind"] == "carson"
+    assert spec["is_ug"] is False
+    assert spec["amps"] == 150.0
+    assert spec["nph"] == 1
+    assert spec["config"] is configs["conf_OHLine_x"]
 
 
-def test_conductor_reference_underground_and_three_phase(ev):
-    conductors = {"c_ug": (0.8, 110.0)}
-    configs = {"conf_UGLine_x": {"conductor_A": "c_ug", "conductor_B": "c_ug"}}
-    r, x, rating, nph = ev.extract_impedances(conductors, configs)["conf_UGLine_x"]
-    assert x == 0.08              # estimated underground reactance (documented)
-    assert nph == 3
+def test_conductor_reference_ug_dispatch_from_object_type(ev):
+    """OH/UG is decided by the conductor object's type when available,
+    not the config name."""
+    conductors = {"c": (0.8, 110.0)}
+    full = {"c": {"conductor_gmr": "0.02", "conductor_resistance": "0.8",
+                  "__type": "underground_line_conductor"}}
+    configs = {"conf_weird_name": {"conductor_A": "c", "conductor_B": "c"}}
+    spec = ev.extract_impedances(conductors, configs, full, {})["conf_weird_name"]
+    assert spec["is_ug"] is True
+    assert spec["nph"] == 3
 
 
 def test_config_without_impedance_source_is_omitted(ev):

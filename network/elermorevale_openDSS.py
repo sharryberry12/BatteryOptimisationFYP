@@ -60,6 +60,7 @@ import numpy as np
 # repo root on sys.path so `paths` imports from any cwd
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from paths import FIGURES, GLM_COMMON, GLM_DIR  # noqa: E402
+from network import line_impedance  # noqa: E402
 
 # --- OpenDSS engine (dss-python) ---
 try:
@@ -116,14 +117,19 @@ def parse_all_glm(glm_dir):
 
 def parse_line_configs(common_dir):
     """
-    Parse common/Line Configs.glm and return two dicts:
-      conductors : {name: (resistance_ohm_per_mile, summer_rating_A)}
-      configs    : {config_name: props_dict}
+    Parse common/Line Configs.glm and return four dicts:
+      conductors      : {name: (resistance_ohm_per_mile, summer_rating_A)}
+      configs         : {config_name: props_dict}
+      conductors_full : {name: props_dict + '__type'} — everything the
+                        Carson computation needs (GMR, diameters, ...)
+      spacings        : {name: props_dict} for line_spacing objects
     """
     path = os.path.join(common_dir, "Line Configs.glm")
     objs = parse_glm(path)
     conductors = {}
     configs = {}
+    conductors_full = {}
+    spacings = {}
     for ot, p in objs:
         if ot in ("overhead_line_conductor", "underground_line_conductor"):
             name = p.get("name", "")
@@ -131,24 +137,51 @@ def parse_line_configs(common_dir):
                              p.get("resistance", "0")))
             rating = gfloat(p.get("rating.summer.continuous", "0"))
             conductors[name] = (r, rating)
+            conductors_full[name] = dict(p, __type=ot)
         elif ot == "line_configuration":
             configs[p.get("name", "")] = p
-    return conductors, configs
+        elif ot == "line_spacing":
+            spacings[p.get("name", "")] = p
+    return conductors, configs, conductors_full, spacings
+
+
+def parse_nominal_frequency(common_dir, default=line_impedance.DEFAULT_FREQ):
+    """The GLM's system frequency (common/ModulePowerflow.glm sets
+    `nominal_frequency 50`); the Carson terms depend on it."""
+    path = os.path.join(common_dir, "ModulePowerflow.glm")
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            m = re.search(r"nominal_frequency\s+([\d.]+)", f.read())
+    except OSError:
+        m = None
+    return float(m.group(1)) if m else default
 
 
 # ==================================================================
 # IMPEDANCE EXTRACTION
 # ==================================================================
 
-def extract_impedances(conductors, configs):
+def extract_impedances(conductors, configs, conductors_full=None,
+                       spacings=None):
     """
-    Build a unified linecode table:
-        {config_name: (r1_ohm_per_km, x1_ohm_per_km, rating_A, nphases)}
+    Build a unified linecode-spec table {config_name: spec_dict}, one entry
+    per line_configuration that carries impedance data:
 
-    - Elermore_line_config_* : from z-matrix z11 field (Ohm/mile -> Ohm/km)
-    - conf_OHLine_* / conf_UGLine_* : from conductor resistance + estimated x
+    - Z-matrix configs (the 11 kV backbone) -> kind='seq':
+      exact sequence impedances z1 = z11 - z12, z0 = z11 + 2 z12 (all
+      source matrices are balanced — line_impedance.zmatrix_sequence_km
+      raises if one is not), Ohm/mile -> Ohm/km. OpenDSS reconstructs the
+      correct phase matrix from these for ANY declared phase subset.
+    - Conductor-reference configs (conf_OHLine_* / conf_UGLine_*) ->
+      kind='carson': the per-(config, phase-set) matrix is computed at
+      line-emission time by line_impedance.config_matrix_km, mirroring
+      GridLAB-D's modified-Carson + concentric-neutral model. The spec
+      carries what that computation needs.
+
+    Ratings keep the legacy heuristic (z11-resistance tiers for the
+    backbone, conductor summer rating for the rest) — they set normamps
+    only and play no part in the power flow.
     """
-    MI_TO_KM = 1.60934
     result = {}
 
     for name, p in configs.items():
@@ -158,28 +191,41 @@ def extract_impedances(conductors, configs):
                 z11 = complex(p["z11"].replace(" ", ""))
             except (ValueError, TypeError):
                 z11 = 0 + 0j
-            r_km = z11.real / MI_TO_KM
-            x_km = z11.imag / MI_TO_KM
-            if r_km < 0.001:
+            r11_km = z11.real / line_impedance.MI_TO_KM
+            if r11_km < 0.001:
                 rating = 1000       # busbar / jumper
-            elif r_km < 0.15:
+            elif r11_km < 0.15:
                 rating = 400
-            elif r_km < 0.30:
+            elif r11_km < 0.30:
                 rating = 300
             else:
                 rating = 250
-            result[name] = (round(r_km, 6), round(x_km, 6), rating, 3)
+            try:
+                z1, z0 = line_impedance.zmatrix_sequence_km(p)
+            except ValueError:
+                z1 = z0 = 0j        # malformed entries degrade to zero
+            result[name] = {
+                "kind": "seq",
+                "r1": round(z1.real, 6), "x1": round(z1.imag, 6),
+                "r0": round(z0.real, 6), "x0": round(z0.imag, 6),
+                "amps": rating, "nph": 3,
+            }
             continue
 
-        # --- Conductor-reference format (LV configs) ---
+        # --- Conductor-reference format (Carson from conductor data) ---
         cond_a = p.get("conductor_A", "")
         if not cond_a:
             continue
-        r_mi, rating = conductors.get(cond_a, (0, 0))
-        r_km = r_mi / MI_TO_KM
-        x_km = 0.08 if "UG" in name else 0.25
+        _, rating = conductors.get(cond_a, (0, 0))
         nph = 3 if "conductor_B" in p else 1
-        result[name] = (round(r_km, 4), round(x_km, 4), round(rating, 1), nph)
+        cond_type = (conductors_full or {}).get(cond_a, {}).get("__type", "")
+        result[name] = {
+            "kind": "carson",
+            "config": p,
+            "is_ug": (cond_type == "underground_line_conductor"
+                      if cond_type else "UG" in name),
+            "amps": round(rating, 1), "nph": nph,
+        }
 
     return result
 
@@ -296,12 +342,16 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
     logger.info("Parsed %d GridLAB-D objects", len(all_objs))
 
     logger.info("Parsing line configs from %s ...", common_dir)
-    conductors, lc_configs = parse_line_configs(common_dir)
-    logger.info("Found %d conductors, %d line configurations",
-                len(conductors), len(lc_configs))
+    conductors, lc_configs, conductors_full, lc_spacings = \
+        parse_line_configs(common_dir)
+    logger.info("Found %d conductors, %d line configurations, %d spacings",
+                len(conductors), len(lc_configs), len(lc_spacings))
 
-    linecodes = extract_impedances(conductors, lc_configs)
-    logger.info("Extracted %d linecodes with real impedance data", len(linecodes))
+    nominal_freq = parse_nominal_frequency(common_dir)
+    linecodes = extract_impedances(conductors, lc_configs,
+                                   conductors_full, lc_spacings)
+    logger.info("Extracted %d linecode specs (Carson terms at %g Hz)",
+                len(linecodes), nominal_freq)
 
     # Index parsed objects by type for easy lookup
     by_type = {}
@@ -351,28 +401,80 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
         "pu=1.0 "                         # source at nominal voltage
         "phases=3 "                       # three-phase
         "bus1=Jesmond_132kV_Bus "          # source bus name (from GLM)
-        "Isc3=20000 Isc1=21000"           # stiff source impedance
+        # The GridLAB-D reference pins this bus as an ideal SWING (zero
+        # source impedance); the earlier Isc3=20000 Isc1=21000 "stiff"
+        # source still dropped a uniform ~0.024% network-wide at the
+        # Level-4 operating point. R~0 with X tiny keeps OpenDSS happy
+        # and the source drop below 1e-4%.
+        "R1=0.00001 X1=0.0001 R0=0.00001 X0=0.0001"
     )
 
     # ================================================================
     # 2. LINECODES (from common/Line Configs.glm)
     # ================================================================
-    logger.info("Defining %d linecodes ...", len(linecodes))
-    for lc_name, (r1, x1, amps, nph) in linecodes.items():
+    # Sequence-impedance codes (z-matrix configs) are defined up front;
+    # Carson codes are per-(config, phase-set) and created lazily by
+    # carson_linecode() below, at first use by a line. Line charging is
+    # zeroed everywhere: GridLAB-D's line model carries no shunt
+    # capacitance (powerflow line_capacitance defaults to false), and
+    # OpenDSS's nonzero defaults would otherwise leak into the comparison.
+    n_seq = sum(1 for s in linecodes.values() if s["kind"] == "seq")
+    logger.info("Defining %d sequence linecodes (of %d specs) ...",
+                n_seq, len(linecodes))
+    for lc_name, spec in linecodes.items():
+        if spec["kind"] != "seq":
+            continue
         cmd.Command = (
-            f"New Linecode.{safe_name(lc_name)} nphases={nph} "
-            f"r1={r1} x1={x1} "              # positive-sequence impedance
-            f"r0={r1*3} x0={x1*3} "           # zero-sequence ~ 3x positive
-            f"units=km normamps={amps}"       # Ohm/km (converted from Ohm/mile)
+            f"New Linecode.{safe_name(lc_name)} nphases={spec['nph']} "
+            f"r1={spec['r1']} x1={spec['x1']} "
+            f"r0={spec['r0']} x0={spec['x0']} "
+            f"c1=0 c0=0 units=km normamps={spec['amps']}"
         )
+
+    def _mat_str(m):
+        """Lower-triangular OpenDSS matrix literal."""
+        return "[" + " | ".join(
+            " ".join(f"{m[i, j]:.6f}" for j in range(i + 1))
+            for i in range(m.shape[0])) + "]"
+
+    carson_codes = {}                    # (config, phase_str) -> code name
+
+    def carson_linecode(config_name, spec, ph_str):
+        """Return the linecode name for this (config, phase set), creating
+        it on first use from the GridLAB-D-faithful matrix; None when the
+        config lacks the data (caller falls back)."""
+        key = (config_name, ph_str)
+        if key in carson_codes:
+            return carson_codes[key]
+        try:
+            z_km, order = line_impedance.config_matrix_km(
+                spec["config"], conductors_full, lc_spacings,
+                ph_str, spec["is_ug"], nominal_freq)
+        except (KeyError, ValueError, np.linalg.LinAlgError) as exc:
+            logger.warning("Carson matrix failed for %s phases=%s (%s); "
+                           "using fallback impedance", config_name, ph_str,
+                           exc)
+            carson_codes[key] = None
+            return None
+        nph = z_km.shape[0]
+        code = f"{safe_name(config_name)}__{order}"
+        zeros = _mat_str(np.zeros((nph, nph)))
+        cmd.Command = (
+            f"New Linecode.{code} nphases={nph} units=km "
+            f"rmatrix={_mat_str(z_km.real)} xmatrix={_mat_str(z_km.imag)} "
+            f"cmatrix={zeros} normamps={spec['amps']}"
+        )
+        carson_codes[key] = code
+        return code
+
     # Fallbacks for any config not found in the common files
     cmd.Command = (
         "New Linecode.fallback_3ph nphases=3 "
-        "r1=0.4 x1=0.25 r0=1.2 x0=0.75 units=km normamps=200"
+        "r1=0.4 x1=0.25 r0=1.2 x0=0.75 c1=0 c0=0 units=km normamps=200"
     )
     cmd.Command = (
         "New Linecode.fallback_1ph nphases=1 "
-        "r1=1.2 x1=0.3 r0=3.6 x0=0.9 units=km normamps=80"
+        "r1=1.2 x1=0.3 r0=3.6 x0=0.9 c1=0 c0=0 units=km normamps=80"
     )
 
     # ================================================================
@@ -380,16 +482,27 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
     # ================================================================
     logger.info("Building 132/11 kV zone substation ...")
 
-    # Main transformer: 50 MVA, Delta primary, Wye-grounded secondary
-    # From GLM: impedance 0.0075 + 0.358j pu -> %R=0.75, %X=35.8
+    # Main transformer: 50 MVA, Delta primary, Wye-grounded secondary.
+    # From GLM: impedance 0.0075 + 0.358j pu. GridLAB-D refers that pu
+    # value to V_secondary^2 / kVA ohms with V_secondary AS WRITTEN in the
+    # transformer_configuration (transformer.cpp) — and this config states
+    # its voltages LINE-TO-NEUTRAL (76210.24 / 6350.85 V), so the engine's
+    # effective ohms are (V_LL/sqrt(3))^2/S = one third of the standard
+    # 11 kV L-L / 50 MVA base the OpenDSS percentages are on. Divide by 3
+    # to reproduce the reference model's actual drop: 0.75%/3 = 0.25% R,
+    # 35.8%/3 = 11.9333% X. (The distribution transformers state 433 V =
+    # L-L, where the two conventions coincide — no correction there.)
+    # Measured before this fix (Level 4): a uniform -0.376% offset on the
+    # whole 11 kV+LV network at 1 kW/load, i.e. 3x the reference's zone-TX
+    # drop; the 132 kV side agreed to 0.02%.
     cmd.Command = (
         "New Transformer.TXZoneSub phases=3 windings=2 "
         "buses=[Jesmond_132kV_Bus, BusZoneSubOLTC] "
         "conns=[delta, wye] "                 # Dyn connection
         "kvs=[132, 11] "                      # 132 kV / 11 kV
         "kvas=[50000, 50000] "                # 50 MVA
-        "%Rs=[0.375, 0.375] "                 # total %R = 0.75
-        "xhl=35.8"                            # leakage reactance
+        "%Rs=[0.125, 0.125] "                 # total %R = 0.75/3 = 0.25
+        "xhl=11.9333"                         # 35.8/3, see comment above
     )
 
     # OLTC: modelled as a unity-ratio autotransformer with RegControl
@@ -445,19 +558,28 @@ def build_elermorevale(glm_dir, common_dir, skip_generators=False, oltc=False):
         bus2 = to_b + suffix
 
         # Match to a real linecode, or fall back
-        if config in linecodes:
-            lc = safe_name(config)
-        else:
+        spec = linecodes.get(config)
+        if spec is None:
             if config:
                 unmapped.add(config)
             lc = "fallback_3ph" if nph == 3 else "fallback_1ph"
+        elif spec["kind"] == "carson":
+            # Per-(config, phase-set) matrix code mirroring GridLAB-D's
+            # Carson/concentric-neutral computation for exactly the
+            # conductors this line energises (created on first use).
+            lc = carson_linecode(config, spec, phases)
+            if lc is None:
+                lc = "fallback_3ph" if nph == 3 else "fallback_1ph"
+        else:
+            lc = safe_name(config)
 
         # phases= must FOLLOW linecode=: assigning a linecode forces the
         # line to the code's phase count, so a 1-phase GLM line with a
         # shared 3-phase config would pad bus.1 to bus.1.2.3 and energise
         # phantom phases (caught by the Level 4 DSS-coverage guard).
         # Setting phases afterwards rebuilds Z for nph from the code's
-        # symmetrical components (all linecodes here are r1/x1/r0/x0).
+        # symmetrical components (seq codes; for Carson matrix codes the
+        # counts already match by construction).
         cmd.Command = (
             f"New Line.{safe_name(name)} "
             f"bus1={bus1} bus2={bus2} "

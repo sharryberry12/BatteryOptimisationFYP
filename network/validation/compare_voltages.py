@@ -34,14 +34,15 @@ from pathlib import Path
 
 import numpy as np
 
-REPO = Path(__file__).resolve().parents[1]
+VALID = Path(__file__).resolve().parent
+REPO = VALID.parents[1]
 sys.path.insert(0, str(REPO))
 
 from paths import GLM_COMMON, GLM_DIR  # noqa: E402
 from network import elermorevale_openDSS as ev  # noqa: E402
 
-GLD_DUMP = REPO / "validation" / "voltages_gld.csv"
-OUT_CSV = REPO / "validation" / "voltage_comparison.csv"
+GLD_DUMP = VALID / "voltages_gld.csv"
+OUT_CSV = VALID / "voltage_comparison.csv"
 
 LOAD_KW = 1.0
 # Line-to-neutral voltage bases (V); bases differ by >25x so nearest-ratio

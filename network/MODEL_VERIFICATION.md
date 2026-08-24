@@ -40,9 +40,10 @@ faulthandler would otherwise print as a scary-but-benign
 | Level | What | Status |
 |-------|------|--------|
 | 1 | Unit tests on the pure translation functions | ✅ [../tests/test_glm_translation.py](../tests/test_glm_translation.py) |
+| 1.5 | Line-impedance engine vs GridLAB-D itself (frozen mini-model voltdump) | ✅ [../tests/test_line_impedance.py](../tests/test_line_impedance.py) |
 | 2 | Invariants: GLM source vs built DSS circuit | ✅ [../tests/test_translation_invariants.py](../tests/test_translation_invariants.py) |
 | 3 | Physics sanity tests (known-answer power flows) | ✅ [../tests/test_physics_sanity.py](../tests/test_physics_sanity.py) |
-| 4 | Cross-validation against GridLAB-D | ✅ [validation/](validation/) + [../tests/test_validation_harness.py](../tests/test_validation_harness.py) — measured agreement ~1.0 % mean at 11 kV, ~1.1 % at LV, 3.9 % max at one feeder tail (results below) |
+| 4 | Cross-validation against GridLAB-D | ✅ [validation/](validation/) + [../tests/test_validation_harness.py](../tests/test_validation_harness.py) — measured agreement ≤0.001 % at 11 kV, 0.010 % mean / 0.020 % max at LV (results below) |
 
 ## Level 1 — unit tests (synthetic inputs, no repo data)
 
@@ -51,10 +52,10 @@ highest-value assertions and the silent failure they guard against:
 
 | Test | Guards against |
 |------|----------------|
-| `test_zmatrix_ohm_per_mile_to_km` | wrong Ω/mile → Ω/km conversion — a **61 % error in every impedance** that still produces plausible-looking voltages |
+| `test_zmatrix_sequence_ohm_per_mile_to_km` | wrong Ω/mile → Ω/km conversion — a **61 % error in every impedance** that still produces plausible-looking voltages — and the z1 = z11 − z12 / z0 = z11 + 2 z12 sequence reduction (keeping only z11, as before 2026-08-24, ran the backbone at ~2× its true balanced impedance) |
 | `test_zmatrix_rating_tiers` | mis-binned heuristic ampacity ratings |
 | `test_zmatrix_malformed_z11_degrades_to_zero` | pins the documented degrade-to-jumper behaviour for unparseable z-matrices |
-| `test_conductor_reference_*` | LV conductor lookup, estimated reactances (0.25 OH / 0.08 UG Ω/km), 1-vs-3-phase detection |
+| `test_conductor_reference_*` | conductor-reference configs dispatching to the Carson engine (OH/UG decided by conductor object type), rating passthrough, 1-vs-3-phase detection |
 | `test_gfloat_*` | unit-suffix stripping (`"11.59 m^2"`), fallback defaults |
 | `test_phase_mapping*` | GLM `AN/BN/CN/ABCN` → DSS `.1/.2/.3` bus suffixes; delta/neutral markers |
 | `test_safe_name*` | name sanitisation and idempotence |
@@ -109,11 +110,27 @@ If the GLM sources are ever regenerated, re-derive these numbers (parse with
 The translation is an approximation **by design**; the tests pin fidelity *to
 this approximation*, not to a perfect electromagnetic model:
 
-- **Balanced-line reduction**: `extract_impedances` keeps only `z11` from the
-  GLM's 3×3 impedance matrix — off-diagonal mutual coupling and inter-phase
-  asymmetry are discarded.
-- **Estimated LV reactances**: x = 0.25 (overhead) / 0.08 (underground) Ω/km
-  are engineering guesses, not data.
+- ~~Balanced-line reduction~~ / ~~estimated LV reactances~~ — **closed
+  2026-08-24** by [line_impedance.py](line_impedance.py): conductor-reference
+  configs now get per-(config, phase-set) matrices from GridLAB-D's own
+  modified-Carson + concentric-neutral equations (50 Hz, 100 Ω·m, empirically
+  pinned against GridLAB-D 5.3 — `tests/test_line_impedance.py`), and
+  z-matrix configs get the exact balanced sequence reduction z1 = z11 − z12,
+  z0 = z11 + 2 z12 (the old z11-only reduction ran the backbone at ~2× its
+  true balanced impedance). What remains approximate: the source matrices are
+  the model author's data, not conductor datasheets, and some k=1
+  concentric-neutral cables Kron-reduce to a negative diagonal reactance —
+  GridLAB-D warns and solves with the same numbers, so the translation
+  reproduces them rather than "fixing" them.
+- **Transformer impedance follows GridLAB-D's referral convention**: pu
+  impedance × V_secondary²/kVA ohms with V_secondary *as written in the GLM*.
+  The zone transformer's config states line-to-neutral voltages, so its
+  effective impedance base is one third of the standard 11 kV L-L base
+  (OpenDSS gets xhl 35.8/3 = 11.93 %); the distribution transformers state
+  433 V = L-L, where the conventions coincide.
+- **No line charging**: GridLAB-D's line model carries no shunt capacitance
+  (`line_capacitance` defaults false), so every linecode sets c1 = c0 = 0
+  rather than inherit OpenDSS's nonzero defaults.
 - **Heuristic ampacity ratings**: binned by resistance tier, not from
   conductor datasheets.
 - **Default load power**: every load is created at 3 kW / 0.95 pf; real
@@ -132,7 +149,9 @@ this approximation*, not to a perfect electromagnetic model:
   include that file at all (only the 40 Redflow batteries from it are
   translated). See defect #6.
 
-These bound the achievable agreement in Level 4: expect *close*, not exact.
+With the impedance rework these no longer bound Level 4 — the measured
+agreement is ≤0.02 % everywhere (below); what bounds it now is numerical
+(solver tolerances, the 1 mm switch stand-ins).
 
 ## Level 3 — physics sanity tests (known-answer power flows)
 
@@ -148,7 +167,7 @@ losses, measured post-fix 2026-08), pushing constant-P loads below their
 | `test_energy_conservation` | source P = Σ actual load P + losses (0.1 %) |
 | `test_transformer_voltage_drop_matches_hand_calc` | solved 11 kV bus dip matches dV ≈ P·R + Q·X from the GLM's zone-transformer impedance (measured agreement ~2×10⁻⁴ pu) |
 | `test_losses_scale_superlinearly_with_load` | loads ×1.2 → min V falls, loss ratio in (1.2, 1.2³); measured 1.49 ≈ quadratic |
-| `test_golden_snapshot_regression` | frozen reference solve: source 1,859.5 kW, losses 74.5 kW, V min/mean/max 0.830/0.949/1.005 pu (dss-python 0.15.7 / DSS C-API 0.14.5, post fixes #3–#6 below; was 1,871.1 kW / 75.1 kW with the 11 energised BlueGen loads) |
+| `test_golden_snapshot_regression` | frozen reference solve: source 1,849.4 kW, losses 64.4 kW, V min/mean/max 0.862/0.960/1.011 pu (dss-python 0.15.7 / DSS C-API 0.14.5, post the 2026-08-24 impedance rework; was 1,859.5 kW / 74.5 kW / 0.830 / 0.949 / 1.005 on the z11-only model, and 1,871.1 kW / 75.1 kW with the 11 energised BlueGen loads before that) |
 | `test_full_model_snapshot_energises_network` | full model (PV + generator-modelled batteries) solves and energises all 4,597 network node-phases — guards the Storage-defect workaround below |
 | `test_every_load_sits_on_an_energised_node_phase` | (×3: profile mode, profile mode + OLTC, full model) no Load connects to a node-phase that solves to < 0.5 pu — the per-node-phase check that `Topology.NumIsolatedLoads` cannot do; guards defect #6 |
 
@@ -282,26 +301,46 @@ be collapsed rather than absent. `tests/test_validation_harness.py`
 unit-tests the harness text surgery and pins the raw-name join contract
 and load-kv semantics the comparison depends on.
 
-**Result (4,597 matched node-phases — 100 % of live OpenDSS nodes):**
+**Result (4,597 matched node-phases — 100 % of live OpenDSS nodes,
+after the 2026-08-24 impedance rework):**
 
 | Level | n | mean \|ΔV\| | p95 | max |
 |-------|---|---------|-----|-----|
-| 132 kV | 3 | 0.03 % | 0.03 % | 0.03 % |
-| 11 kV | 306 | 1.01 % | 1.33 % | 1.35 % |
-| LV | 4,288 | 1.10 % | 1.82 % | 3.90 % |
+| 132 kV | 3 | 0.000 % | 0.000 % | 0.000 % |
+| 11 kV | 306 | 0.000 % | 0.001 % | 0.001 % |
+| LV | 4,288 | 0.010 % | 0.017 % | 0.020 % |
 
-Stated as measured: **~1.0 % mean at 11 kV (p95 1.33 %), ~1.1 % mean at
-LV, 3.9 % max** at the tail of one long feeder (FDR_61210L). This is
-consistent with the pre-registered expectation of roughly 1 % at 11 kV
-and a few % at LV extremities; the 11 kV mean sits marginally above the
-1.0 % figure, and the residual gap is the documented approximation by
-construction: the translation drops the z-matrix mutual-coupling terms
-and uses estimated LV reactances, and OpenDSS sits consistently slightly
-lower — worst at feeder tails.
+Stated as measured: **exact at 132/11 kV to solver tolerance, 0.010 %
+mean / 0.020 % max at LV.** The two engines now solve the same
+impedances, so the residual is numerical (NR tolerances, the 1 mm
+switch stand-ins), not modelling.
+
+How the 2026-08-19 gap (1.0 % mean / 3.9 % max) decomposed, each step
+measured by re-running this comparison:
+
+1. **z11-only backbone reduction** — keeping z11 as the sequence
+   impedance ran every mutual-coupled 11 kV line at ~2× its balanced
+   impedance (z1 = z11 − z12; the source matrices carry z12 ≈ z11/2),
+   and `r0 = 3·r1` inflated every single-phase spur by 5/3. With the
+   estimated LV reactances replaced by the Carson engine as well:
+   1.008/1.097/3.90 % → 0.368/0.369/0.44 %.
+2. **Zone-transformer impedance base** — the remaining error was one
+   uniform −0.376 % network-wide offset: GridLAB-D refers the pu
+   impedance to V_secondary²/kVA with the config's LINE-TO-NEUTRAL
+   6350.85 V, one third of the 11 kV L-L base the OpenDSS percentages
+   assumed. xhl 35.8 → 11.93: max error → 0.026 %.
+3. **Ideal source** — the last uniform 0.024 % was the OpenDSS Vsource's
+   default short-circuit impedance vs the reference's ideal SWING;
+   R1≈0, X1≈0: the table above.
+
 **The thesis claim this supports: translation verified (Levels 1–3),
-approximation measured at ~1 % mean / ≤3.9 % max (Level 4).**
+and the OpenDSS model reproduces the GridLAB-D reference to ≤0.02 %
+(Level 4) — the two engines agree on this network.**
 
-History: the first comparison run showed 4.8–5.3 % systematic deviation
+History: the 2026-08-19 comparison measured 1.01 % mean at 11 kV /
+1.10 % at LV / 3.90 % max and attributed the gap to the then-documented
+approximations; the decomposition above closed it. Earlier: the first
+comparison run showed 4.8–5.3 % systematic deviation
 and caught the bare-length=feet bug (Known defects #3). The first
 *harness* revision then reported 1.02 %/1.09 % over only 4,366
 node-phases — a join-key bug (safe_name applied to one side only)

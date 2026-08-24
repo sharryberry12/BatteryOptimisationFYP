@@ -1,5 +1,16 @@
 # Network-aware dispatch on Elermore Vale — can the batteries be made to enforce zero voltage violations?
 
+> **Model epoch warning (2026-08-24):** the OpenDSS translation was
+> reworked after this note was written — GridLAB-D-faithful Carson line
+> impedances, the exact z-matrix sequence reduction, the zone-transformer
+> impedance base and an ideal source (network/MODEL_VERIFICATION.md,
+> Level 4 agreement now ≤0.02 %). The old model overstated line
+> impedance (backbone ~2×), so every violation count, V min and loss
+> figure below is PESSIMISTIC relative to the current model. The numbers
+> remain internally comparable (baseline vs QP vs DOE all ran on the same
+> old model) but must not be mixed with runs made after 2026-08-24;
+> regenerate the sweeps to update them.
+
 *Working note, 2026-08-16; §4 extended 2026-08-19 with the import-side
 envelope and PV-curtailment experiment. Answers the question raised after
 the 2026-08-13 sweeps: "how can I enforce 0 voltage violations? or do some
@@ -410,9 +421,10 @@ splits the violation-points by feeder and by hour.
   times), so load coincidence is that of 152 households, not 1,785, and
   every battery makes the same decision at the same minute.
 - Distribution-transformer taps are at nominal; Ausgrid boosts them.
-- LV reactances are estimates (0.25 / 0.08 Ω/km); the balanced-line
-  reduction discards mutual coupling (network/MODEL_VERIFICATION.md "Known
-  approximations"). Level 4 puts the LV agreement with GridLAB-D at ~1 %.
+- Line impedances mirror GridLAB-D's Carson/concentric-neutral model
+  since 2026-08-24 (network/line_impedance.py); Level 4 puts the
+  agreement with GridLAB-D at ≤0.02 % — but see the model-epoch note at
+  the top: the numbers in this document predate that rework.
 - No inverter volt-var / volt-watt on the network side and no OLTC on the
   distribution transformers. PV curtailment exists only as the DOE
   scheduler's `c` variable, i.e. only when an export cap binds in the

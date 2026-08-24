@@ -45,10 +45,14 @@ def glm_objects(ev):
 
 @pytest.fixture(scope="session")
 def line_tables(ev):
-    """(conductors, configs, linecodes) from common/Line Configs.glm."""
-    conductors, configs = ev.parse_line_configs(str(COMMON_DIR))
-    linecodes = ev.extract_impedances(conductors, configs)
-    return conductors, configs, linecodes
+    """(conductors, configs, linecodes, conductors_full, spacings) from
+    common/Line Configs.glm; linecodes values are spec dicts (kind='seq'
+    for z-matrix configs, kind='carson' for conductor-reference ones)."""
+    conductors, configs, conductors_full, spacings = \
+        ev.parse_line_configs(str(COMMON_DIR))
+    linecodes = ev.extract_impedances(conductors, configs,
+                                      conductors_full, spacings)
+    return conductors, configs, linecodes, conductors_full, spacings
 
 
 @pytest.fixture(scope="session")
