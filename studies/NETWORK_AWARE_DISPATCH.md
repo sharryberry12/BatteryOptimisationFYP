@@ -1,24 +1,27 @@
 # Network-aware dispatch on Elermore Vale — can the batteries be made to enforce zero voltage violations?
 
-> **Model epoch warning (2026-08-24):** the OpenDSS translation was
-> reworked after this note was written — GridLAB-D-faithful Carson line
-> impedances, the exact z-matrix sequence reduction, the zone-transformer
-> impedance base and an ideal source (network/MODEL_VERIFICATION.md,
-> Level 4 agreement now ≤0.02 %). The old model overstated line
-> impedance (backbone ~2×), so every violation count, V min and loss
-> figure below is PESSIMISTIC relative to the current model. The numbers
-> remain internally comparable (baseline vs QP vs DOE all ran on the same
-> old model) but must not be mixed with runs made after 2026-08-24;
-> regenerate the sweeps to update them.
+> **Model epoch (2026-08-24):** the OpenDSS translation was reworked —
+> GridLAB-D-faithful Carson line impedances, the exact z-matrix sequence
+> reduction, the zone-transformer impedance base and an ideal source
+> (network/MODEL_VERIFICATION.md, Level 4 agreement now ≤0.02 %) — and
+> **every sweep, representative day and attribution in this note was
+> regenerated on the reworked model the same day** (the pre-rework
+> outputs are archived as `outputs/figures/*.stale-20260824`). The old
+> model overstated line impedance (backbone ~2×), so its numbers — e.g.
+> a 132,170-point baseline, QP V min 0.813, the export caps clipping up
+> to 10 % of residual over-voltage — are pessimistic and must not be
+> mixed with anything below.
 
 *Working note, 2026-08-16; §4 extended 2026-08-19 with the import-side
-envelope and PV-curtailment experiment. Answers the question raised after
-the 2026-08-13 sweeps: "how can I enforce 0 voltage violations? or do some
-violations occur in real life?" Every number below comes from the model as
-fixed on 2026-08-16 (network/MODEL_VERIFICATION.md defects #2 and #6 closed)
+envelope and PV-curtailment experiment; all network numbers regenerated
+2026-08-24 on the impedance-reworked model (see the epoch note above).
+Answers the question raised after the 2026-08-13 sweeps: "how can I
+enforce 0 voltage violations? or do some violations occur in real life?"
+Every number below comes from the model as of 2026-08-24
+(network/line_impedance.py; Level 4 agreement with GridLAB-D ≤0.02 %)
 and the DOE scheduler as of 2026-08-19 (envelope actually enforced, PV
-curtailment and import shortfall as decision variables — see §4.1). Numbers
-from earlier runs are not comparable.*
+curtailment and import shortfall as decision variables — see §4.1).
+Numbers from earlier runs are not comparable.*
 
 ## 0. TL;DR
 
@@ -30,17 +33,18 @@ from earlier runs are not comparable.*
   *design target for the batteries* worth quantifying, not a physical
   expectation for this feeder.
 - **The R15 QP moves the problem, it does not remove it.** Over the year the
-  QP dispatch cuts violation-points by 26–29 % (fit / net) — almost entirely
+  QP dispatch cuts violation-points by 24–27 % (fit / net) — almost entirely
   over-voltage at midday — but the synchronised charging it induces raises
-  under-voltage: mean daily V min falls 0.883 → 0.813 pu, mean daily peak
-  substation power rises 2.4 → 3.7 MW, annual losses ×4.3 (§2).
+  under-voltage (4,801 → 15,128 points): mean daily V min falls 0.923 →
+  0.847 pu, mean daily peak substation power rises 2.4 → 3.7 MW, annual
+  losses ×4.4 (§2).
 - **The zone-substation OLTC cannot help.** With the regulator active the
-  11 kV bus sits at 0.9955–1.0004 pu all day, inside its ±1 % band; the tap
+  11 kV bus sits at 0.9979–1.0002 pu all day, inside its ±1 % band; the tap
   never moves and every result is identical to controls-off. The violations
   are LV-side, downstream of the distribution transformers (§3).
 - **Export-cap DOEs on the QP act only at the margin here** (§4.2–4.3): with
   PV curtailment holding the cap on every day, the tightest envelopes
-  (0.6 kW flat, `tight`) remove ~10 % of the QP's remaining over-voltage —
+  (0.6 kW flat, `tight`) remove ~6.5 % of the QP's remaining over-voltage —
   the inverter clipping 2.6–2.9 % of the year's PV at a handful of large
   systems, at a cost that falls almost entirely on them (median household
   ±$0.03/yr, worst −$2,600–2,800; fleet mean −10 %) — and none of its
@@ -50,28 +54,28 @@ from earlier runs are not comparable.*
   actually been enforced before 2026-08-16 (§4.1) — the DOE numbers here
   are the first real ones.
 - **What the plain QP leaves is two specific things, not a diffuse
-  problem.** 91 % of its residual over-voltage points sit on the LV feeder
+  problem.** 95 % of its residual over-voltage points sit on the LV feeder
   of one transformer (`HP00007159`, +2.56 % boost tap in the GLM) that is
   above 1.10 pu whenever it is lightly loaded — a DNSP tap-setting matter no
-  dispatch can fix; and 82 % of its under-voltage points fall in
+  dispatch can fix; and 96 % of its under-voltage points fall in
   22:00–24:00, when every battery starts charging at 5 kW as the off-peak
-  tariff begins (feeder-head peak 4.1 → 5.9 MW).
+  tariff begins (feeder-head peak 4.0 → 5.9 MW).
 - **An import-side envelope is the lever that works** (§4.4). A flat
-  2 kW/household import cap on the same QP takes the year to **75,011
-  violation-points, 43 % below baseline** (plain QP: 26 % below): under-voltage
-  26,199 → 13,571 (baseline 11,472), mean daily V min 0.813 → 0.876
-  (baseline 0.883), mean daily peak substation power 3.77 → 2.83 MW
-  (baseline 2.44), annual losses ×2.4 instead of ×4.3 — and it also trims
-  over-voltage (71,839 → 61,440) because more of the charging moves under
+  2 kW/household import cap on the same QP takes the year to **66,422
+  violation-points, 41 % below baseline** (plain QP: 24 % below): under-voltage
+  15,128 → 6,078 (baseline 4,801), mean daily V min 0.847 → 0.910
+  (baseline 0.923), mean daily peak substation power 3.75 → 2.81 MW
+  (baseline 2.42), annual losses ×2.4 instead of ×4.4 — and it also trims
+  over-voltage (69,799 → 60,344) because more of the charging moves under
   the PV peak. Cost: 12 % of the savings ($365 → $323/yr) and 38 MWh/yr of
   import the battery cannot bring under the cap on the coldest / hottest
   13 % of customer-days (a flat cap is the wrong shape for those days; the
   shortfall variable measures exactly that).
 - **What is still left** after the import cap is the HP00007159 feeder on
-  the over side (still 91 % of the residual over-points) and, on the under
+  the over side (still 94 % of the residual over-points) and, on the under
   side, the fact that every household still steps to *its* cap at 22:00
-  (71 % of the residual under-points) plus a thin all-night band while the
-  batteries recharge at the cap (27 %); the evening-peak (17:00–19:30)
+  (89 % of the residual under-points) plus a thin all-night band while the
+  batteries recharge at the cap (9 %); the evening-peak (17:00–19:30)
   under-voltage the baseline has is gone entirely. §5 lists what to try
   next — a time-shaped / feeder-derived import envelope, staggered charge
   start, and the HP00007159 tap sensitivity — and what each needs from the
@@ -95,21 +99,29 @@ no battery) and **QP** (grid = load − PV − b with b from `osqp_daily.py`,
 
 | Metric (per day unless noted) | Baseline | QP (fit) | QP (net) |
 |---|---|---|---|
-| Violation-points, annual | 132,170 | 98,038 (−25.8 %) | 93,610 (−29.2 %) |
-| Violation-points, daily mean / max | 362 / 1,023 | 269 / 456 | 257 / 431 |
-| Days QP < baseline | — | 223 / 365 | 226 / 365 |
-| Mean daily V min (pu) | 0.883 | 0.813 | 0.816 |
-| Worst V min in the year (pu) | 0.705 | 0.622 | 0.623 |
-| Mean daily V max (pu) | 1.150 | 1.131 | 1.127 |
-| Mean daily peak substation P (kW) | 2,440 | 3,770 | 3,732 |
-| Worst peak substation P (kW) | 5,653 | 7,584 | 7,506 |
-| Mean daily losses (kW, day-sum of interval losses) | 71.9 | 312.1 | 308.4 |
+| Violation-points, annual | 112,070 | 84,927 (−24.2 %) | 81,538 (−27.2 %) |
+| … of which over / under | 107,269 / 4,801 | 69,799 / 15,128 | 66,668 / 14,870 |
+| Violation-points, daily mean / max | 307 / 906 | 233 / 403 | 223 / 324 |
+| Days QP < baseline | — | 215 / 365 | 216 / 365 |
+| Mean daily V min (pu) | 0.923 | 0.847 | 0.849 |
+| Worst V min in the year (pu) | 0.742 | 0.648 | 0.650 |
+| Mean daily V max (pu) | 1.145 | 1.127 | 1.123 |
+| Mean daily peak substation P (kW) | 2,424 | 3,746 | 3,708 |
+| Worst peak substation P (kW) | 5,639 | 7,661 | 7,578 |
+| Mean daily losses (kW, day-sum of interval losses) | 61.9 | 272.1 | 268.9 |
 
-The over/under split (added 2026-08-16) shows the mechanism on the winter
-representative day (2010-07-01, net profiles): baseline 141 over / 126 under
-→ QP 60 over / **182 under**. Every battery starts charging at 5 kW the
-moment the off-peak tariff begins (22:00), and 1,785 copies of the same
-decision put a new 5.9 MW peak on a feeder whose baseline peak was 4.1 MW.
+Relative to the pre-rework model the baseline lost 15 % of its
+violation-points (132,170 → 112,070), almost all on the under side
+(11,472 → 4,801): halving the backbone impedance mostly relieves
+voltage *drop*, so the over-voltage share is now 96 % of the baseline
+problem. The QP's relative effect is unchanged (−24 to −27 %), and it
+still trades over-voltage for under-voltage: 4,801 → 15,128 points.
+
+The over/under split shows the mechanism on the winter representative
+day (2010-07-01, net profiles): baseline 118 over / 61 under → QP 66
+over / **110 under**. Every battery starts charging at 5 kW the moment
+the off-peak tariff begins (22:00), and 1,785 copies of the same
+decision put a new 5.9 MW peak on a feeder whose baseline peak was 4.0 MW.
 This is the classic tariff-herding effect; it is not an artefact of the
 translation, it is what a price-only objective does at scale.
 
@@ -122,8 +134,10 @@ mechanism is verified: in the 3 kW-placeholder snapshot the tap moves to
 1.025 (`tests/test_zone_regcontrol_*`).
 
 With real profiles it never moves. On both representative days the 11 kV
-bus stays between **0.9955 and 1.0004 pu** for all 48 intervals — the 132 kV
-source is stiff and the zone transformer drop at 4 MW is < 0.5 % — so the
+bus stays between **0.9979 and 1.0002 pu** for all 48 intervals — the 132 kV
+source is ideal and the zone transformer drop even at the QP's 5.9 MW peak
+is ~0.2 % (the 2026-08-24 rework put the zone TX on GridLAB-D's impedance
+base, a third of what the model used before) — so the
 regulator sits at neutral and every metric in `outputs/figures/net_oltc/summaries.txt`
 is byte-identical to `outputs/figures/net/summaries.txt`. The violations live across
 the distribution transformers and LV feeders (2–3 % drop each way), out of
@@ -225,30 +239,31 @@ solver tolerance, not an envelope the battery could not meet.
 `python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_doe_<scenario>.csv --full --save --output-dir outputs/figures/doe_<scenario>`
 
 Full year, 100 monitors × 48 intervals × 365 days; baseline (no battery)
-is the same in every row: **132,170** violation-points = 120,698 over +
-11,472 under. `qp_*` columns are the dispatched scenario.
+is the same in every row: **112,070** violation-points = 107,269 over +
+4,801 under. `qp_*` columns are the dispatched scenario.
 
 | Dispatch | Violation-points | over (> +10 %) | under (< −6 %) | mean daily V min / worst | mean daily V max / worst | mean daily peak TX (kW) |
 |---|---|---|---|---|---|---|
-| Baseline (no battery) | 132,170 | 120,698 | 11,472 | 0.883 / 0.705 | 1.150 / 1.193 | 2,440 |
-| QP, fit profiles (no DOE) | 98,038 (−26 %) | 71,839 | 26,199 | 0.813 / 0.622 | 1.131 / 1.153 | 3,770 |
-| QP, net profiles (no DOE) | 93,610 (−29 %) | 67,808 | 25,802 | 0.816 / 0.623 | 1.127 / 1.150 | 3,732 |
-| QP + DOE 2.4 kW export cap | 95,727 (−28 %) | 69,480 | 26,247 | 0.813 / 0.622 | 1.125 / 1.147 | 3,771 |
-| QP + DOE 1.2 kW export cap | 93,123 (−30 %) | 66,867 | 26,256 | 0.813 / 0.622 | 1.122 / 1.139 | 3,770 |
-| QP + DOE 0.6 kW export cap | 90,887 (−31 %) | 64,649 | 26,238 | 0.813 / 0.622 | 1.119 / 1.129 | 3,767 |
-| QP + DOE `tight` (1.5/0.9/0.45 kW) | 90,609 (−31 %) | 64,400 | 26,209 | 0.813 / 0.622 | 1.118 / 1.129 | 3,767 |
+| Baseline (no battery) | 112,070 | 107,269 | 4,801 | 0.923 / 0.742 | 1.145 / 1.180 | 2,424 |
+| QP, fit profiles (no DOE) | 84,927 (−24 %) | 69,799 | 15,128 | 0.847 / 0.648 | 1.127 / 1.147 | 3,746 |
+| QP, net profiles (no DOE) | 81,538 (−27 %) | 66,668 | 14,870 | 0.849 / 0.650 | 1.123 / 1.144 | 3,708 |
+| QP + DOE 2.4 kW export cap | 83,756 (−25 %) | 68,611 | 15,145 | 0.847 / 0.648 | 1.123 / 1.142 | 3,747 |
+| QP + DOE 1.2 kW export cap | 81,868 (−27 %) | 66,725 | 15,143 | 0.847 / 0.648 | 1.120 / 1.135 | 3,747 |
+| QP + DOE 0.6 kW export cap | 80,357 (−28 %) | 65,235 | 15,122 | 0.847 / 0.649 | 1.118 / 1.127 | 3,743 |
+| QP + DOE `tight` (1.5/0.9/0.45 kW) | 80,366 (−28 %) | 65,245 | 15,121 | 0.847 / 0.649 | 1.118 / 1.127 | 3,743 |
 
 Three things the table says:
 
 1. **The export caps act only on the over-voltage side, and only at the
-   margin.** Now that the cap is held by curtailment on every day, the
-   envelopes do more than the 2026-08-16 fallback runs suggested (0.4–3.6 %):
-   the 2.4 / 1.2 / 0.6 kW caps remove 3.3 / 6.9 / 10.0 % of the QP's
-   over-voltage points and `tight` 10.4 %, and each pulls the worst-day
-   V max down (1.153 → 1.147 / 1.139 / 1.129 / 1.129 pu) — that is the
+   margin.** With curtailment holding the cap on every day, the
+   2.4 / 1.2 / 0.6 kW caps remove 1.7 / 4.4 / 6.5 % of the QP's
+   over-voltage points and `tight` 6.5 %, and each pulls the worst-day
+   V max down (1.147 → 1.142 / 1.135 / 1.127 / 1.127 pu) — that is the
    inverter clipping the handful of large-PV households (§4.2) whose export
-   the battery cannot absorb. Under-voltage does not move (26,199 →
-   26,209–26,256 across the four sets) and neither do V min, peak
+   the battery cannot absorb. (On the pre-2026-08-24 model the same caps
+   measured 3.3–10.4 %: the old overstated impedance made voltage twice as
+   sensitive to the clipped export.) Under-voltage does not move (15,128 →
+   15,121–15,145 across the four sets) and neither do V min, peak
    substation power or losses.
    The caps have little to work on because the plain fit QP already charges
    into the PV peak: on the summer representative day the aggregate PV peak
@@ -258,14 +273,14 @@ Three things the table says:
    averages 0.25 kW; only 17 of 152 customers ever export more than 0.6 kW
    on that day.
 2. **What the QP leaves behind on the over-voltage side is one transformer.**
-   Attributing points on 25 days spread through the year: 91 % of the QP's
+   Attributing points on 25 days spread through the year: 95 % of the QP's
    residual over-voltage points sit on the 7 monitors behind
    `HP00007159GTX00000001_TX` (300 kVA, GLM `primary_voltage 10725` — a
    +2.56 % off-load boost tap; 433 V × 11000/10725 = 444 V, 256 V L-N =
    1.068 pu on the 240 V base before any load effect). Those loads sit above
-   1.10 pu in every light-load interval (07:00–21:30 on the summer day: 210
-   of the QP's 252 over-points that day) whatever the dispatch does. In the
-   baseline the same feeder is 31 % of the over-points; PV export elsewhere
+   1.10 pu through every light-load interval (07:00–21:30) whatever the
+   dispatch does. In the
+   baseline the same feeder is 36 % of the over-points; PV export elsewhere
    is the rest, and that is the part the QP removes. **This is a tap-setting
    question for the DNSP, not a battery-scheduling one** — and it is a
    modelling one for the thesis: on the 240 V base the AS 60038 window is
@@ -273,20 +288,21 @@ Three things the table says:
    held at exactly 1.0 pu, and the boost tap the source encodes was set for a
    feeder without 155 PV systems.
 3. **What the QP adds on the under-voltage side is the 22:00 charging block.**
-   82 % of the QP's under-voltage points fall in 22:00–24:00 (baseline:
-   13 %); on the winter day 40 of the 100 monitors are below 0.94 pu at
-   22:00 (V min 0.737) as every battery starts charging at 5 kW the moment the
-   off-peak tariff begins, lifting the feeder-head peak from 4.08 MW
-   (18:00, baseline) to 5.93 MW (22:00). Export caps cannot see this; it needs
+   96 % of the QP's under-voltage points fall in 22:00–24:00 (baseline:
+   14 %); on the winter day V min drops to 0.754 pu at
+   22:00 as every battery starts charging at 5 kW the moment the
+   off-peak tariff begins, lifting the feeder-head peak from 4.04 MW
+   (18:00, baseline) to 5.89 MW (22:00). Export caps cannot see this; it needs
    an *import*-side constraint or de-synchronisation (§5, items 1 and 3).
 
 So the honest answer to "how do I enforce zero violations": on this model
 you cannot get there from the export side. The plain QP already does most
-of the export side's job, and the tightest cap buys only another 7 % of
-the residual (98 k → 91 k points/yr) by clipping a few large-PV
-households. What remains splits into a static tap-boost feeder (DNSP-side,
-~2/3) and synchronised charging (dispatch-side, ~1/4) — the second is
-exactly what an import envelope targets (§4.4).
+of the export side's job, and the tightest cap buys only another ~5 % of
+the residual (84.9 k → 80.4 k points/yr) by clipping a few large-PV
+households. What remains is dominated by over-voltage on the boosted
+HP00007159 feeder (DNSP-side) plus the QP's synchronised 22:00 charging
+(dispatch-side) — the second is exactly what an import envelope targets
+(§4.4).
 
 ### 4.4 Import-cap scenarios — the lever that works
 
@@ -325,39 +341,40 @@ cold night. No PV is curtailed in either set (no export cap is active).
 
 | Dispatch | Violation-points | over (> +10 %) | under (< −6 %) | mean daily V min / worst | mean daily V max | mean daily peak TX (kW) | mean daily losses (kW) |
 |---|---|---|---|---|---|---|---|
-| Baseline (no battery) | 132,170 | 120,698 | 11,472 | 0.883 / 0.705 | 1.150 | 2,440 | 71.9 |
-| QP, fit profiles (no DOE) | 98,038 (−26 %) | 71,839 | 26,199 | 0.813 / 0.622 | 1.131 | 3,770 | 312.1 |
-| QP + 3 kW import cap | 87,830 (−34 %) | 68,137 | 19,693 | 0.838 / 0.655 | 1.130 | 3,339 | 241.3 |
-| QP + 2 kW import cap | **75,011 (−43 %)** | 61,440 | 13,571 | 0.876 / 0.665 | 1.129 | 2,827 | 171.9 |
+| Baseline (no battery) | 112,070 | 107,269 | 4,801 | 0.923 / 0.742 | 1.145 | 2,424 | 61.9 |
+| QP, fit profiles (no DOE) | 84,927 (−24 %) | 69,799 | 15,128 | 0.847 / 0.648 | 1.127 | 3,746 | 272.1 |
+| QP + 3 kW import cap | 76,862 (−31 %) | 66,452 | 10,410 | 0.872 / 0.678 | 1.127 | 3,316 | 209.7 |
+| QP + 2 kW import cap | **66,422 (−41 %)** | 60,344 | 6,078 | 0.910 / 0.690 | 1.126 | 2,808 | 149.0 |
 
 Four things the tables say:
 
 1. **The import cap fixes what the QP broke.** Under-voltage points fall
-   from 26,199 back to 13,571 (baseline 11,472), mean daily V min recovers
-   from 0.813 to 0.876 pu (baseline 0.883), the mean daily feeder-head peak
-   drops from 3.77 to 2.83 MW (baseline 2.44) and annual losses go from ×4.3
+   from 15,128 back to 6,078 (baseline 4,801), mean daily V min recovers
+   from 0.847 to 0.910 pu (baseline 0.923), the mean daily feeder-head peak
+   drops from 3.75 to 2.81 MW (baseline 2.42) and annual losses go from ×4.4
    to ×2.4 of baseline. The 22:00 step is now capped at 2 kW of grid import
    per household instead of load + 5 kW of charging.
-2. **It also trims over-voltage** (71,839 → 61,440, −14 %) although it never
+2. **It also trims over-voltage** (69,799 → 60,344, −14 %) although it never
    touches export: with the night's charging capped at ~1 kW above load the
    battery cannot fill in the off-peak window, so more of its 10 kWh is
    charged under the midday PV peak, and less PV is exported.
 3. **The cost is modest and measurable**: 12 % of the savings ($365 → $323
    per year) at 2 kW, 4 % at 3 kW, plus the unmet import above. Relative to
    the plain QP, the 3 kW cap buys 44 % of the 2 kW cap's violation
-   reduction for 35 % of its savings cost — the response is close to linear
-   in the cap over this range.
+   reduction (8,065 of 18,505 points) for 35 % of its savings cost — the
+   response is close to linear in the cap over this range, on both model
+   epochs.
 4. **What is left, from the 25-day attribution** (`diag_violation_attribution.py`
-   on `fit_doe_none_imp2`): over-voltage is still 91 % feeder HP00007159
-   (3,611 of 3,984 points) — and it now runs later into the day
-   (14:00–20:00 carries ~2× the points per half-hour of the morning) because
-   the batteries discharge through the evening peak to hold imports under
-   the cap, lifting that already-boosted feeder further. Under-voltage
-   (852 points on the 25 days; baseline 763) is 71 % in 22:00–24:00 — every
-   household still steps to *its* 2 kW cap at the same minute — 27 % in a
+   on `fit_doe_none_imp2`): over-voltage is still 94 % feeder HP00007159
+   (3,720 of 3,948 points) — and it runs later into the day
+   (14:00–20:00 carries ~1.5× the points per half-hour of the morning)
+   because the batteries discharge through the evening peak to hold imports
+   under the cap, lifting that already-boosted feeder further. Under-voltage
+   (457 points on the 25 days; baseline 301) is 89 % in 22:00–24:00 — every
+   household still steps to *its* 2 kW cap at the same minute — 9 % in a
    thin all-night band (00:00–06:30) while the batteries recharge at the cap,
    2 % at 20:00–21:30, and **none between 17:00 and 19:30**, where the baseline
-   has 63 % of its under-voltage (383 of 763): the batteries carry the
+   has 47 % of its under-voltage (141 of 301): the batteries carry the
    evening peak. A flat cap has therefore removed the evening-peak
    under-voltage and halved the 22:00 block; what remains is the
    synchronisation itself, which a flat per-household number cannot address
@@ -375,7 +392,7 @@ remaining options, ordered by how much of the existing code each reuses:
 
 1. **Shape the import envelope in time.** A flat number is simultaneously
    too tight for a 37 kWh winter day (38 MWh/yr of shortfall) and not tight
-   enough at 22:00 (everyone steps to 2 kW together — 71 % of the residual
+   enough at 22:00 (everyone steps to 2 kW together — 89 % of the residual
    under-points). Two shapes to run, both a scenario branch in
    `generate_doe_envelope()` (`doe_max` is currently flat): a tighter cap in
    22:00–24:00 that relaxes after midnight, and a per-interval cap derived
@@ -390,7 +407,7 @@ remaining options, ordered by how much of the existing code each reuses:
 3. **Network side: the HP00007159 tap.** Setting that transformer's
    `primary_voltage` to 11000 (neutral tap) in the model — one number in
    `TransformerConfigs.glm`, or an override in `build_elermorevale` — would
-   remove ~90 % of the residual over-voltage at a stroke (still 91 % of it
+   remove ~90 % of the residual over-voltage at a stroke (still 94 % of it
    after the import cap, and now extending into 14:00–20:00 as the batteries
    discharge through the evening) and is what a DNSP would do first on a
    feeder that has grown 155 PV systems. Worth running as a sensitivity so
@@ -410,7 +427,7 @@ remaining options, ordered by how much of the existing code each reuses:
    Highest fidelity, largest change; only worth it after 1–3 have shown what
    a per-household envelope cannot reach.
 
-The attribution numbers (91 % / 82 % for the plain QP; 91 % / 71 % after the
+The attribution numbers (95 % / 96 % for the plain QP; 94 % / 89 % after the
 2 kW import cap) come from `network/diagnostics/diag_violation_attribution.py`,
 which re-runs baseline and the dispatched profile set on every 15th day and
 splits the violation-points by feeder and by hour.
