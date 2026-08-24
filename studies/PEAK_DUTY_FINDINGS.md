@@ -7,6 +7,18 @@ plant* whose value is firm capacity, not bill savings. Produced by
 Elermore Vale OpenDSS model). Figures in `outputs/figures/peak_duty/` and
 `outputs/runs/peak_replay_*/figures/`.
 
+> **Model epoch warning (2026-08-24):** the network-side numbers in §
+> below (the feeder-head replay table — peak P, v_min, violation points —
+> and the "~450 of the 1,273 violation points" claim) were produced on the
+> pre-2026-08-24 OpenDSS model, which overstated line impedance (~2× on
+> the backbone; see network/MODEL_VERIFICATION.md). They are pessimistic
+> on voltages and violation counts; the *dispatch-side* results (duty
+> cycle, event sizing, 772 kW peak, 2.23 kW / 10.0 kWh per household) do
+> not touch the network model and stand. Regeneration is blocked on
+> `data/data_3_years.csv`, which is no longer on this machine — restore
+> it and re-run `python studies/replay_peak_event.py` to update the
+> replay table on the corrected model.
+
 ## 1. Why this analysis exists
 
 The supervisor notes reframe the project: the point of a VPP is to act like
