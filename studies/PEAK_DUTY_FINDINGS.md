@@ -182,6 +182,70 @@ Three physical findings the kW-bookkeeping could not show:
 Run artifacts (dispatch CSVs, `replay_summary.csv`, `manifest.json` with
 fleet IDs and sizing provenance) are under `outputs/runs/peak_replay_2011-02-05_*/`.
 
+## 5b. How many households must participate? (1-year window, 2026-08-25)
+
+The question "how many households would need to participate in the VPP to
+account for the excess demand" has no single number — it depends on where
+the firm-capacity threshold is set — so here is the full participation
+curve, computed on the one-year `data/data.csv` window (which contains the
+same 2011-02-05 worst event as the 3-year analysis above, so the focus
+numbers coincide):
+
+```bash
+python studies/peak_duty_analysis.py --data data/data.csv --save --output-dir outputs/figures/peak_duty_1yr
+```
+
+Panel: 300 households (scaled), aggregate peak **772.1 kW = 2.57
+kW/household** at 2011-02-05 18:30. "Excess demand" at threshold f = demand
+above f × 772 kW; each participant contributes a 5 kW / 10 kWh battery,
+pre-charged before the event.
+
+| Hold feeder at | Excess to cover (worst event) | Households required | % of all households | VPP runs | Cycles/battery/yr |
+|---|---|---|---|---|---|
+| 90 % of peak (695 kW) | 77 kW / 179 kWh | 18 | 6.0 % | 7 h/yr, 2 events | 1.6 |
+| 85 % (656 kW) | 116 kW / 349 kWh | 35 | 11.7 % | 8.5 h/yr, 3 | 1.7 |
+| 80 % (618 kW) | 154 kW / 551 kWh | 56 | 18.7 % | 13 h/yr, 5 | 1.8 |
+| 75 % (579 kW) | 193 kW / 778 kWh | 78 | 26.0 % | 19 h/yr, 6 | 2.0 |
+| **70 % (540 kW)** | **232 kW / 1,040 kWh** | **104** | **34.7 %** | 32 h/yr, 14 | 2.4 |
+| 65 % (502 kW) | 270 kW / 1,339 kWh | 134 | 44.7 % | 79 h/yr, 39 | 3.5 |
+| 60 % (463 kW) | 309 kW / 1,668 kWh | 167 | 55.7 % | 169 h/yr, 75 | 5.5 |
+| 50 % (386 kW) | 386 kW / 2,489 kWh | 249 | 83.0 % | 555 h/yr, 244 | 14.3 |
+
+What the curve says:
+
+1. **Participation is set by energy, not power, at every practical
+   threshold.** The worst events are long (7.5–11 h evening plateaus), so
+   the 10 kWh battery, not the 5 kW inverter, is the binding constraint
+   everywhere below the 95 % threshold: n = ⌈worst-event kWh / 10 kWh⌉.
+   Doubling every battery's energy would halve the required participation;
+   doubling inverter power changes nothing.
+2. **The practical answer is roughly one household in three.** Holding the
+   feeder at the study's 70 % firm-capacity target needs 104 of 300
+   households (34.7 %) — at Elermore Vale scale, ~620 of the 1,785
+   households — and each participant is asked for only 2.4
+   full-cycle-equivalents per year. A modest 10 % reduction of peak (the
+   90 % row) needs just 6 % participation.
+3. **Below ~65 % the ask explodes.** Threshold fractions under 0.65 push
+   the VPP from a peaker (tens of hours/yr) into baseload-shaving
+   (hundreds of hours/yr): required participation grows past 45 % and
+   per-battery duty past 3.5 cycles/yr; by 50 % it needs 83 % of all
+   households cycling 14×/yr. The peaker framing only makes economic sense
+   in the top ~30 % of the demand range.
+4. **Pre-charge notice halves the fleet requirement — or doubles it.**
+   The table assumes the full 10 kWh is available when the event starts
+   (`--usable-frac 1.0`). In the Part A QP world batteries idle at 50 %
+   SOC; with no notice to pre-charge (`--usable-frac 0.5`) every
+   energy-limited row doubles: the 70 % target then needs 208 households
+   (69 %). Firm-capacity products need a day-ahead warning signal more
+   than they need more batteries.
+
+Caveats: per-event sizing assumes full recharge between events (one
+February event pair violates the bound — sizing is slightly optimistic
+there); no round-trip losses; one year of data (but the binding event is
+the same one the 3-year analysis found). Dispatch-side only — these
+numbers do not touch the network model and are unaffected by the
+2026-08-24 impedance rework. Figures: `outputs/figures/peak_duty_1yr/`.
+
 ## 6. Limitations & next steps
 
 - **Dataset ≠ feeder.** The 300 Ausgrid customers are all solar homes;
