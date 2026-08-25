@@ -221,6 +221,31 @@ Distribution shape is preserved including the **long left tail of customers with
 under net metering**. Differences vs [1] attributed to OSQP (ADMM, default parameters) vs the
 quadprog interior-point solver.
 
+### 6b. VPP participation required to cover the feeder's excess demand (2026-08-25)
+
+From `studies/peak_duty_analysis.py` on the one-year window (full derivation, caveats
+and the complete threshold sweep: `studies/PEAK_DUTY_FINDINGS.md` §5b). Aggregate peak
+772 kW = 2.57 kW/household (2011-02-05 18:30, 300-household scaled panel); "excess
+demand" at threshold f = demand above f × peak; each participant = one 5 kW / 10 kWh
+battery, pre-charged.
+
+| Hold feeder at | Households required | % of all households | Duty |
+|---|---|---|---|
+| 90 % of peak | 18 | 6.0 % | 7 h/yr |
+| 80 % | 56 | 18.7 % | 13 h/yr |
+| **70 %** | **104** | **34.7 %** (~620 at feeder scale) | 32 h/yr, 2.4 cycles |
+| 60 % | 167 | 55.7 % | 169 h/yr |
+| 50 % | 249 | 83.0 % | 555 h/yr |
+
+Four headline facts: sizing is **energy-limited** at every practical threshold
+(n = ⌈worst-event kWh / 10 kWh⌉ — the binding events are 7.5–11 h evening plateaus, so
+battery kWh matters and inverter kW does not); the practical answer is **about one
+household in three** for the 70 % firm-capacity target; below a ~65 % threshold the
+VPP stops being a peaker and the ask explodes; and with no pre-charge notice
+(batteries idling at the QP's 50 % SOC) every energy-limited count **doubles**
+(70 % target → 208 households, 69 %). Dispatch-side only — unaffected by the
+2026-08-24 network-model epoch.
+
 ---
 
 ## 7. OpenDSS network validation
