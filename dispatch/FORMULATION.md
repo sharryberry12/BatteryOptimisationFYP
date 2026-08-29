@@ -104,14 +104,20 @@ Block-rows 1–4 act on the `beta` block, 5–6 on the `pi` block:
 [-I   0 ]           [ -D_min     ]
 ```
 
-> **⚠ Known sign ambiguity — verify against the code before trusting the paper.**
-> The printed `A1` in the paper shows the SOC block-rows as `[0 T]` paired with `C_hi` and
-> `[0 -T]` paired with `-C_lo`. That contradicts the inline derivation `-C_lo <= -T*beta <= C_hi`
-> immediately above it, which requires `-T*beta <= C_hi` **and** `T*beta <= C_lo`. The version
-> written in the block above is the one consistent with the physics (β positive on discharge
-> drains SOC). **Action for any agent working here: check what the code actually assembles, run a
-> forward SOC simulation on a solved dispatch, and confirm `0 <= chi_k <= C` holds. If the code
-> matches the paper's printed matrix, the paper has a typo and needs correcting for Part B.**
+> **⚠ Sign ambiguity in the PAPER's printed matrix — RESOLVED for this codebase (verified
+> 2026-08-29).** The printed `A1` in the paper shows the SOC block-rows as `[0 T]` paired with
+> `C_hi` and `[0 -T]` paired with `-C_lo`. That contradicts the inline derivation
+> `-C_lo <= -T*beta <= C_hi` immediately above it, which requires `-T*beta <= C_hi` **and**
+> `T*beta <= C_lo`. The block above shows the derivation's (physics-consistent) orientation —
+> β positive on discharge drains SOC — and **that is what the code assembles**:
+> `build_constraints` in `osqp_daily.py` stacks `-A_soc` (negated `tril·Δ`) with bounds
+> `[-soc_init, e_max - soc_init]`, which is exactly `0 <= chi_k <= e_max`; the DOE variant
+> mirrors the same rows. The band is pinned by forward-simulated SOC checks (not read back from
+> the constraint matrix): `tests/test_doe_constraints.py` asserts `0 - 1e-4 <= soc <= E_MAX + 1e-4`
+> on solved dispatches, including a case that fills the battery before curtailing — which would
+> fail immediately under the flipped orientation. **Conclusion: the paper's printed matrix has
+> the typo; cite the inline derivation, not the printed `A1`, when reproducing this in the
+> thesis.**
 
 ### Cost function
 
