@@ -24,13 +24,11 @@ existing script remains independently runnable.
 
 Today the two halves of the project don't talk to each other:
 
-- **VPP side** (`vpp/`): six coupling methods, each ultimately producing an
+- **VPP side** (`vpp/`): two coupling methods, each ultimately producing an
   `(N, T)` battery dispatch matrix `B` for one day over a `households` ensemble
   built by `vpp_common.setup_ensemble()`. But each method exposes `B` differently
-  (`CentralisedResult.B`, `run_admm → (B, hist, t)`, `run_dual → {"B_last",
-  "B_avg"}`, `run_rule → (B, curtail_kwh, n_failed)`, `solve_fcas → (B, R, dt,
-  status)`, price-based `→ B`), each inside its own `main()` with method-specific
-  CLI flags. Results live in memory and figures; nothing is exported for the
+  (`CentralisedResult.B` versus `run_rule → (B, curtail_kw, shortfall_kw,
+  n_failed)`), each inside its own `main()` with method-specific CLI flags. Results live in memory and figures; nothing is exported for the
   network stage.
 
 - **OpenDSS side** (`elermorevale_openDSS.py`): knows nothing about
@@ -57,7 +55,7 @@ run_vpp_network.py  (orchestrator, repo root)
 │           → households, date_iso, tariff, (d_min, d_max)
 │
 ├─ Stage 2  Method dispatch       vpp/registry.py
-│           registry["sharing_admm"].run(households, d_min, d_max, cfg)
+│           registry["centralised_qp"].run(households, d_min, d_max, cfg)
 │           → VPPDispatch(B, converged, iters, solve_time, extras)
 │
 ├─ Stage 3  Artifact export       vpp/export.py
@@ -75,7 +73,7 @@ run_vpp_network.py  (orchestrator, repo root)
 ```
 
 New code is only three pieces — a **registry**, an **exporter**, and the
-**orchestrator**. The six method scripts and the OpenDSS scripts stay standalone.
+**orchestrator**. The two method scripts and the OpenDSS scripts stay standalone.
 
 ---
 
@@ -91,37 +89,29 @@ functions behind a uniform interface.
 class VPPDispatch:
     B: np.ndarray          # (N, T) battery dispatch, +ve = discharge
     method: str
-    converged: bool        # False when e.g. ADMM hits its iteration cap
+    converged: bool        # False when soft slack is non-zero or a two-stage slice fails
     iterations: int | None
     solve_time: float
-    extras: dict           # method-specific: residual history, curtail_kwh,
-                           # FCAS reserve schedule R, duals, slack, ...
+    extras: dict           # method-specific: coupling duals, soft slack,
+                           # curtail_kwh, n_failed_households, ...
 
 @dataclass
 class MethodSpec:
     name: str
-    add_args: Callable[[argparse.ArgumentParser], None]   # rho, iters, rule, tau, ...
+    add_args: Callable[[argparse.ArgumentParser], None]   # --soft/--penalty, --rule, ...
     run: Callable[[households, d_min, d_max, args], VPPDispatch]
 
-REGISTRY: dict[str, MethodSpec]   # centralised_qp, dual_decomposition,
-                                  # sharing_admm, price_based_control,
-                                  # two_stage_doe_allocation, fcas_cooptimisation
+REGISTRY: dict[str, MethodSpec]   # centralised_qp, two_stage_doe_allocation
 ```
 
 - The `run` adapters are thin wrappers around functions that **already exist**
-  (`solve_centralised`, `run_admm`, `run_dual`, `run_rule`, `solve_fcas`, …).
-  Zero changes to the method files.
+  (`solve_centralised`, `run_rule`). Zero changes to the method files.
 - `VPPDispatch` carries convergence metadata so the manifest records *how* the
-  dispatch was obtained, not just the numbers — this matters when ADMM exhausts
-  iterations or the hard centralised QP is infeasible.
-- For dual decomposition, the adapter must pick `B_last` vs `B_avg` — make it a
-  method flag with `B_avg` as the default (the feasibility-averaged iterate).
-- FCAS is a slight outlier: its reserve schedule `R` has no meaning in an
-  energy-only power flow. The adapter injects only `B` and stashes `R` in
-  `extras`.
+  dispatch was obtained, not just the numbers — this matters when the hard
+  centralised QP is infeasible or a two-stage slice cannot be met.
 
 **CLI shape:** argparse **subcommands**
-(`run_vpp_network.py sharing_admm --rho 0.5 --n-households 145 …`). Each
+(`run_vpp_network.py centralised_qp --soft --n-households 145 …`). Each
 method's flags stay namespaced via its `add_args`; shared flags (ensemble,
 envelope scenario, network, output) are registered on the parent parser,
 reusing the option set of `vpp_common.standard_argparser`.
@@ -226,7 +216,7 @@ elements. Three reconciliation semantics:
 | Option | Semantics | Cost / notes |
 |---|---|---|
 | **Replicate** (round-robin, like today) | Feeder = k copies of the VPP ensemble; envelope arithmetic stays honest because the envelope is `export_limit × N` and scales proportionally with replication | Cheap. **Recommended default.** |
-| **Exact** (`N = n_loads`) | Every network load individually coupled — the "true" whole-feeder VPP | Centralised QP ≈ 86k variables (fine for sparse OSQP); iterative methods solve 1,785 sub-QPs per iteration — slow but tractable. Offer as a flag for a headline result. |
+| **Exact** (`N = n_loads`) | Every network load individually coupled — the "true" whole-feeder VPP | Centralised QP ≈ 86k variables (fine for sparse OSQP); two-stage solves 1,785 independent sub-QPs once — trivially parallel. Offer as a flag for a headline result. |
 | **Subset** | N VPP households mapped to specific loads (e.g. one distribution transformer's customers); rest of feeder runs baseline profiles | Models partial VPP penetration — the most realistic scenario, but needs topology-aware mapping. **Future work.** |
 
 Default **replicate**: consistent with the repo's existing practice
@@ -238,8 +228,8 @@ the comparison self-consistent.
 
 ## 5. Failure modes and gotchas
 
-- **Non-convergence is a result, not a crash.** ADMM/dual hitting the iteration
-  cap, or a hard-infeasible envelope, should still export a dispatch with
+- **Non-convergence is a result, not a crash.** A hard-infeasible envelope, or
+  a two-stage slice no household can meet, should still export a dispatch with
   `converged=False` recorded in the manifest and a prominent warning. The
   centralised method's `--soft` penalty mode is the existing fallback for
   infeasible envelopes.
@@ -261,7 +251,7 @@ the comparison self-consistent.
 
 Each step leaves the repo in a working state:
 
-1. **`vpp/registry.py`** — `VPPDispatch`, `MethodSpec`, adapters for all six
+1. **`vpp/registry.py`** — `VPPDispatch`, `MethodSpec`, adapters for both
    methods (pure wrapping, no method-file changes).
 2. **`vpp/export.py`** — three-CSV export + `outputs/runs/` layout + manifest.
 3. **Orchestrator Stages 1–3** — verify end-to-end by feeding the exported CSV
@@ -271,5 +261,5 @@ Each step leaves the repo in a working state:
    summary CSV.
 
 Later extensions (explicitly out of scope for v1): multi-method comparison in
-one run reusing the same ensemble (`--methods a,b,c`), date/N/scenario sweeps
+one run reusing the same ensemble (`--methods a,b`), date/N/scenario sweeps
 with aggregated reporting, and the subset-mapping penetration study.

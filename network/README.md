@@ -11,6 +11,7 @@ to replay battery dispatch profiles on it and to trust the numbers.
 | [`glm/Elermorevale/`](glm/Elermorevale/), [`glm/common/`](glm/common/) | The GridLAB-D sources (feeder, subs, transformer configs, generators scenario file) and shared includes (`Line Configs.glm` …). Read-only inputs, tracked. |
 | [`validation/`](validation/) | Level 4 cross-validation: `gen_harness.py` strips the GLM into a one-instant harness GridLAB-D can solve, `compare_voltages.py` joins both engines' node-phase voltages (≤0.02 % max deviation since the 2026-08-24 impedance rework). |
 | [`diagnostics/diag_violation_attribution.py`](diagnostics/diag_violation_attribution.py) | Where the violations come from: baseline vs QP on every N-th day, split over/under, by hour, by feeder. |
+| [`FEEDER_ANATOMY.md`](FEEDER_ANATOMY.md) | Top-to-bottom map of the model (132 kV SWING bus → zone TX + OLTC → 11 kV backbone → 23 LV cells → loads/DER), written as layered boxes-and-edges for turning into a diagram; includes a starter Mermaid diagram and the translation census. |
 | [`MODEL_VERIFICATION.md`](MODEL_VERIFICATION.md) | **Read this before quoting any network number.** The four-level verification pyramid, measured ground truth, known approximations, and the known-defect log (feet-vs-metres, phantom phases, floating BlueGen loads, dead-circuit "Converged=True", …). |
 
 ## Run

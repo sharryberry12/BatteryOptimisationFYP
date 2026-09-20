@@ -6,7 +6,7 @@ run against the code as of 2026-08-18. Prerequisites: `data.csv` at the
 root, `outputs/profiles/fit_profiles.csv` (from `python dispatch/osqp_daily.py`), and the
 usual `pip install -r requirements.txt`. Figures land in
 `outputs/figures/walkthrough/` (gitignored). Read `dispatch/FORMULATION.md` §2–4 next to
-Part 1, `MODEL_VERIFICATION.md` next to Part 2, `VPP_EXTENSION.md` §2/§6
+Part 1, `MODEL_VERIFICATION.md` next to Part 2, `VPP_EXTENSION.md` §2–§4
 next to Part 3.
 
 Sign conventions used everywhere: **b** = battery power (kW), b > 0
@@ -314,35 +314,16 @@ about $1.35/day here ($16.10 → $14.75) and keeps Jain at 0.83. Try
 `import_limit_kw=1.5`: hard mode becomes infeasible, soft mode tells you
 by how much.
 
-### 3.3 Method D — sharing ADMM (the same answer, one household QP at a time)
-
-```python
-from vpp.sharing_admm import sharing_admm as admm
-B_admm, hist, n_it = admm.run_admm(households, d_min, d_max, rho=50.0, iters=300, tol_kw=0.05)
-gap = vc.objective_surrogate(households, B_admm) / vc.objective_surrogate(households, res.B) - 1
-print(f"ADMM converged in {n_it} iterations; objective gap vs centralised {100*gap:.3f} %; "
-      f"final primal residual {hist['r'][-1]:.4f} kW; aggregate violation "
-      f"{vc.envelope_violation(vc.aggregate_pi(households, B_admm), d_min, d_max)['max_kw']:.3f} kW")
-```
-
-Each iteration: every household solves *its own* QP with `P + ρI` (set
-once) and a `q`-only update carrying the average/dual terms
-(`HouseholdSolver.solve(q_extra=...)`), then a scalar clip onto the
-envelope, then a dual update. That is why the per-iteration cost is one
-uncoupled QP per household and why the sparsity/warm start survive. Expect
-~25 iterations and a gap within ±0.01 % (a slightly negative gap means the
-0.05 kW residual tolerance let a hair of violation through — tighten
-`tol_kw` and watch it go to zero). Try `rho=2` to see it crawl.
-
-### 3.4 Method B — two-stage DOE allocation (deployed practice) and fairness
+### 3.3 Method B — two-stage DOE allocation (deployed practice) and fairness
 
 ```python
 from vpp.two_stage_doe_allocation import two_stage_doe_allocation as ts
 for rule in ts.RULES:
-    B_rule, curtail_kwh, n_failed = ts.run_rule(rule, households, d_min, d_max)
+    B_rule, curtail_kw, shortfall_kw, n_failed = ts.run_rule(rule, households, d_min, d_max)
     gap = vc.objective_surrogate(households, B_rule) / vc.objective_surrogate(households, res.B) - 1
     sav = vc.savings_vector(households, B_rule, tariff, "fit")
-    viol = vc.envelope_violation(vc.aggregate_pi(households, B_rule), d_min, d_max)["max_kw"]
+    # credit the export excess a real inverter would curtail before measuring the residual violation
+    viol = vc.envelope_violation(vc.aggregate_pi(households, B_rule) + curtail_kw, d_min, d_max)["max_kw"]
     print(f"{rule:16s} gap {100*gap:6.1f} %  agg violation {viol:.2f} kW  savings ${sav.sum():.2f}  "
           f"Jain {vc.jain_index(sav):.2f}  Gini {vc.gini(sav):.2f}  infeasible households {n_failed}")
 ```
@@ -363,16 +344,12 @@ side, so with an import cap they coincide; run the summer day
 (`date_iso="2011-01-07"`, `export_limit_kw=0.05`, `import_limit_kw=np.inf`)
 to see `prorata_surplus` beat the others.
 
-### 3.5 The scripts and the end-to-end pipeline
+### 3.4 The scripts and the end-to-end pipeline
 
 ```bash
 python vpp/centralised_qp/centralised_qp.py --n-households 20 --scenario static --save
-python vpp/sharing_admm/sharing_admm.py --n-households 20 --scenario static --rho 50 --save
 python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --n-households 20 --scenario tight_tou --save
-python vpp/dual_decomposition/dual_decomposition.py --n-households 20 --save
-python vpp/price_based_control/price_based_control.py --n-households 20 --save
-python vpp/fcas_cooptimisation/fcas_cooptimisation.py --n-households 20 --save
-python vpp/run_vpp_network.py admm --n-households 20 --scenario static     # solve -> export 3 CSVs -> Elermore Vale -> outputs/runs/<id>/
+python vpp/run_vpp_network.py centralised_qp --n-households 20 --scenario static   # solve -> export 3 CSVs -> Elermore Vale -> outputs/runs/<id>/
 ```
 
 `run_vpp_network.py` is the join between Parts 1–3: `vpp_export` writes
@@ -394,9 +371,10 @@ report overlays measured feeder-head power on the envelope.
 3. Why is 82 % of the QP's under-voltage in 22:00–24:00? *(1,785 copies of
    the same QP start charging at 5 kW when the off-peak tariff begins.
    Look at 2.2, at `h0` in 1.2, and at the 22.7 kW ensemble peak in 3.1.)*
-4. Why does one ADMM iteration cost exactly one uncoupled QP per
-   household? *(`P + ρI` is set at setup; only `q` changes; the coupling is
-   a scalar clip. Look at 3.3 and `HouseholdSolver`.)*
+4. Why do the four two-stage allocation rules give the same answer under
+   an import cap? *(They differ only in how they split the export budget
+   `−D_min`; the import side is split equally by all of them. Look at 3.3
+   and `run_rule`.)*
 5. Why must DOE rows be pre-allocated in the OSQP workspace? *(`update()`
    cannot change the sparsity pattern and silently ignores `A=`. Look at
    1.5 and `tests/test_doe_constraints.py`.)*

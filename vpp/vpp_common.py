@@ -208,7 +208,10 @@ def feeder_envelope(scenario, n_households,
     export_limit_kw / import_limit_kw are PER-HOUSEHOLD bases, scaled by N.
 
     Scenarios:
-      none          no constraint
+      none          no export envelope; a finite import_limit_kw still
+                    applies (mirrors osqp_daily_with_DOE.py, where
+                    `--scenarios none --import-limit 2` is the flat
+                    import-cap experiment)
       static        flat export cap (SAPN-style fixed limit)
       tight_tou     TOU-shaped: with export_limit_kw=1.5 this reproduces
                     the per-household 'tight' envelope of
@@ -218,12 +221,12 @@ def feeder_envelope(scenario, n_households,
                     capacity -- generous 10:00-17:00, tight in the evening)
     """
     ones = np.ones(T)
-    if scenario == "none":
-        return -np.inf * ones, np.inf * ones
-
-    L = export_limit_kw * n_households
     d_max = (import_limit_kw * n_households) * ones \
         if np.isfinite(import_limit_kw) else np.inf * ones
+    if scenario == "none":
+        return -np.inf * ones, d_max
+
+    L = export_limit_kw * n_households
 
     if scenario == "static":
         frac = ones.copy()

@@ -1,0 +1,1469 @@
+{
+  "run_id": "centralised_qp_static_2010-12-21_20260902-202031",
+  "created": "2026-09-02T20:20:31",
+  "git_sha": "5b38d1ff46bdb06a9916740d214230afc88fc2a6",
+  "pipeline_version": 1,
+  "method": "centralised_qp",
+  "cli_args": {
+    "command": "centralised_qp",
+    "n_households": 152,
+    "date": null,
+    "mode": "fit",
+    "e_max": 10.0,
+    "data": "C:\\Users\\Shazza\\Desktop\\BatteryOptimisationFYP\\data\\data.csv",
+    "scenario": "static",
+    "export_limit": 1.5,
+    "import_limit": 0.6,
+    "network": "elermorevale",
+    "glm_dir": "C:\\Users\\Shazza\\Desktop\\BatteryOptimisationFYP\\network\\glm\\Elermorevale",
+    "common_dir": "C:\\Users\\Shazza\\Desktop\\BatteryOptimisationFYP\\network\\glm\\common",
+    "n_monitors": 100,
+    "skip_network": false,
+    "runs_root": "C:\\Users\\Shazza\\Desktop\\BatteryOptimisationFYP\\outputs\\runs",
+    "soft": false,
+    "penalty": 1000.0,
+    "method": "centralised_qp"
+  },
+  "ensemble": {
+    "n_households": 152,
+    "date": "2010-12-21",
+    "mode": "fit",
+    "e_max_kwh": 10.0
+  },
+  "envelope": {
+    "d_min_kw": [
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0,
+      -228.0
+    ],
+    "d_max_kw": [
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2,
+      91.2
+    ]
+  },
+  "households": [
+    {
+      "pseudo_id": 1,
+      "name": "1",
+      "customer": 1,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.16099422021001075
+    },
+    {
+      "pseudo_id": 2,
+      "name": "2",
+      "customer": 2,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.5237181748530362
+    },
+    {
+      "pseudo_id": 3,
+      "name": "6",
+      "customer": 6,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.10378222961730454
+    },
+    {
+      "pseudo_id": 4,
+      "name": "9",
+      "customer": 9,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.03114580033277825
+    },
+    {
+      "pseudo_id": 5,
+      "name": "13",
+      "customer": 13,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.14966196601941517
+    },
+    {
+      "pseudo_id": 6,
+      "name": "14",
+      "customer": 14,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.24462106796116334
+    },
+    {
+      "pseudo_id": 7,
+      "name": "16",
+      "customer": 16,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.14934796057693056
+    },
+    {
+      "pseudo_id": 8,
+      "name": "17",
+      "customer": 17,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.5635879068219629
+    },
+    {
+      "pseudo_id": 9,
+      "name": "18",
+      "customer": 18,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.3941973352692294
+    },
+    {
+      "pseudo_id": 10,
+      "name": "19",
+      "customer": 19,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.043091747572820305
+    },
+    {
+      "pseudo_id": 11,
+      "name": "20",
+      "customer": 20,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.16232813311147964
+    },
+    {
+      "pseudo_id": 12,
+      "name": "27",
+      "customer": 27,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.61060659991928
+    },
+    {
+      "pseudo_id": 13,
+      "name": "29",
+      "customer": 29,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.19597750963020522
+    },
+    {
+      "pseudo_id": 14,
+      "name": "30",
+      "customer": 30,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.20095026699029805
+    },
+    {
+      "pseudo_id": 15,
+      "name": "31",
+      "customer": 31,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.11226733777038245
+    },
+    {
+      "pseudo_id": 16,
+      "name": "33",
+      "customer": 33,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.16552148687482493
+    },
+    {
+      "pseudo_id": 17,
+      "name": "35",
+      "customer": 35,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.7902198163771748
+    },
+    {
+      "pseudo_id": 18,
+      "name": "37",
+      "customer": 37,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.3856285679611626
+    },
+    {
+      "pseudo_id": 19,
+      "name": "38",
+      "customer": 38,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.2583698746577228
+    },
+    {
+      "pseudo_id": 20,
+      "name": "39",
+      "customer": 39,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.7122810549084879
+    },
+    {
+      "pseudo_id": 21,
+      "name": "42",
+      "customer": 42,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.35982506375038525
+    },
+    {
+      "pseudo_id": 22,
+      "name": "43",
+      "customer": 43,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.1479448652246269
+    },
+    {
+      "pseudo_id": 23,
+      "name": "45",
+      "customer": 45,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.17219012487111485
+    },
+    {
+      "pseudo_id": 24,
+      "name": "46",
+      "customer": 46,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 2.2027005708937795
+    },
+    {
+      "pseudo_id": 25,
+      "name": "48",
+      "customer": 48,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.7106167068242533
+    },
+    {
+      "pseudo_id": 26,
+      "name": "54",
+      "customer": 54,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.31668598917367374
+    },
+    {
+      "pseudo_id": 27,
+      "name": "55",
+      "customer": 55,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 2.5318766808487805
+    },
+    {
+      "pseudo_id": 28,
+      "name": "56",
+      "customer": 56,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.03319160066555682
+    },
+    {
+      "pseudo_id": 29,
+      "name": "57",
+      "customer": 57,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.24773391423425029
+    },
+    {
+      "pseudo_id": 30,
+      "name": "59",
+      "customer": 59,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.23821749042334073
+    },
+    {
+      "pseudo_id": 31,
+      "name": "62",
+      "customer": 62,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.1080215326478124
+    },
+    {
+      "pseudo_id": 32,
+      "name": "67",
+      "customer": 67,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.23621005509868986
+    },
+    {
+      "pseudo_id": 33,
+      "name": "68",
+      "customer": 68,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.54363058236273
+    },
+    {
+      "pseudo_id": 34,
+      "name": "69",
+      "customer": 69,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.5125756426799013
+    },
+    {
+      "pseudo_id": 35,
+      "name": "72",
+      "customer": 72,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.01566997572815443
+    },
+    {
+      "pseudo_id": 36,
+      "name": "73",
+      "customer": 73,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.5426204333635538
+    },
+    {
+      "pseudo_id": 37,
+      "name": "74",
+      "customer": 74,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.1138145592705051
+    },
+    {
+      "pseudo_id": 38,
+      "name": "75",
+      "customer": 75,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -1.6163385050383212
+    },
+    {
+      "pseudo_id": 39,
+      "name": "76",
+      "customer": 76,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.46971206310679925
+    },
+    {
+      "pseudo_id": 40,
+      "name": "78",
+      "customer": 78,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.28913862229617315
+    },
+    {
+      "pseudo_id": 41,
+      "name": "79",
+      "customer": 79,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.02735596672212992
+    },
+    {
+      "pseudo_id": 42,
+      "name": "81",
+      "customer": 81,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.1613914342762066
+    },
+    {
+      "pseudo_id": 43,
+      "name": "82",
+      "customer": 82,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.23714229323802627
+    },
+    {
+      "pseudo_id": 44,
+      "name": "83",
+      "customer": 83,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.2696006177897967
+    },
+    {
+      "pseudo_id": 45,
+      "name": "84",
+      "customer": 84,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.4129527953410981
+    },
+    {
+      "pseudo_id": 46,
+      "name": "87",
+      "customer": 87,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.2490233980582479
+    },
+    {
+      "pseudo_id": 47,
+      "name": "88",
+      "customer": 88,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.2143559708737821
+    },
+    {
+      "pseudo_id": 48,
+      "name": "91",
+      "customer": 91,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 2.3745864189723322
+    },
+    {
+      "pseudo_id": 49,
+      "name": "93",
+      "customer": 93,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.1888308252427242
+    },
+    {
+      "pseudo_id": 50,
+      "name": "97",
+      "customer": 97,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.2490610052153297
+    },
+    {
+      "pseudo_id": 51,
+      "name": "100",
+      "customer": 100,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.24621131067960933
+    },
+    {
+      "pseudo_id": 52,
+      "name": "101",
+      "customer": 101,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.0264917475728228
+    },
+    {
+      "pseudo_id": 53,
+      "name": "103",
+      "customer": 103,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.04486206551407612
+    },
+    {
+      "pseudo_id": 54,
+      "name": "104",
+      "customer": 104,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.7530010981697166
+    },
+    {
+      "pseudo_id": 55,
+      "name": "106",
+      "customer": 106,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.11557674757281156
+    },
+    {
+      "pseudo_id": 56,
+      "name": "109",
+      "customer": 109,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.17358412806107815
+    },
+    {
+      "pseudo_id": 57,
+      "name": "110",
+      "customer": 110,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.041280387509835315
+    },
+    {
+      "pseudo_id": 58,
+      "name": "111",
+      "customer": 111,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.27254048543688825
+    },
+    {
+      "pseudo_id": 59,
+      "name": "113",
+      "customer": 113,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.10697924696105576
+    },
+    {
+      "pseudo_id": 60,
+      "name": "116",
+      "customer": 116,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.6553174642262891
+    },
+    {
+      "pseudo_id": 61,
+      "name": "117",
+      "customer": 117,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.23764453577371003
+    },
+    {
+      "pseudo_id": 62,
+      "name": "118",
+      "customer": 118,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.1326144159733773
+    },
+    {
+      "pseudo_id": 63,
+      "name": "119",
+      "customer": 119,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.5320586289684952
+    },
+    {
+      "pseudo_id": 64,
+      "name": "122",
+      "customer": 122,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.1060729592317289
+    },
+    {
+      "pseudo_id": 65,
+      "name": "123",
+      "customer": 123,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.22301607653910205
+    },
+    {
+      "pseudo_id": 66,
+      "name": "124",
+      "customer": 124,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.3993241497504152
+    },
+    {
+      "pseudo_id": 67,
+      "name": "125",
+      "customer": 125,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.11501402995008414
+    },
+    {
+      "pseudo_id": 68,
+      "name": "126",
+      "customer": 126,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.03713449180327921
+    },
+    {
+      "pseudo_id": 69,
+      "name": "130",
+      "customer": 130,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.7294713244115103
+    },
+    {
+      "pseudo_id": 70,
+      "name": "133",
+      "customer": 133,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.24778323793677126
+    },
+    {
+      "pseudo_id": 71,
+      "name": "134",
+      "customer": 134,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.4033105580633434
+    },
+    {
+      "pseudo_id": 72,
+      "name": "137",
+      "customer": 137,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.35676378640776996
+    },
+    {
+      "pseudo_id": 73,
+      "name": "138",
+      "customer": 138,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.547476428571386
+    },
+    {
+      "pseudo_id": 74,
+      "name": "139",
+      "customer": 139,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.5257621661519023
+    },
+    {
+      "pseudo_id": 75,
+      "name": "141",
+      "customer": 141,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.8324754239721655
+    },
+    {
+      "pseudo_id": 76,
+      "name": "142",
+      "customer": 142,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.16321387970782375
+    },
+    {
+      "pseudo_id": 77,
+      "name": "143",
+      "customer": 143,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6528597784643275
+    },
+    {
+      "pseudo_id": 78,
+      "name": "144",
+      "customer": 144,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.48588446256239637
+    },
+    {
+      "pseudo_id": 79,
+      "name": "152",
+      "customer": 152,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.035833030464649696
+    },
+    {
+      "pseudo_id": 80,
+      "name": "153",
+      "customer": 153,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.0650432317882661
+    },
+    {
+      "pseudo_id": 81,
+      "name": "156",
+      "customer": 156,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6162678668885175
+    },
+    {
+      "pseudo_id": 82,
+      "name": "157",
+      "customer": 157,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.15173999999995047
+    },
+    {
+      "pseudo_id": 83,
+      "name": "158",
+      "customer": 158,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.8672344503410327
+    },
+    {
+      "pseudo_id": 84,
+      "name": "159",
+      "customer": 159,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.3276937670486997
+    },
+    {
+      "pseudo_id": 85,
+      "name": "160",
+      "customer": 160,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.094718163771708
+    },
+    {
+      "pseudo_id": 86,
+      "name": "161",
+      "customer": 161,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.20667966101699964
+    },
+    {
+      "pseudo_id": 87,
+      "name": "163",
+      "customer": 163,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.23130953410981725
+    },
+    {
+      "pseudo_id": 88,
+      "name": "164",
+      "customer": 164,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.3134446601941807
+    },
+    {
+      "pseudo_id": 89,
+      "name": "165",
+      "customer": 165,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.1712290782029946
+    },
+    {
+      "pseudo_id": 90,
+      "name": "166",
+      "customer": 166,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6630564958402636
+    },
+    {
+      "pseudo_id": 91,
+      "name": "167",
+      "customer": 167,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.0805268636395855
+    },
+    {
+      "pseudo_id": 92,
+      "name": "169",
+      "customer": 169,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.16093204531155703
+    },
+    {
+      "pseudo_id": 93,
+      "name": "170",
+      "customer": 170,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.19832637603993453
+    },
+    {
+      "pseudo_id": 94,
+      "name": "175",
+      "customer": 175,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.388452550921921
+    },
+    {
+      "pseudo_id": 95,
+      "name": "176",
+      "customer": 176,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.0872033486563315
+    },
+    {
+      "pseudo_id": 96,
+      "name": "177",
+      "customer": 177,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.1851538103161392
+    },
+    {
+      "pseudo_id": 97,
+      "name": "183",
+      "customer": 183,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.02896944758735387
+    },
+    {
+      "pseudo_id": 98,
+      "name": "184",
+      "customer": 184,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6750826422628933
+    },
+    {
+      "pseudo_id": 99,
+      "name": "185",
+      "customer": 185,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.3538418997361434
+    },
+    {
+      "pseudo_id": 100,
+      "name": "187",
+      "customer": 187,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.030865728155330174
+    },
+    {
+      "pseudo_id": 101,
+      "name": "188",
+      "customer": 188,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.042431213592229344
+    },
+    {
+      "pseudo_id": 102,
+      "name": "189",
+      "customer": 189,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.4424222567345013
+    },
+    {
+      "pseudo_id": 103,
+      "name": "192",
+      "customer": 192,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.2407618202995001
+    },
+    {
+      "pseudo_id": 104,
+      "name": "193",
+      "customer": 193,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.059780844389681675
+    },
+    {
+      "pseudo_id": 105,
+      "name": "197",
+      "customer": 197,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.001333307820300167
+    },
+    {
+      "pseudo_id": 106,
+      "name": "200",
+      "customer": 200,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.5133617766749352
+    },
+    {
+      "pseudo_id": 107,
+      "name": "201",
+      "customer": 201,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.08009753410981757
+    },
+    {
+      "pseudo_id": 108,
+      "name": "202",
+      "customer": 202,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.05523887520798665
+    },
+    {
+      "pseudo_id": 109,
+      "name": "203",
+      "customer": 203,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.15764058182494267
+    },
+    {
+      "pseudo_id": 110,
+      "name": "204",
+      "customer": 204,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.9365137653866751
+    },
+    {
+      "pseudo_id": 111,
+      "name": "205",
+      "customer": 205,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.27361036702517616
+    },
+    {
+      "pseudo_id": 112,
+      "name": "206",
+      "customer": 206,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.6657071921010123
+    },
+    {
+      "pseudo_id": 113,
+      "name": "207",
+      "customer": 207,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.39159138842930385
+    },
+    {
+      "pseudo_id": 114,
+      "name": "210",
+      "customer": 210,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.022083717105275014
+    },
+    {
+      "pseudo_id": 115,
+      "name": "211",
+      "customer": 211,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.03936559068219658
+    },
+    {
+      "pseudo_id": 116,
+      "name": "212",
+      "customer": 212,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.4620133477537429
+    },
+    {
+      "pseudo_id": 117,
+      "name": "213",
+      "customer": 213,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.16050755740432487
+    },
+    {
+      "pseudo_id": 118,
+      "name": "214",
+      "customer": 214,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6837314875207978
+    },
+    {
+      "pseudo_id": 119,
+      "name": "218",
+      "customer": 218,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.03376120133111504
+    },
+    {
+      "pseudo_id": 120,
+      "name": "220",
+      "customer": 220,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.7731990370370538
+    },
+    {
+      "pseudo_id": 121,
+      "name": "221",
+      "customer": 221,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.9334393477537422
+    },
+    {
+      "pseudo_id": 122,
+      "name": "230",
+      "customer": 230,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.1971134276206321
+    },
+    {
+      "pseudo_id": 123,
+      "name": "233",
+      "customer": 233,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.4286045690515803
+    },
+    {
+      "pseudo_id": 124,
+      "name": "234",
+      "customer": 234,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.5075122163061556
+    },
+    {
+      "pseudo_id": 125,
+      "name": "238",
+      "customer": 238,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.3460059334442587
+    },
+    {
+      "pseudo_id": 126,
+      "name": "239",
+      "customer": 239,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.05024374043261304
+    },
+    {
+      "pseudo_id": 127,
+      "name": "241",
+      "customer": 241,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.14534274271844083
+    },
+    {
+      "pseudo_id": 128,
+      "name": "243",
+      "customer": 243,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.12439282861896728
+    },
+    {
+      "pseudo_id": 129,
+      "name": "244",
+      "customer": 244,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.2518456472545747
+    },
+    {
+      "pseudo_id": 130,
+      "name": "245",
+      "customer": 245,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.3464651391425764
+    },
+    {
+      "pseudo_id": 131,
+      "name": "246",
+      "customer": 246,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.04298733027188284
+    },
+    {
+      "pseudo_id": 132,
+      "name": "249",
+      "customer": 249,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.0519317470881866
+    },
+    {
+      "pseudo_id": 133,
+      "name": "253",
+      "customer": 253,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.28365809078746196
+    },
+    {
+      "pseudo_id": 134,
+      "name": "254",
+      "customer": 254,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.3200885775433022
+    },
+    {
+      "pseudo_id": 135,
+      "name": "256",
+      "customer": 256,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.16836356893193738
+    },
+    {
+      "pseudo_id": 136,
+      "name": "258",
+      "customer": 258,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.008664174757281096
+    },
+    {
+      "pseudo_id": 137,
+      "name": "262",
+      "customer": 262,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.5549646189683854
+    },
+    {
+      "pseudo_id": 138,
+      "name": "263",
+      "customer": 263,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.016845633669533733
+    },
+    {
+      "pseudo_id": 139,
+      "name": "265",
+      "customer": 265,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.04637094509151396
+    },
+    {
+      "pseudo_id": 140,
+      "name": "266",
+      "customer": 266,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.033596244482680504
+    },
+    {
+      "pseudo_id": 141,
+      "name": "268",
+      "customer": 268,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.055991844660197465
+    },
+    {
+      "pseudo_id": 142,
+      "name": "270",
+      "customer": 270,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.027211727121463802
+    },
+    {
+      "pseudo_id": 143,
+      "name": "272",
+      "customer": 272,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.049272748752079654
+    },
+    {
+      "pseudo_id": 144,
+      "name": "273",
+      "customer": 273,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.007062861239944596
+    },
+    {
+      "pseudo_id": 145,
+      "name": "275",
+      "customer": 275,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.01961783222550917
+    },
+    {
+      "pseudo_id": 146,
+      "name": "276",
+      "customer": 276,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.4855228105736211
+    },
+    {
+      "pseudo_id": 147,
+      "name": "279",
+      "customer": 279,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.10170469217970046
+    },
+    {
+      "pseudo_id": 148,
+      "name": "280",
+      "customer": 280,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.0009174109816969533
+    },
+    {
+      "pseudo_id": 149,
+      "name": "282",
+      "customer": 282,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": -0.15264129472727728
+    },
+    {
+      "pseudo_id": 150,
+      "name": "294",
+      "customer": 294,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 1.3275052312811961
+    },
+    {
+      "pseudo_id": 151,
+      "name": "297",
+      "customer": 297,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6010188679921136
+    },
+    {
+      "pseudo_id": 152,
+      "name": "300",
+      "customer": 300,
+      "e_max_kwh": 10.0,
+      "savings_uncoupled": 0.6692320016341311
+    }
+  ],
+  "dispatch": {
+    "converged": true,
+    "iterations": null,
+    "solve_time_s": 0.756855399988126,
+    "extras": {
+      "status": "solved",
+      "objective": 368235.07902141224,
+      "n_variables": 7296,
+      "n_constraints": 14792,
+      "soft": false
+    },
+    "extras_npz": [
+      "y_couple"
+    ]
+  },
+  "scenario_metrics": {
+    "nobatt": {
+      "objective": 4140784.654876003,
+      "agg_pi_kw": [
+        119.938,
+        142.37800000000001,
+        158.114,
+        131.62199999999996,
+        106.09999999999995,
+        79.60800000000002,
+        67.58399999999999,
+        61.95600000000001,
+        65.13200000000002,
+        66.72800000000001,
+        72.81199999999997,
+        85.34,
+        79.87999999999998,
+        83.94399999999999,
+        49.904,
+        32.396,
+        -5.355999999999996,
+        -32.10200000000002,
+        -66.86800000000001,
+        -85.46800000000003,
+        -107.50399999999999,
+        -136.87000000000003,
+        -154.45199999999997,
+        -161.33999999999995,
+        -165.86200000000008,
+        -165.92200000000003,
+        -161.6760000000001,
+        -151.778,
+        -133.74599999999995,
+        -121.398,
+        -111.37199999999999,
+        -85.51999999999997,
+        -64.73600000000002,
+        -38.866000000000035,
+        13.956000000000001,
+        44.235999999999976,
+        85.936,
+        101.52999999999994,
+        116.48800000000003,
+        116.06400000000004,
+        133.856,
+        142.86999999999998,
+        143.6160000000001,
+        130.43999999999997,
+        129.08600000000004,
+        132.65999999999997,
+        124.27999999999993,
+        112.41399999999997
+      ],
+      "envelope_violation": {
+        "max_kw": 66.914,
+        "energy_kwh": 291.12799999999993,
+        "n_intervals": 16
+      },
+      "savings_total": 0.0,
+      "savings_mean": 0.0,
+      "jain": 1.0,
+      "gini": null
+    },
+    "uncoupled": {
+      "objective": 367758.54344619036,
+      "agg_pi_kw": [
+        82.99738631535794,
+        82.99738631536223,
+        83.12405298202341,
+        82.99738631535959,
+        79.85631823441601,
+        79.85631823441624,
+        79.01215156774397,
+        77.41600039474733,
+        77.41600039474322,
+        77.41600039474869,
+        77.41600039475115,
+        77.30300039475863,
+        78.054775286527,
+        79.45912658393671,
+        -6.2670287767875905,
+        -8.293330685152313,
+        -8.946535410755471,
+        -12.95664088815321,
+        -12.351205289265565,
+        -12.510926771621953,
+        -12.989426771621922,
+        -15.075768217830088,
+        -16.71376821783005,
+        -16.839518839767464,
+        -16.83951883976755,
+        -16.83672199463416,
+        -16.834729588850166,
+        -16.834729588850166,
+        -72.65462554940733,
+        -68.35739900254887,
+        -64.18110188012564,
+        -58.77164684601894,
+        -53.780524245172415,
+        -48.479767854739855,
+        -39.75926407851897,
+        -33.31328241607058,
+        -28.806299833695036,
+        -25.395621315972775,
+        -24.855501246915168,
+        -24.58389177945945,
+        6.243133398943527,
+        6.329205450800856,
+        5.734133398943527,
+        5.513613511250355,
+        143.52969659017631,
+        143.52969659017774,
+        143.52969659017333,
+        143.52969659017364
+      ],
+      "envelope_violation": {
+        "max_kw": 52.32969659017773,
+        "energy_kwh": 104.6593931803505,
+        "n_intervals": 4
+      },
+      "savings_total": 39.16792637619384,
+      "savings_mean": 0.25768372615917,
+      "jain": 0.3045721970472533,
+      "gini": 1.234186115480189
+    },
+    "coupled": {
+      "objective": 368235.07902141224,
+      "agg_pi_kw": [
+        91.20000000000002,
+        91.20000000000002,
+        91.20000000000005,
+        91.20000000000002,
+        91.20000000000002,
+        91.2,
+        91.20000000000002,
+        91.2,
+        91.19999999999999,
+        91.2,
+        91.19999999999999,
+        91.2,
+        91.2,
+        91.2,
+        -4.705013785706349,
+        -6.765779109140411,
+        -7.470528763580424,
+        -11.482922994099287,
+        -11.41620449587461,
+        -11.473945961490841,
+        -11.949681084143407,
+        -14.037531854057477,
+        -15.675531854057851,
+        -15.541396752418109,
+        -15.541396752418137,
+        -15.532993666915559,
+        -15.528196710757157,
+        -15.52819671075639,
+        -72.24926684853315,
+        -67.96468752007578,
+        -63.78069194170112,
+        -57.938541957689054,
+        -52.92508223002763,
+        -47.59294912427947,
+        -38.789462136952245,
+        -31.88455446843642,
+        -26.74587444514063,
+        -23.1884059379357,
+        -22.089456843548476,
+        -21.438123830905326,
+        9.701111612116875,
+        9.782082944290295,
+        9.19211161211689,
+        8.993111612116664,
+        91.19999999999999,
+        91.20000000000005,
+        91.20000000000002,
+        91.20000000000002
+      ],
+      "envelope_violation": {
+        "max_kw": 4.263256414560601e-14,
+        "energy_kwh": 9.237055564881302e-14,
+        "n_intervals": 0
+      },
+      "savings_total": 35.15539862607396,
+      "savings_mean": 0.23128551727680238,
+      "jain": 0.29252064213184553,
+      "gini": 1.3782118184617496
+    }
+  },
+  "files": {
+    "nobatt": "dispatch_nobatt.csv",
+    "uncoupled": "dispatch_uncoupled.csv",
+    "coupled": "dispatch_coupled.csv"
+  },
+  "network": {
+    "backend": "elermorevale",
+    "n_loads": 1785,
+    "n_customers_in_csv": 152,
+    "n_monitored": 100,
+    "scale_factor": 11.743421052631579,
+    "scale_exact": false,
+    "scale_note": "non-uniform replication (n_loads % n_customers != 0): the first n_loads mod n_customers households get one extra copy, so tx_envelope_exceed_* values carry a bias of up to one household profile near the envelope boundary",
+    "summary": [
+      {
+        "scenario": "nobatt",
+        "label": "no battery",
+        "v_min_pu": 0.9571428894996643,
+        "v_max_pu": 1.1803109645843506,
+        "n_violations": 878,
+        "total_points": 4800,
+        "peak_tx_kw": 1926.3826904296875,
+        "loss_kw_final_interval": 34.31590495909421,
+        "tx_envelope_exceed_kw": 855.3826904296875,
+        "tx_envelope_exceed_intervals": 16,
+        "injected_peak_kw": 1950.058000000001,
+        "vpp_objective": 4140784.654876003,
+        "vpp_envelope_exceed_kw": 66.914,
+        "savings_total_per_day": 0.0
+      },
+      {
+        "scenario": "uncoupled",
+        "label": "uncoupled QP",
+        "v_min_pu": 0.9722088575363159,
+        "v_max_pu": 1.1429681777954102,
+        "n_violations": 373,
+        "total_points": 4800,
+        "peak_tx_kw": 1750.4691162109375,
+        "loss_kw_final_interval": 57.49453736692503,
+        "tx_envelope_exceed_kw": 679.4691162109375,
+        "tx_envelope_exceed_intervals": 4,
+        "injected_peak_kw": 1693.1283870692794,
+        "vpp_objective": 367758.54344619036,
+        "vpp_envelope_exceed_kw": 52.32969659017773,
+        "savings_total_per_day": 39.16792637619384
+      },
+      {
+        "scenario": "coupled",
+        "label": "VPP coupled",
+        "v_min_pu": 1.0076255798339844,
+        "v_max_pu": 1.1428632736206055,
+        "n_violations": 361,
+        "total_points": 4800,
+        "peak_tx_kw": 1110.06884765625,
+        "loss_kw_final_interval": 27.48318416213053,
+        "tx_envelope_exceed_kw": 39.06884765625,
+        "tx_envelope_exceed_intervals": 18,
+        "injected_peak_kw": 1082.647422667585,
+        "vpp_objective": 368235.07902141224,
+        "vpp_envelope_exceed_kw": 4.263256414560601e-14,
+        "savings_total_per_day": 35.15539862607396
+      }
+    ],
+    "completed": "2026-09-02T20:20:35"
+  }
+}

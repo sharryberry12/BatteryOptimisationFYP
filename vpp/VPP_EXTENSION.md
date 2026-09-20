@@ -138,261 +138,52 @@ savings) — the AEMO fairness question [11] is explicitly about the tension bet
 
 ---
 
-## 5. Method C — Dual decomposition (price coordination)
+## 5. Methods considered but not carried forward
 
-Relax **only** the coupling constraint into the objective with a multiplier `lambda_k >= 0`
-(interpretable as a **shadow price of feeder headroom in interval k**, in $/kW).
+Four further ways of enforcing the §2 coupling were designed and prototyped
+against the same stacked problem, then removed from the repository on
+2026-09-11 so the VPP layer ships only the two architectures the project
+compares: A (what an aggregator with full visibility could achieve) and B
+(what a DNSP actually deploys). They are recorded here so the choice is
+traceable; the formulations and their tests are in git history before that
+date.
 
-Lagrangian separates:
-
-```
-L(X, lambda) = sum_i [ x_i^T H_cal_i x_i + lambda^T E_i x_i ]  -  lambda^T D_feeder
-```
-
-Each household solves, **independently and in parallel**:
-
-```
-min  x_i^T H_cal_i x_i + lambda^T E_i x_i    s.t.  local constraints only
-```
-
-which in OSQP terms is **your existing problem with `q = E^T lambda` instead of `q = 0`**.
-
-Master update (projected subgradient / dual ascent):
-
-```
-lambda^{t+1} = max(0,  lambda^t + alpha_t * (sum_i pi_i^t - D_feeder))
-```
-
-### Mapping onto the existing code — this is the appealing part
-
-- `P` unchanged. `A_c` unchanged. **Sparsity pattern untouched.**
-- Only `q` changes each iteration → `osqp.update(q=...)`, the cheapest possible update.
-- Warm start from the previous iteration's solution → later iterations solve in a handful of ADMM steps.
-- The aggregator only ever sees `sum_i pi_i` — **strong privacy**.
-
-### Assessment
-
-| | |
-|---|---|
-| **Optimality** | Converges to global optimum (convex, zero duality gap) |
-| **Convergence** | **Slow and step-size sensitive.** Subgradient methods are O(1/sqrt(t)). Needs a diminishing step rule or Nesterov acceleration |
-| **Communication** | `s` numbers down (prices), `s` numbers up (aggregate) per iteration |
-| **Interpretability** | Excellent — `lambda_k` *is* a congestion price, directly meaningful to a DNSP |
-
-### Verdict
-
-Attractive economically (the multipliers are the product, not just a numerical device) but
-practically fiddly. **If you want decomposition, prefer Method D unless the price interpretation is
-itself the research contribution.**
+- **Method C — dual decomposition (price coordination).** Lagrange-relax the
+  coupling rows, broadcast a per-interval price `mu_k`, let each household
+  solve its unchanged QP with a linear price term, update `mu` by projected
+  subgradient. The prices converge to A's coupling duals (`mu -> -y`), but at
+  O(1/sqrt(t)) and with a step size that needed retuning per instance, and
+  nothing downstream consumed the prices.
+- **Method D — sharing ADMM.** Boyd's sharing form: local proximal QPs with
+  `P + rho*I`, a scalar clip onto the envelope, a dual update; tens of
+  iterations to engineering tolerance with A's sparsity and warm start intact.
+  It is a distributed route to A's optimum, not a different architecture, so
+  it answered a question the comparison does not ask.
+- **Method E — one-shot price-based indirect control.** Broadcast one price
+  shape and let households respond selfishly. With A's duals it reproduces A
+  exactly; with a retail TOU shape it herds every battery into the price
+  trough. That lesson survives as a one-line warning in §8.
+- **FCAS contingency-raise co-optimisation.** A reserve variable per household
+  and interval (headroom `b + r <= P_max`, SOC adequacy `SOC >= tau*r`, and the
+  DOE-interaction row `sum_i (pi_i - r_i) >= D_min`) to quantify the raise
+  capacity static versus dynamic export limits leave. Still a QP, but a
+  market-participation study rather than a coupling method, and it needs FCAS
+  price data the repository does not carry.
+- **Method F — receding-horizon MPC.** Never implemented: a wrapper around any
+  coupling method, not an alternative to one.
 
 ---
 
-## 6. Method D — Consensus / sharing ADMM ⭐ recommended decomposition
-
-The **sharing problem** (Boyd et al., *Distributed Optimization and Statistical Learning*, §7.3) is
-almost exactly your structure: separable objectives, one coupled sum constraint.
-
-Introduce `z_i` copies of each household's grid profile and split. Each ADMM iteration:
-
-```
-# 1. Local (parallel across N):
-x_i^{t+1} = argmin  x_i^T H_cal_i x_i
-                  + (rho/2) * || E_i x_i - E_i x_i^t + pi_bar^t - z^t + u^t ||_2^2
-            s.t. local constraints
-
-# 2. Aggregate (cheap, one projection onto the feeder envelope):
-z^{t+1}  = projection of (pi_bar^{t+1} + u^t) onto {z : N*z <= D_feeder}
-
-# 3. Dual:
-u^{t+1}  = u^t + pi_bar^{t+1} - z^{t+1}
-```
-
-where `pi_bar = (1/N) sum_i pi_i`.
-
-### Why this fits the existing code unusually well
-
-The local subproblem's quadratic term becomes `2*H_cal_i + rho * E_i^T E_i`.
-
-`H_cal` is **diagonal** (zeros on the beta block). `E^T E` is **also diagonal** (identity on the pi
-block, zero on beta). So:
-
-> **`P` stays diagonal. Its sparsity pattern does not change — only the values on the `pi` block
-> shift by `rho`.** Use `osqp.update_P(Px=...)` once when `rho` changes, and `osqp.update(q=...)`
-> each iteration. Same factorisation strategy, same warm-start advantage.
-
-Also worth noting: OSQP is itself an ADMM solver, so you are running ADMM-over-ADMM. This is fine
-and common, but **do not run the inner OSQP to tight tolerance in early outer iterations** — use a
-loose `eps_abs`/`eps_rel` early and tighten as the outer residuals fall. This is usually a 3–5x
-speedup and is the single most impactful implementation detail here.
-
-### Assessment
-
-| | |
-|---|---|
-| **Optimality** | Converges to global optimum |
-| **Convergence** | **Much more robust than dual decomposition.** Typically tens of iterations for engineering tolerance. Less step-size sensitive (`rho` matters but is forgiving; adaptive `rho` helps) |
-| **Communication** | `s` numbers each way per iteration; only the *aggregate* leaves the households |
-| **Parallelism** | Step 1 is fully parallel — reuse the existing CPU pool |
-| **Warm start** | Across days *and* across ADMM iterations. Both help |
-
-### Verdict
-
-**The best decomposition choice for this project.** Same solver, same sparsity, same warm-start
-story, same parallel infrastructure. The extension is genuinely ~150 lines of coordination logic
-around code that already exists.
-
-Stopping criteria: primal residual `||pi_bar - z||` and dual residual `rho*||z^{t+1} - z^t||`, both
-below tolerance. Log both — a plot of residuals vs iteration is a good figure for Part B.
-
----
-
-## 7. Method E — Market-mediated / indirect control
-
-No explicit envelope allocation and no iteration to convergence. The DNSP or aggregator **broadcasts
-a price signal** and households respond selfishly. This is the "transactive energy" family.
-
-The objective must change from the surrogate `sum h_k pi_k^2` to something denominated in dollars.
-
-### ⚠ The tariff problem you will hit immediately
-
-Actual settlement is piecewise-linear:
-
-```
-cost = DELTA * sum_k [ p_import_k * max(pi_k, 0)  -  p_export_k * max(-pi_k, 0) ]
-```
-
-The standard trick is to split `pi = pi_plus - pi_minus` with both `>= 0` and solve an LP. **That
-relaxation is only tight when `p_import_k >= p_export_k` at every interval** — otherwise the
-optimum wants simultaneous import and export.
-
-In this project's tariff set: export is a **flat $0.40/kWh** while import is at most **$0.30/kWh**
-(peak) and as low as **$0.03/kWh** (off-peak). **Export compensation exceeds import price in every
-interval.** So:
-
-- The LP relaxation is **not tight**. You would need binaries (MILP) or a complementarity
-  constraint to prevent simultaneous import/export.
-- Even with a single net `pi`, a purely linear objective becomes a pure arbitrage problem: charge
-  from the grid at $0.03 off-peak, export at $0.40. It will slam every constraint boundary.
-- **This is almost certainly why [1] uses the `h_k * pi_k^2` surrogate in the first place.** The
-  quadratic term regularises the solution away from bang-bang arbitrage and simultaneously
-  penalises reverse power flow.
-
-**Action:** document this explicitly in Part B. It is a real and defensible modelling justification,
-not a limitation to hide. If you want dollar-denominated results, either (a) keep the quadratic as a
-regulariser and add a linear price term (`q != 0`, still a QP — easy), or (b) use contemporary
-tariffs where export < import and the LP relaxation is tight.
-
-### Assessment
-
-| | |
-|---|---|
-| **Optimality** | No constraint guarantee — households may collectively violate the feeder envelope |
-| **Risk** | **Synchronisation / herding.** Every battery responding to the same price signal creates a new peak at the price trough. Well documented in demand-response literature |
-| **Verdict** | Interesting as a comparison baseline showing *why* explicit envelopes are needed. Not a primary method |
-
----
-
-## 8. Method F — Receding-horizon MPC (orthogonal, composable)
-
-This is not an alternative to A–E; it wraps around any of them.
-
-Instead of one 48-interval day-ahead solve, re-solve over a **shrinking or rolling horizon** as
-actual load and PV are realised:
-
-```
-at interval k:  solve over [k, k+H], apply only interval k, advance, repeat
-```
-
-- Directly addresses the **perfect forecast** assumption flagged in `dispatch/FORMULATION.md` §9
-- 48 solves per day instead of 1 — but each is smaller, and warm-starting makes this cheap
-- The `1^T beta = 0` neutrality constraint must be reworked into a **terminal SOC target or band**;
-  otherwise the shrinking horizon makes it progressively infeasible
-- Uncertainty variants:
-  - **Stochastic**: scenario-based, `M` scenarios → `M` copies of the QP with non-anticipativity
-    constraints. Stays a QP but scales by `M`
-  - **Robust**: enforce constraints for worst case in an uncertainty set. Box uncertainty stays a
-    QP; ellipsoidal becomes a **second-order cone program** — no longer OSQP-solvable, needs
-    Clarabel/ECOS
-  - **Learning-augmented**: refs [4], [5]. RL supplies the forecast or a terminal value function;
-    the QP still enforces feasibility. This is the **safest hybrid** — the optimiser guarantees
-    constraint satisfaction, the learner only improves the objective. Explicitly flagged as a
-    future direction in the paper
-
----
-
-## 9. FCAS and wholesale market participation
-
-Stated future work in the paper: VPPs respond far faster than conventional generators [12], static
-export limits have been shown to constrain FCAS delivery [12], and SAPN demonstrated dynamic limits
-can **more than double available export capacity at key intervals** [13].
-
-### Formulation — stays a QP
-
-Add non-negative reserve enablement variables `r_k^raise`, `r_k^lower` for each service.
-
-**Headroom constraints** (the battery must be able to move by the enabled amount):
-```
-beta_k + r_k^raise  <=  B_MAX          # discharge headroom for raise
-beta_k - r_k^lower  >=  B_MIN          # charge headroom for lower
-```
-
-**Energy adequacy** (must sustain the response for the service duration `tau`):
-```
-chi_k          >=  r_k^raise * tau     # enough stored energy to deliver raise
-C - chi_k      >=  r_k^lower * tau     # enough empty capacity to absorb lower
-```
-`tau` = 6 s / 60 s / 5 min for contingency services; regulation is continuous and needs a different
-(and more conservative) energy treatment.
-
-**⚠ The DOE–FCAS interaction — this is the interesting result:**
-```
-pi_k - r_k^raise  >=  D_min_k          # raise response must fit inside the export envelope
-pi_k + r_k^lower  <=  D_max_k          # lower response must fit inside the import envelope
-```
-
-This is precisely the mechanism by which static export limits throttle FCAS capability [12], and
-precisely what dynamic envelopes relieve [13]. **Quantifying enabled FCAS capacity under static vs
-dynamic envelopes on the Elermore Vale feeder is the single strongest result available to this
-project.** It is directly comparable to the SAPN finding and uses infrastructure you already have.
-
-**Objective** becomes energy cost minus reserve revenue:
-```
-min  sum_k h_k pi_k^2  -  sum_k ( p_k^raise * r_k^raise + p_k^lower * r_k^lower )
-```
-Quadratic + linear, all constraints linear → **still a convex QP**. `P` unchanged in pattern (the
-new variables have zero quadratic cost), `q != 0`. OSQP handles it.
-
-### Aggregation
-
-An individual 10 kWh household battery is far below any NEM registration threshold. FCAS enablement
-is a **VPP-level** quantity: `R_k = sum_i r_{i,k}`. So this is another coupling constraint and slots
-straight into Method A or D. Bid the aggregate; disaggregate the dispatch instruction back to
-households.
-
-### Practical notes
-- NEM dispatch interval is **5 minutes**, not 30. Don't hardcode `s = 48` (see `dispatch/FORMULATION.md` §11).
-- 8 contingency FCAS markets plus 2 regulation markets. Start with **contingency raise only** — one
-  service, one price series, clean story.
-- FCAS prices are extremely spiky. Expected-value optimisation over historical prices will be
-  dominated by a handful of intervals; report medians alongside means.
-
----
-
-## 10. Comparison summary
+## 6. Comparison summary
 
 | Method | Optimal? | Code delta | Scales to N=1785? | Privacy | Matches industry? | Do it? |
 |---|---|---|---|---|---|---|
 | **A. Centralised QP** | ✅ exact | Small | Probably, test it | ✗ | ✗ | **1st — ground truth** |
 | **B. Two-stage allocation** | ✗ measurable gap | Smallest | ✅ trivially | ✅ | ✅✅ SAPN/AEMO | **2nd — the realistic case** |
-| **C. Dual decomposition** | ✅ (slow) | Medium | ✅ | ✅ | Partial | Only if prices are the point |
-| **D. Sharing ADMM** | ✅ | Medium | ✅ | ✅ | Emerging | **3rd — best decomposition** |
-| **E. Price-based indirect** | ✗ no guarantee | Medium | ✅ | ✅ | Research | Baseline / counterexample |
-| **F. MPC + uncertainty** | n/a (wrapper) | Medium–large | inherits | inherits | ✅ | Layer on later |
-| **FCAS co-optimisation** | ✅ (still QP) | Medium | inherits | inherits | ✅✅ | **High-value result** |
 
 ---
 
-## 11. Recommended implementation sequence
+## 7. Recommended implementation sequence
 
 1. **Close the modelling gaps first** (`dispatch/FORMULATION.md` §9). Add round-trip efficiency and relax
    `1^T beta = 0` to a terminal SOC band. Both are small edits and both change every downstream
@@ -404,29 +195,22 @@ households.
    the most policy-legible output.
 4. **OpenDSS validation with DOE rows enabled** and contemporary PV penetration. The paper's current
    "no violations" result is under 2010–11 penetration — the interesting result is where it breaks.
-5. **Method D** if and only if A hits a wall at feeder scale, or if the distributed architecture is
-   itself part of the contribution.
-6. **FCAS layer**, static vs dynamic envelope comparison. This is the strongest single result and it
-   plugs into whichever coupling method is working by then.
-7. **Consumer-facing dashboard**, addressing the prosumer transparency concerns from [12], [13].
+5. **Consumer-facing dashboard**, addressing the prosumer transparency concerns from [12], [13].
 
 ---
 
-## 12. Things that will bite
+## 8. Things that will bite
 
 - **Infeasibility is the default in VPP mode.** A feeder envelope tight enough to be interesting
   will make some households infeasible. Decide the policy up front: soft constraints with slack and
   a large linear penalty is usually right, and the slack values then tell you *who* is constrained
   and *when* — which is a result, not an error.
-- **Warm-start staleness.** When the coupling term changes between ADMM iterations, a stale warm
-  start can slow convergence rather than help. Measure it; don't assume.
-- **`rho` tuning.** OSQP's adaptive `rho` and the outer ADMM's `rho` are different parameters.
-  Naming them distinctly in code will save an afternoon.
+- **Price signals herd.** Any scheme that coordinates through a broadcast price alone (retail TOU
+  included) synchronises every battery at the price trough and creates a new peak there — the
+  uncoupled QP's 22:00 charging block is exactly this. Explicit envelopes, not prices, are what
+  both retained methods enforce.
 - **Three-phase reality.** OpenDSS is unbalanced; the QP layer is single-phase. A feeder envelope
   allocated without regard to phase can be satisfied at the QP layer and still cause a phase-specific
   voltage excursion in OpenDSS. Either allocate per-phase or state the limitation explicitly.
 - **Profile-to-bus mapping** (`dispatch/FORMULATION.md` §7). 145 profiles onto ~1,785 loads. Whatever the
   replication strategy is, it dominates the network results. Seed it and document it.
-- **Reproducibility.** Once ADMM and CPU pooling are combined, floating-point non-determinism from
-  reduction ordering can make results non-bitwise-reproducible. Fix the reduction order or accept
-  and document a tolerance.

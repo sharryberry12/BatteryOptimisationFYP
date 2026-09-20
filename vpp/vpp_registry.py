@@ -2,9 +2,10 @@
 vpp_registry.py
 ===============
 
-Uniform interface over the coupling methods in vpp/ so the end-to-end
-pipeline (run_vpp_network.py) can invoke any of them interchangeably
-(PIPELINE_DESIGN.md Section 3.1).
+Uniform interface over the two coupling methods in vpp/ -- Method A
+(centralised_qp) and Method B (two_stage_doe_allocation) -- so the
+end-to-end pipeline (run_vpp_network.py) can invoke either
+interchangeably (PIPELINE_DESIGN.md Section 3.1).
 
 Each MethodSpec wraps solve functions that already exist in the method
 modules -- nothing in those files changes. run() returns a VPPDispatch
@@ -136,150 +137,16 @@ def _args_two_stage(p):
 def _run_two_stage(ctx, args):
     mod = _module("two_stage_doe_allocation")
     t0 = time.perf_counter()
-    B, curtail_kwh, n_failed = mod.run_rule(
+    B, curtail_kw, shortfall_kw, n_failed = mod.run_rule(
         args.rule, ctx.households, ctx.d_min, ctx.d_max)
     dt = time.perf_counter() - t0
     return VPPDispatch(
         B=B, method="two_stage_doe_allocation",
         converged=(n_failed == 0), iterations=None, solve_time=dt,
-        extras={"rule": args.rule, "curtail_kwh": float(curtail_kwh),
+        extras={"rule": args.rule,
+                "curtail_kwh": float(curtail_kw.sum() * vc.DT),
+                "import_shortfall_kwh": float(shortfall_kw.sum() * vc.DT),
                 "n_failed_households": int(n_failed)})
-
-
-# ==========================================================
-# METHOD C -- dual decomposition
-# ==========================================================
-
-def _args_dual(p):
-    p.add_argument("--iters", type=int, default=300,
-                   help="Subgradient iterations")
-    p.add_argument("--alpha0", type=float, default=10.0,
-                   help="Initial step size (alpha_t = alpha0/sqrt(t)); scale "
-                        "with the dual magnitude (~50-120 on the Ausgrid "
-                        "instances -- 0.5 under-converges, see the method "
-                        "README)")
-    p.add_argument("--iterate", choices=["avg", "last"], default="avg",
-                   help="Report the ergodic average (converges) or the "
-                        "last iterate")
-    p.add_argument("--tol-kw", type=float, default=0.05,
-                   help="Envelope-violation threshold for the converged "
-                        "flag (kW)")
-
-
-def _run_dual(ctx, args):
-    mod = _module("dual_decomposition")
-    t0 = time.perf_counter()
-    out = mod.run_dual(ctx.households, ctx.d_min, ctx.d_max,
-                       args.iters, args.alpha0)
-    dt = time.perf_counter() - t0
-    B = out["B_avg"] if args.iterate == "avg" else out["B_last"]
-    final_viol = vc.envelope_violation(
-        vc.aggregate_pi(ctx.households, B), ctx.d_min, ctx.d_max)["max_kw"]
-    return VPPDispatch(
-        B=np.asarray(B), method="dual_decomposition",
-        converged=(final_viol <= args.tol_kw),
-        iterations=args.iters, solve_time=dt,
-        extras={"iterate": args.iterate, "alpha0": args.alpha0,
-                "final_violation_kw": float(final_viol),
-                "mu": np.asarray(out["mu"]),
-                "viol_last_history": np.asarray(out["hist"]["viol_last"]),
-                "viol_avg_history": np.asarray(out["hist"]["viol_avg"])})
-
-
-# ==========================================================
-# METHOD D -- sharing ADMM
-# ==========================================================
-
-def _args_admm(p):
-    p.add_argument("--rho", type=float, default=50.0,
-                   help="ADMM penalty parameter")
-    p.add_argument("--iters", type=int, default=200,
-                   help="Maximum ADMM iterations")
-    p.add_argument("--tol-kw", type=float, default=0.05,
-                   help="Primal/dual residual stopping tolerance (kW)")
-
-
-def _run_admm(ctx, args):
-    mod = _module("sharing_admm")
-    t0 = time.perf_counter()
-    B, hist, n_used = mod.run_admm(ctx.households, ctx.d_min, ctx.d_max,
-                                   args.rho, args.iters, args.tol_kw)
-    dt = time.perf_counter() - t0
-    converged = bool(hist["r"] and hist["r"][-1] < args.tol_kw
-                     and hist["s"][-1] < args.tol_kw)
-    return VPPDispatch(
-        B=np.asarray(B), method="sharing_admm",
-        converged=converged, iterations=int(n_used), solve_time=dt,
-        extras={"rho": args.rho,
-                "final_primal_kw": float(hist["r"][-1]) if hist["r"] else None,
-                "final_dual_kw": float(hist["s"][-1]) if hist["s"] else None,
-                "primal_history": np.asarray(hist["r"]),
-                "dual_history": np.asarray(hist["s"]),
-                "viol_history": np.asarray(hist["viol"])})
-
-
-# ==========================================================
-# METHOD E -- one-shot price-based control
-# ==========================================================
-
-def _args_price(p):
-    p.add_argument("--signal", choices=["none", "tou", "shadow"],
-                   default="shadow",
-                   help="Broadcast price signal. 'shadow' uses the "
-                        "centralised solve's coupling duals (approximately "
-                        "reproduces the coupled optimum); 'tou' is the "
-                        "naive retail-shaped herding demo; 'none' is the "
-                        "uncoupled baseline")
-    p.add_argument("--gamma", type=float, default=50.0,
-                   help="Scale for the TOU-shaped signal")
-
-
-def _run_price(ctx, args):
-    mod = _module("price_based_control")
-    y_star = None
-    if args.signal == "shadow":
-        bench = vc.solve_centralised(ctx.households, ctx.d_min, ctx.d_max)
-        _require_solved(bench.status,
-                        "centralised benchmark (needed for --signal shadow)")
-        y_star = bench.y_couple
-    mu = mod.build_signal(args.signal, args.gamma, ctx.tariff, y_star)
-    t0 = time.perf_counter()
-    B = mod.respond(ctx.households, mu)
-    dt = time.perf_counter() - t0
-    return VPPDispatch(
-        B=np.asarray(B), method="price_based_control",
-        converged=True, iterations=None, solve_time=dt,
-        extras={"signal": args.signal, "gamma": args.gamma,
-                "mu": np.asarray(mu)})
-
-
-# ==========================================================
-# FCAS co-optimisation
-# ==========================================================
-
-def _args_fcas(p):
-    p.add_argument("--fcas-price", type=float, default=0.1,
-                   help="Raise enablement price, $/kW per interval (flat)")
-    p.add_argument("--tau", type=float, default=1.0 / 12.0,
-                   help="Required sustain duration in hours "
-                        "(default 5 min)")
-
-
-def _run_fcas(ctx, args):
-    mod = _module("fcas_cooptimisation")
-    price = args.fcas_price * np.ones(vc.T)
-    B, R, dt, status = mod.solve_fcas(ctx.households, ctx.d_min, ctx.d_max,
-                                      price, args.tau)
-    _require_solved(status, "FCAS co-optimised QP")
-    R_agg = R.sum(axis=0)
-    return VPPDispatch(
-        B=np.asarray(B), method="fcas_cooptimisation",
-        converged=True, iterations=None, solve_time=dt,
-        extras={"status": status, "fcas_price": args.fcas_price,
-                "tau_hours": args.tau,
-                "fcas_revenue": float(np.sum(price * R_agg)),
-                "raise_total_kwh": float(R_agg.sum() * vc.DT),
-                "R": np.asarray(R)})
 
 
 # ==========================================================
@@ -298,26 +165,4 @@ REGISTRY = {
                     "(deployed-practice baseline)",
         aliases=("two_stage", "two-stage"),
         add_args=_args_two_stage, run=_run_two_stage),
-    "dual_decomposition": MethodSpec(
-        name="dual_decomposition",
-        description="Method C: dual decomposition via projected subgradient",
-        aliases=("dual",),
-        add_args=_args_dual, run=_run_dual),
-    "sharing_admm": MethodSpec(
-        name="sharing_admm",
-        description="Method D: consensus/sharing ADMM "
-                    "(best decomposition)",
-        aliases=("admm",),
-        add_args=_args_admm, run=_run_admm),
-    "price_based_control": MethodSpec(
-        name="price_based_control",
-        description="Method E: one-shot price-based indirect control",
-        aliases=("price",),
-        add_args=_args_price, run=_run_price),
-    "fcas_cooptimisation": MethodSpec(
-        name="fcas_cooptimisation",
-        description="FCAS contingency-raise co-optimisation under DOEs "
-                    "(reserve schedule goes to extras, not the network)",
-        aliases=("fcas",),
-        add_args=_args_fcas, run=_run_fcas),
 }

@@ -1,16 +1,12 @@
 """
 Cross-method consistency tests for the VPP coupling layer (vpp/).
 
-The methods make claims about each other that can be checked directly on a
-small synthetic ensemble (no data.csv needed):
+The two methods make claims about each other that can be checked directly on
+a small synthetic ensemble (no data.csv needed):
 
   * Method A hard == Method A soft when the envelope is feasible;
-  * a one-shot broadcast of A's coupling duals (Method E 'shadow') reproduces
-    A exactly -- the objectives are strictly convex, so the Lagrangian
-    minimiser at the optimal prices IS the primal optimum;
-  * the FCAS co-optimisation at zero FCAS price is Method A;
-  * sharing ADMM (Method D) converges to A;
-  * dual decomposition (Method C) with an adequate step converges to A;
+  * Method A's coupling duals are non-zero exactly where the cap binds, with
+    the sign OSQP's convention dictates on each side of the envelope;
   * two-stage allocation (Method B) is feasible when every slice is, and
     can never beat A;
   * vpp_common.feeder_envelope('tight_tou') is osqp_daily_with_DOE's
@@ -18,8 +14,15 @@ small synthetic ensemble (no data.csv needed):
   * a HouseholdSolver with a per-household DOE reproduces
     osqp_daily_with_DOE.solve_battery -- Part B's local problem IS Part A's QP.
 
+Two fixtures cover both sides of the coupling: `ensemble` binds the IMPORT
+cap (winter evening peak), `ensemble_export` binds the EXPORT cap (summer
+midday PV). The export fixture exists because a sign error in the coupling
+duals or the two-stage curtailment credit would be invisible to import-only
+tests (audit finding, 2026-09-01).
+
 Every dispatch is also run through validate_dispatch (SOC, rate,
-neutrality). Verified 2026-08-18.
+neutrality). Verified 2026-08-18; export side added 2026-09-02; trimmed to
+Methods A and B on 2026-09-11.
 """
 
 import sys
@@ -35,11 +38,7 @@ if str(REPO) not in sys.path:
 vc = pytest.importorskip("vpp.vpp_common")
 base = pytest.importorskip("dispatch.osqp_daily")
 D = pytest.importorskip("dispatch.osqp_daily_with_DOE")
-admm = pytest.importorskip("vpp.sharing_admm.sharing_admm")
-dd = pytest.importorskip("vpp.dual_decomposition.dual_decomposition")
 ts = pytest.importorskip("vpp.two_stage_doe_allocation.two_stage_doe_allocation")
-pbc = pytest.importorskip("vpp.price_based_control.price_based_control")
-fc = pytest.importorskip("vpp.fcas_cooptimisation.fcas_cooptimisation")
 
 T = vc.T
 E_MAX = 10.0
@@ -80,6 +79,44 @@ def centralised(ensemble):
     return res
 
 
+def synthetic_pv_household(i, tariff):
+    """A summer-like day: big midday PV over a light load -- the export
+    regime. Per-household surplus stays below P_MAX so no envelope slice
+    ever needs the curtailment relaxation."""
+    hrs = np.arange(T) * vc.DT
+    load = 0.35 + 0.5 * np.exp(-((hrs - 19.0) / 2.0) ** 2)
+    pv = (3.2 + 0.4 * i) * np.maximum(np.sin(np.pi * (hrs - 7.0) / 10.0), 0.0)
+    pv[(hrs < 7.0) | (hrs > 17.0)] = 0.0
+    h, b_unc, sav = base.optimise_H(load, pv, tariff, E_MAX, "fit")
+    return vc.HouseholdDay(name=f"pv{i}", customer=i, date="2010-12-21",
+                           load=load, pv=pv, net=load - pv, h=h, e_max=E_MAX,
+                           b_uncoupled=b_unc, savings_uncoupled=sav)
+
+
+@pytest.fixture(scope="module")
+def ensemble_export():
+    tariff = base.build_tariff()
+    households = [synthetic_pv_household(i, tariff) for i in range(4)]
+    agg_unc = vc.aggregate_pi(households,
+                              np.vstack([hh.b_uncoupled for hh in households]))
+    # export cap at 75 % of the uncoupled aggregate export peak: binds,
+    # stays feasible (agg_unc is most negative at midday)
+    cap = 0.75 * (-agg_unc.min())
+    assert cap > 1.0, "fixture must actually export"
+    d_min = -cap * np.ones(T)
+    d_max = np.inf * np.ones(T)
+    assert vc.envelope_violation(agg_unc, d_min, d_max)["max_kw"] > 0.5
+    return households, tariff, d_min, d_max
+
+
+@pytest.fixture(scope="module")
+def centralised_export(ensemble_export):
+    households, _tariff, d_min, d_max = ensemble_export
+    res = vc.solve_centralised(households, d_min, d_max)
+    assert res.status == "solved"
+    return res
+
+
 def _valid(households, B):
     return all(not vc.validate_dispatch(hh, b) for hh, b in zip(households, B))
 
@@ -103,88 +140,46 @@ def test_soft_equals_hard_when_feasible(ensemble, centralised):
     assert soft.objective == pytest.approx(centralised.objective, rel=1e-6)
 
 
-def test_shadow_price_broadcast_reproduces_centralised(ensemble, centralised):
-    households, tariff, d_min, d_max = ensemble
-    mu = pbc.build_signal("shadow", 50.0, tariff, centralised.y_couple)
-    B = pbc.respond(households, mu)
-    assert vc.objective_surrogate(households, B) == pytest.approx(
-        centralised.objective, rel=1e-5)
-    assert _viol(households, B, d_min, d_max) < 1e-3
-    assert np.allclose(B, centralised.B, atol=1e-3)
-
-
-def test_price_none_is_the_uncoupled_dispatch(ensemble):
-    households, tariff, _dmin, _dmax = ensemble
-    B = pbc.respond(households, pbc.build_signal("none", 50.0, tariff, None))
-    assert np.allclose(B, np.vstack([hh.b_uncoupled for hh in households]),
-                       atol=1e-4)
-
-
-def test_fcas_at_zero_price_is_centralised(ensemble, centralised):
-    households, _t, d_min, d_max = ensemble
-    B, R, _dt, status = fc.solve_fcas(households, d_min, d_max,
-                                      np.zeros(T), fc.TAU_DEFAULT)
-    assert status == "solved"
-    assert np.allclose(B, centralised.B, atol=1e-5)
-    assert R.max() < 1e-4
-
-
-def test_fcas_respects_headroom_adequacy_and_envelope(ensemble):
-    households, _t, d_min, d_max = ensemble
-    price = 0.1 * np.ones(T)
-    B, R, _dt, status = fc.solve_fcas(households, d_min, d_max, price,
-                                      fc.TAU_DEFAULT)
-    assert status == "solved" and R.sum() > 0
-    assert _valid(households, B)
-    assert (B + R <= vc.P_MAX + 1e-4).all()                       # headroom
-    soc = np.vstack([vc.SOC_INIT_FRAC * hh.e_max - vc.DT * np.cumsum(b)
-                     for hh, b in zip(households, B)])
-    assert (soc >= fc.TAU_DEFAULT * R - 1e-4).all()               # adequacy
-    assert _viol(households, B, d_min, d_max) < 1e-3               # import cap
-
-
-def test_sharing_admm_converges_to_centralised(ensemble, centralised):
-    households, _t, d_min, d_max = ensemble
-    B, hist, n_it = admm.run_admm(households, d_min, d_max, rho=50.0,
-                                  iters=500, tol_kw=0.01)
-    assert n_it < 500, "ADMM hit the iteration cap"
-    assert _valid(households, B)
-    gap = vc.objective_surrogate(households, B) / centralised.objective - 1
-    assert abs(gap) < 2e-3
-    assert _viol(households, B, d_min, d_max) < 0.02
-
-
-def test_dual_decomposition_prices_converge_to_centralised_duals(ensemble, centralised):
-    """The sharp claim of Method C is that the projected-subgradient prices
-    converge to the coupling duals of Method A (mu -> -y). With an adequate
-    step they do within ~1 % in 400 iterations. The ergodic-average PRIMAL
-    recovers only at O(1/sqrt t): on a strongly binding cap (|y| ~ 120 here)
-    a 0.1 kW residual violation is worth several % of the objective, so it
-    is bounded loosely. NOTE the shipped default alpha0=0.5 is an order of
-    magnitude too small for real instances (dual scale ~50-70): see
-    vpp/dual_decomposition/README.md."""
-    households, _t, d_min, d_max = ensemble
-    out = dd.run_dual(households, d_min, d_max, iters=400, alpha0=10.0)
-    y_scale = np.abs(centralised.y_couple).max()
-    assert np.abs(out["mu"] + centralised.y_couple).max() < 0.05 * y_scale
-    B = out["B_avg"]
-    assert _valid(households, B)
-    assert _viol(households, B, d_min, d_max) < 0.1
-    gap = vc.objective_surrogate(households, B) / centralised.objective - 1
-    assert -0.06 < gap < 0.02          # infeasible-side, shrinking with iterations
-    # more iterations tighten the primal (O(1/sqrt t)): 1500 must beat 400
-    out2 = dd.run_dual(households, d_min, d_max, iters=1500, alpha0=10.0)
-    assert _viol(households, out2["B_avg"], d_min, d_max) < _viol(households, B, d_min, d_max)
-
-
 @pytest.mark.parametrize("rule", ts.RULES)
 def test_two_stage_is_feasible_and_never_beats_centralised(ensemble, centralised, rule):
     households, _t, d_min, d_max = ensemble
-    B, curtail_kwh, n_failed = ts.run_rule(rule, households, d_min, d_max)
+    B, curtail_kw, shortfall_kw, n_failed = ts.run_rule(
+        rule, households, d_min, d_max)
     assert n_failed == 0
+    assert curtail_kw.max() < 1e-6 and shortfall_kw.max() < 1e-6
     assert _valid(households, B)
     assert _viol(households, B, d_min, d_max) < 1e-3
     assert vc.objective_surrogate(households, B) >= centralised.objective - 1e-6
+
+
+# ==========================================================
+# EXPORT-CAP SIDE (ensemble_export) -- the paths an import-only
+# suite cannot see: the upper coupling bound's dual sign and the
+# two-stage curtailment credit
+# ==========================================================
+
+def test_centralised_export_cap_binds_with_positive_duals(
+        ensemble_export, centralised_export):
+    households, _t, d_min, d_max = ensemble_export
+    assert _valid(households, centralised_export.B)
+    assert _viol(households, centralised_export.B, d_min, d_max) < 1e-4
+    # export cap active -> upper coupling bound -> y strictly positive
+    assert (centralised_export.y_couple > 1e-6).any()
+    assert centralised_export.y_couple.min() > -1e-6
+
+
+@pytest.mark.parametrize("rule", ts.RULES)
+def test_two_stage_export_side_is_feasible_after_curtailment(
+        ensemble_export, centralised_export, rule):
+    households, _t, d_min, d_max = ensemble_export
+    B, curtail_kw, shortfall_kw, n_failed = ts.run_rule(
+        rule, households, d_min, d_max)
+    assert n_failed == 0
+    assert shortfall_kw.max() < 1e-6           # no import cap here
+    agg_delivered = vc.aggregate_pi(households, B) + curtail_kw
+    assert vc.envelope_violation(agg_delivered, d_min, d_max)["max_kw"] < 1e-3
+    assert vc.objective_surrogate(households, B) \
+        >= centralised_export.objective - 1e-6
 
 
 def test_tight_tou_envelope_matches_doe_script_times_n():

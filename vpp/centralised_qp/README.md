@@ -23,7 +23,7 @@ block-diagonal, which is exactly the sparsity OSQP exploits.
 **Soft mode** (`--soft`): adds slack `s_up, s_lo >= 0` on the coupling with a
 linear penalty (default `1e3`). The solve is then always feasible and the slack
 values tell you *when* and *by how much* the envelope cannot be met — a result,
-not an error (VPP_EXTENSION.md §12). Hard mode reports OSQP primal
+not an error (VPP_EXTENSION.md §8). Hard mode reports OSQP primal
 infeasibility instead.
 
 ## Run

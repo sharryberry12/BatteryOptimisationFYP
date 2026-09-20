@@ -6,7 +6,7 @@ QP scheduler ([../dispatch/osqp_daily.py](../dispatch/osqp_daily.py)). Read
 [../dispatch/FORMULATION.md](../dispatch/FORMULATION.md) for notation and the base formulation.
 The VPP is not separate from Part A: every household's local problem *is* the
 Part A QP (same weights `h`, same constraint block); this layer adds one thing —
-the feeder-head coupling `D_min ≤ Σᵢ pᵢ ≤ D_max` — and six ways of enforcing it.
+the feeder-head coupling `D_min ≤ Σᵢ pᵢ ≤ D_max` — and two ways of enforcing it.
 
 ## Layout
 
@@ -21,14 +21,11 @@ the feeder-head coupling `D_min ≤ Σᵢ pᵢ ≤ D_max` — and six ways of en
 |---|---|---|
 | [centralised_qp/](centralised_qp/) | A (§3) | One stacked OSQP problem — the exact ground truth every other method benchmarks against |
 | [two_stage_doe_allocation/](two_stage_doe_allocation/) | B (§4) | DNSP splits the feeder envelope per household, households solve independently — deployed Australian practice |
-| [dual_decomposition/](dual_decomposition/) | C (§5) | Shadow-price coordination via projected subgradient — slow but the prices *are* the product |
-| [sharing_admm/](sharing_admm/) | D (§6) | Boyd sharing ADMM — the recommended decomposition; same solver, same sparsity, same warm start |
-| [price_based_control/](price_based_control/) | E (§7) | One-shot broadcast price, selfish response — the counterexample showing why envelopes are needed |
-| [fcas_cooptimisation/](fcas_cooptimisation/) | §9 | Contingency-raise FCAS co-optimisation; quantifies static vs dynamic envelope FCAS capacity |
 
-Method F (receding-horizon MPC, §8) is deliberately **not** a folder here: it is a
-wrapper around any of the above, not an alternative coupling method. Layer it on
-once a coupling method is chosen.
+Dual decomposition, sharing ADMM, price-based control, FCAS co-optimisation and
+the MPC wrapper were designed and prototyped but are **not** carried in the
+repository (removed 2026-09-11); VPP_EXTENSION.md §5 records what they were and
+why the comparison stops at A versus B.
 
 `vpp_common.py` holds everything shared: ensemble assembly, feeder envelope
 scenarios, the centralised benchmark solve, persistent per-household OSQP
@@ -45,10 +42,10 @@ discharge), with grid power `pi = net - b` substituted out. The feeder coupling
 D_min <= sum_i pi_i <= D_max      becomes      agg_net - D_max <= sum_i b_i <= agg_net - D_min
 ```
 
-so coupling rows are `[I I ... I]` and `P` stays **diagonal** in every method,
-including the ADMM proximal shift. All methods share the identical strictly
-convex objective (weights `h_i` frozen from the uncoupled per-household
-heuristic), so optimality gaps between methods are well defined.
+so coupling rows are `[I I ... I]` and `P` stays **diagonal** in both methods.
+Both share the identical strictly convex objective (weights `h_i` frozen from
+the uncoupled per-household heuristic), so the optimality gap of B against A is
+well defined.
 
 ## Running
 
@@ -60,12 +57,9 @@ themselves) and share a common CLI (`--n-households`, `--date`,
 ```bash
 python vpp/centralised_qp/centralised_qp.py --n-households 20 --save
 python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --save
-python vpp/dual_decomposition/dual_decomposition.py --save
-python vpp/sharing_admm/sharing_admm.py --save
-python vpp/price_based_control/price_based_control.py --save
-python vpp/fcas_cooptimisation/fcas_cooptimisation.py --save
-python vpp/run_vpp_network.py admm --n-households 20 --scenario static           # -> outputs/runs/<id>/
-python vpp/run_vpp_network.py resume --run-dir outputs/runs/sharing_admm_static_...
+python vpp/run_vpp_network.py centralised_qp --n-households 20 --scenario static  # -> outputs/runs/<id>/
+python vpp/run_vpp_network.py two_stage --rule prorata_surplus --skip-network
+python vpp/run_vpp_network.py resume --run-dir outputs/runs/centralised_qp_static_...
 ```
 
 The first run cleans the full Ausgrid CSV (~1 min) and caches the day arrays in
@@ -77,26 +71,27 @@ is where the coupling bites hardest (the uncoupled QP herds every battery into
 (docs/WALKTHROUGH.md Part 3, `tests/test_vpp_methods.py`).
 
 Verification: `tests/test_vpp_methods.py` pins the cross-method invariants
-(A hard = A soft when feasible; shadow-price broadcast = A; FCAS at zero price
-= A; ADMM → A; dual prices → −y; two-stage feasible and never better than A;
-`HouseholdSolver` with a per-household DOE = `dispatch/osqp_daily_with_DOE`).
+(A hard = A soft when feasible; A's coupling duals non-zero exactly where the
+cap binds, with the right sign on each side; two-stage feasible and never
+better than A, with export excess credited as curtailment; `HouseholdSolver`
+with a per-household DOE = `dispatch/osqp_daily_with_DOE`) — on **both**
+coupling sides: an import-cap fixture (winter evening peak) and an export-cap
+fixture (summer midday PV).
 
-Recommended experiment order (VPP_EXTENSION.md §11): centralised first (ground
+Recommended experiment order (VPP_EXTENSION.md §7): centralised first (ground
 truth + scaling curve), two-stage second (the policy-relevant efficiency/fairness
-comparison), ADMM third (only if centralised hits a wall), price-based as the
-cautionary baseline, FCAS as the headline static-vs-dynamic result.
+comparison across allocation rules).
 
 ## Shared caveats
 
 - **Feeder infeasibility is the default, not an error.** Tight envelopes make
   the coupled problem infeasible; `centralised_qp.py --soft` adds penalised
-  slack whose values identify *who/when*. Iterative methods cannot converge on
-  an infeasible envelope — check the centralised solve first.
+  slack whose values identify *who/when*. Method B reports households whose
+  slice is infeasible as `n_failed` — check the centralised solve first.
 - **Weights are frozen** from the uncoupled heuristic. Re-running the greedy
   heuristic inside a coupled loop would make the objective method-dependent and
   the gap numbers meaningless.
 - Modelling gaps from dispatch/FORMULATION.md §9 (no round-trip efficiency, perfect
   foresight, daily SOC neutrality) are inherited untouched — close them there
   before publishing numbers from here.
-- Everything is single-day. Annual sweeps are a loop over `--date` away, but
-  mind the runtime of the iterative methods.
+- Everything is single-day. Annual sweeps are a loop over `--date` away.

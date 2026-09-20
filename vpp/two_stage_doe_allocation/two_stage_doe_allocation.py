@@ -108,15 +108,23 @@ def allocate(rule, households, d_min, d_max):
 # ==========================================================
 
 def run_rule(rule, households, d_min, d_max):
-    """Allocate, then solve every household independently."""
+    """Allocate, then solve every household independently.
+
+    Returns (B, curtail_kw, shortfall_kw, n_failed). curtail_kw and
+    shortfall_kw are per-interval AGGREGATE arrays (T,) of the realised
+    out-of-envelope power of the returned dispatch against the original
+    (pre-relaxation) allocated envelopes: export excess is PV a deployed
+    inverter would spill to stay inside its DOE, import excess is cap
+    shortfall the battery cannot cover. They are distinct physical
+    quantities -- do not sum them into one "curtailment" number.
+    """
     d_min_i, d_max_i = allocate(rule, households, d_min, d_max)
     B = np.zeros((len(households), vc.T))
-    curtail_kwh = 0.0
+    curtail_kw = np.zeros(vc.T)
+    shortfall_kw = np.zeros(vc.T)
     n_failed = 0
     for i, hh in enumerate(households):
         solver = vc.HouseholdSolver(hh, d_min=d_min_i[i], d_max=d_max_i[i])
-        curtail_kwh += float((solver.doe_relax_kw
-                              + solver.import_relax_kw).sum() * vc.DT)
         b, status = solver.solve()
         if "solved" not in status:
             n_failed += 1  # zeros returned; shows up in violation metrics
@@ -126,7 +134,10 @@ def run_rule(rule, households, d_min, d_max):
             logger.warning("household %s: dispatch violates its allocated "
                            "envelope", hh.name)
         B[i] = b
-    return B, curtail_kwh, n_failed
+        pi = hh.net - b
+        curtail_kw += np.maximum(d_min_i[i] - pi, 0.0)    # export excess
+        shortfall_kw += np.maximum(pi - d_max_i[i], 0.0)  # import excess
+    return B, curtail_kw, shortfall_kw, n_failed
 
 
 def main():
@@ -155,25 +166,33 @@ def main():
     fig_p, ax_p = plt.subplots(figsize=(10, 5))
     rows = []
     for rule in rules:
-        B, curtail_kwh, n_failed = run_rule(rule, households, d_min, d_max)
+        B, curtail_kw, shortfall_kw, n_failed = run_rule(
+            rule, households, d_min, d_max)
         obj = vc.objective_surrogate(households, B)
         agg_pi = vc.aggregate_pi(households, B)
-        viol = vc.envelope_violation(agg_pi, d_min, d_max)
+        # deliverable aggregate: a deployed inverter spills the export
+        # excess, so credit curtail_kw before measuring the residual
+        # feeder violation (import shortfall stays visible -- nothing
+        # physical removes it)
+        agg_delivered = agg_pi + curtail_kw
+        viol = vc.envelope_violation(agg_delivered, d_min, d_max)
         savings = vc.savings_vector(households, B, tariff, args.mode)
         gap = (obj - obj_star) / obj_star * 100.0 \
             if obj_star is not None else np.nan
         rows.append((rule, obj, gap, savings.sum(),
                      vc.jain_index(savings), vc.gini(savings),
-                     viol["max_kw"], curtail_kwh, n_failed))
-        ax_p.plot(hours, agg_pi, label=rule)
+                     viol["max_kw"],
+                     float(curtail_kw.sum() * vc.DT),
+                     float(shortfall_kw.sum() * vc.DT), n_failed))
+        ax_p.plot(hours, agg_delivered, label=rule)
 
     logger.info("=== Method B: allocation rule comparison ===")
-    logger.info("  %-16s %10s %8s %9s %6s %6s %8s %8s %6s",
+    logger.info("  %-16s %10s %8s %9s %6s %6s %8s %8s %9s %6s",
                 "rule", "objective", "gap%", "save$/d",
-                "Jain", "Gini", "viol kW", "curt kWh", "fail")
+                "Jain", "Gini", "viol kW", "curt kWh", "short kWh", "fail")
     for r in rows:
-        logger.info("  %-16s %10.3f %8.2f %9.2f %6.3f %6.3f %8.3f %8.2f %6d",
-                    *r)
+        logger.info("  %-16s %10.3f %8.2f %9.2f %6.3f %6.3f %8.3f %8.2f "
+                    "%9.2f %6d", *r)
 
     if np.isfinite(d_min).any():
         ax_p.plot(hours, d_min, "r--", label="feeder envelope")

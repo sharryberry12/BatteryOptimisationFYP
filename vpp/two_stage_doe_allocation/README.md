@@ -20,8 +20,13 @@ By construction `sum_i D_min,i >= D_min`, so feeder compliance holds without
 any runtime coordination (verified in the output anyway).
 
 Per-household envelopes can demand more export headroom than a 5 kW battery can
-physically deliver; those bounds are relaxed to the battery limit and reported
-as **required curtailment (kWh)** — physically, PV spill.
+physically deliver; those bounds are relaxed to the battery limit. The script
+then reports the **realised** out-of-envelope energy of each dispatch against
+its original allocation, split into its two distinct physical quantities:
+**curt kWh** (export excess — PV a deployed inverter would spill, so it is
+credited before the residual "viol kW" is measured) and **short kWh** (import
+excess the battery cannot cover — nothing physical removes it, so it stays
+in "viol kW").
 
 **Energy-infeasible slices (read before quoting the numbers).** The relaxation
 above only handles per-interval *power*; a slice can still be infeasible on
@@ -61,8 +66,8 @@ python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py \
     --rules equal,maxmin --scenario tight_tou --save
 ```
 
-Outputs: per-rule table (objective, gap %, savings, Jain, Gini, violation,
-curtailment, failed solves), `outputs/figures/vpp/two_stage_doe_allocation/two_stage_aggregate.png` and
+Outputs: per-rule table (objective, gap %, savings, Jain, Gini, residual
+violation, curtailment, import shortfall, failed solves), `outputs/figures/vpp/two_stage_doe_allocation/two_stage_aggregate.png` and
 `outputs/figures/vpp/two_stage_doe_allocation/two_stage_tradeoff.png`.
 
 ## Assessment (from VPP_EXTENSION.md §4)

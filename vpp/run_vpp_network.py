@@ -19,14 +19,12 @@ Figures and CSVs land in outputs/runs/<method>_<scenario>_<date>_<timestamp>/.
 Every run is reproducible from its manifest.json.
 
 Examples (repo root; --data defaults to data/data.csv):
-    python vpp/run_vpp_network.py sharing_admm
-    python vpp/run_vpp_network.py admm --rho 5 --n-households 40
+    python vpp/run_vpp_network.py centralised_qp --n-households 20
     python vpp/run_vpp_network.py centralised_qp --soft --scenario tight_tou
-    python vpp/run_vpp_network.py fcas --skip-network
-    python vpp/run_vpp_network.py resume --run-dir outputs/runs/sharing_admm_static_...
+    python vpp/run_vpp_network.py two_stage --rule prorata_surplus --skip-network
+    python vpp/run_vpp_network.py resume --run-dir outputs/runs/centralised_qp_static_...
 
-The method subcommands accept short aliases: centralised, two_stage,
-dual, admm, price, fcas.
+The method subcommands accept short aliases: centralised, two_stage.
 """
 
 import argparse
@@ -392,7 +390,10 @@ def build_summary(manifest, results, injected, d_min_s, d_max_s):
             "n_violations": r["n_violations"],
             "total_points": r["total_points"],
             "peak_tx_kw": float(np.max(np.abs(tx))),
-            "loss_kw": r["loss_kw"],
+            # simulate_scenario reports the losses of the LAST power flow
+            # of the day (23:30-24:00) only, not a daily total -- label it
+            # as such so the per-day comparison table cannot be misread
+            "loss_kw_final_interval": r["loss_kw"],
             "tx_envelope_exceed_kw": tx_viol["max_kw"],
             "tx_envelope_exceed_intervals": tx_viol["n_intervals"],
             "injected_peak_kw": float(np.max(np.abs(injected[scen]))),
@@ -446,7 +447,7 @@ def report_stage(run_dir, fig_dir, manifest, results, injected, scale,
     vexport.save_manifest(run_dir, manifest)
 
     cols = ["scenario", "v_min_pu", "v_max_pu", "n_violations",
-            "peak_tx_kw", "loss_kw", "tx_envelope_exceed_kw",
+            "peak_tx_kw", "loss_kw_final_interval", "tx_envelope_exceed_kw",
             "savings_total_per_day"]
     print("\n" + df[cols].to_string(index=False,
                                     float_format=lambda v: f"{v:.3f}"))

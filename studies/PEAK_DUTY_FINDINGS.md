@@ -7,17 +7,17 @@ plant* whose value is firm capacity, not bill savings. Produced by
 Elermore Vale OpenDSS model). Figures in `outputs/figures/peak_duty/` and
 `outputs/runs/peak_replay_*/figures/`.
 
-> **Model epoch warning (2026-08-24):** the network-side numbers in §
-> below (the feeder-head replay table — peak P, v_min, violation points —
-> and the "~450 of the 1,273 violation points" claim) were produced on the
-> pre-2026-08-24 OpenDSS model, which overstated line impedance (~2× on
-> the backbone; see network/MODEL_VERIFICATION.md). They are pessimistic
-> on voltages and violation counts; the *dispatch-side* results (duty
-> cycle, event sizing, 772 kW peak, 2.23 kW / 10.0 kWh per household) do
-> not touch the network model and stand. Regeneration is blocked on
-> `data/data_3_years.csv`, which is no longer on this machine — restore
-> it and re-run `python studies/replay_peak_event.py` to update the
-> replay table on the corrected model.
+> **Model epoch note (resolved 2026-09-01):** §5 was regenerated on the
+> post-2026-08-24 (Carson-faithful) OpenDSS model after
+> `data/data_3_years.csv` was restored
+> (`outputs/runs/peak_replay_2011-02-05_20260901-205054/`). As the old
+> warning predicted, the pre-rework numbers were pessimistic: v_min
+> 0.727 → 0.826 p.u., violation points 1,273 → 230 of 4,800. The epoch-2
+> model also excludes the 25 BlueGen CHP loads, so replication is ×5.95
+> (1,785 loads), not ×6.03 (1,810). The *dispatch-side* results (duty
+> cycle, event sizing, 772 kW peak, 104-household fleet, 2.23 kW /
+> 10.0 kWh per household) reproduced exactly, as expected — they never
+> touched the network model.
 
 ## 1. Why this analysis exists
 
@@ -136,43 +136,44 @@ which are forecastable, but worth stating.
 
 `replay_peak_event.py` replays the worst event (2011-02-05 16:00–23:30) as
 a physical power flow: the 300 customers' day profiles are mapped round-robin
-onto all 1,810 Elermore Vale loads (×6.03 replication), the 104-household
+onto the 1,785 Elermore Vale household loads (×5.95 replication; the 25
+BlueGen CHP loads are excluded on the epoch-2 model), the 104-household
 fleet discharges pro-rata (per-household peak 2.23 kW, 10.0 kWh — i.e. each
 battery fully drains exactly once), and both scenarios (no battery / VPP)
 are solved as 48-step daily power flows. Threshold at feeder scale:
-70 % × 772 kW × 6.03 = **3,261 kW** at the zone substation.
+70 % × 772 kW × 5.95 = **3,216 kW** at the zone substation.
 
 | Scenario | Peak feeder-head P | Over threshold | v_min | Voltage-violation points |
 |---|---|---|---|---|
-| No battery | 5,077 kW | +1,816 kW | 0.727 p.u. | 1,273 of 4,800 |
-| VPP peaker fleet | 3,644 kW | +383 kW | 0.781 p.u. | 820 of 4,800 |
+| No battery | 5,002 kW | +1,786 kW | 0.826 p.u. | 230 of 4,800 |
+| VPP peaker fleet | 3,446 kW | +230 kW | 0.870 p.u. | 139 of 4,800 |
 
-**Max measured shave: 1,438 kW** — the evening profile is flat-topped for
+**Max measured shave: 1,556 kW** — the evening profile is flat-topped for
 the full 7.5 h event (`outputs/runs/peak_replay_*/figures/feeder_head_relief.png`),
 which is exactly the visual signature of a peaker plant holding a firm limit.
 
 Three physical findings the kW-bookkeeping could not show:
 
 1. **Losses drive a wedge between customer-level and feeder-head capacity.**
-   The *injected* VPP aggregate sits exactly on the 3,261 kW threshold, but
-   the *measured* feeder head rides ~383 kW (~9 %) above it — network
-   losses at this loading (~380 kW at the feeder head during the event).
-   The measured shave (1,438 kW) also exceeds the injected shave
-   (231.6 kW × 6.03 = 1,397 kW) because reducing flow also avoids some
-   losses. Implication: a firm-capacity product defined *at the zone
-   substation* must be sized on measured power — roughly a losses-margin
-   (~9 % here) more fleet than the customer-aggregate arithmetic suggests —
-   or the threshold must be defined at the customer-aggregate level.
+   The *injected* VPP aggregate sits exactly on the 3,216 kW threshold, but
+   the *measured* feeder head rides ~230 kW (~7 %) above it — network
+   losses at this loading. The measured shave (1,556 kW) also exceeds the
+   injected shave (231.6 kW × 5.95 = 1,378 kW) because reducing flow also
+   avoids some losses. Implication: a firm-capacity product defined *at the
+   zone substation* must be sized on measured power — roughly a
+   losses-margin (~7 % here on the corrected model; ~9 % on the pre-rework
+   one) more fleet than the customer-aggregate arithmetic suggests — or
+   the threshold must be defined at the customer-aggregate level.
 2. **The peak relief is also voltage relief.** During the event the
-   no-battery feeder sags to 0.727 p.u. at the worst monitored load —
-   far below the −6 % statutory limit, the kind of condition that precedes
-   load shedding. The fleet lifts the evening minimum by ~0.05 p.u. and
-   removes ~450 of the 1,273 violation points. It does not fix the feeder's
-   midday overvoltage (up to 1.118 p.u. from replicated PV export) — that
+   no-battery feeder sags to 0.826 p.u. at the worst monitored load —
+   still far below the −6 % statutory limit (0.94 p.u.). The fleet lifts
+   the evening minimum by ~0.044 p.u. (0.826 → 0.870) and removes 91 of
+   the 230 violation points (~40 %). It does not fix the feeder's
+   midday overvoltage (up to 1.114 p.u. from replicated PV export) — that
    is the *export*-envelope problem the DOE methods in `vpp/` address, and
    the two are complementary: the same fleet charges midday, discharges at
    the evening peak.
-3. **The stress is real but the mapping exaggerates it.** ×6 replication of
+3. **The stress is real but the mapping exaggerates it.** ~×6 replication of
    300 all-solar households onto every load makes the simulated feeder
    heavily loaded (evening violations even in the VPP scenario). Absolute
    voltages/kW describe this synthetic loading, not the real Elermore Vale

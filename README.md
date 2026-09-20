@@ -28,7 +28,7 @@ outputs/          EVERYTHING GENERATED (not in git): profiles/, figures/, runs/,
 |---|---|---|
 | [dispatch/](dispatch/) | [dispatch/README.md](dispatch/README.md), [dispatch/FORMULATION.md](dispatch/FORMULATION.md) | `osqp_daily.py` (R15 QP + heuristic), `osqp_daily_with_DOE.py` (+ export/import envelopes, PV curtailment, import shortfall), `diagnostics/` |
 | [network/](network/) | [network/README.md](network/README.md), [network/MODEL_VERIFICATION.md](network/MODEL_VERIFICATION.md) | `elermorevale_openDSS.py` (build + profile-driven simulation), `elermorevale_gui.py` (dashboard), `glm/` (GridLAB-D sources), `validation/` (GridLAB-D cross-check), `diagnostics/` |
-| [vpp/](vpp/) | [vpp/README.md](vpp/README.md), [vpp/VPP_EXTENSION.md](vpp/VPP_EXTENSION.md), [vpp/PIPELINE_DESIGN.md](vpp/PIPELINE_DESIGN.md) | six method folders (`centralised_qp`, `two_stage_doe_allocation`, `dual_decomposition`, `sharing_admm`, `price_based_control`, `fcas_cooptimisation`), `run_vpp_network.py` (solve → export → Elermore Vale → report) |
+| [vpp/](vpp/) | [vpp/README.md](vpp/README.md), [vpp/VPP_EXTENSION.md](vpp/VPP_EXTENSION.md), [vpp/PIPELINE_DESIGN.md](vpp/PIPELINE_DESIGN.md) | two method folders (`centralised_qp`, `two_stage_doe_allocation`), `run_vpp_network.py` (solve → export → Elermore Vale → report) |
 | [studies/](studies/) | [studies/README.md](studies/README.md), [studies/NETWORK_AWARE_DISPATCH.md](studies/NETWORK_AWARE_DISPATCH.md), [studies/PEAK_DUTY_FINDINGS.md](studies/PEAK_DUTY_FINDINGS.md) | `peak_duty_analysis.py`, `replay_peak_event.py` |
 | [docs/](docs/) | [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) | — |
 | [data/](data/) | [data/README.md](data/README.md) | — |
@@ -52,8 +52,8 @@ python network/elermorevale_gui.py --open                                       
 
 # 3. Part B -- coordinate N households under a feeder envelope, and push it through the network
 python vpp/centralised_qp/centralised_qp.py --n-households 20 --save
-python vpp/sharing_admm/sharing_admm.py --n-households 20 --save
-python vpp/run_vpp_network.py admm --n-households 20 --scenario static
+python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --n-households 20 --save
+python vpp/run_vpp_network.py centralised_qp --n-households 20 --scenario static
 ```
 
 Every script runs from the repo root (or anywhere: they locate the repo
