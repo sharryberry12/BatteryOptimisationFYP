@@ -19,6 +19,7 @@ over-voltage is one transformer; 82 % of its under-voltage is 22:00-24:00").
 Usage (repo root):
     python network/diagnostics/diag_violation_attribution.py \
         [--profiles outputs/profiles/fit_profiles.csv] [--every 15] [--feeder 7159]
+        [--csv outputs/figures/paper/attribution_by_hour.csv]
 """
 
 import argparse
@@ -40,6 +41,30 @@ def load_bus(name):
     return ev.dss.ActiveCircuit.ActiveCktElement.BusNames[0]
 
 
+def write_by_interval_csv(path, tot, args, n_days, n_monitors):
+    """
+    Per-interval violation-point counts summed over the sampled days (one
+    row per half-hour: base_over, base_under, qp_over, qp_under), with the
+    sampling recorded in a '#' header line, so the hour-of-day attribution
+    can be re-plotted without re-running the simulations.
+    """
+    import pandas as pd
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    frame = pd.DataFrame({
+        "interval": np.arange(1, ev.T + 1),
+        "hour": np.arange(ev.T) * ev.DT,
+        **{k: np.asarray(tot[k], dtype=int)
+           for k in ("base_over", "base_under", "qp_over", "qp_under")},
+    })
+    with open(path, "w", encoding="utf-8", newline="") as fh:
+        fh.write(f"# profiles={Path(args.profiles).name} every={args.every} "
+                 f"days={n_days} monitors={n_monitors} feeder={args.feeder} "
+                 f"limits_pu={ev.V_LOWER_PU}/{ev.V_UPPER_PU}\n")
+        frame.to_csv(fh, index=False)
+    print(f"\nper-interval violation counts written: {path}")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--profiles", default=str(PROFILES / "fit_profiles.csv"))
@@ -48,6 +73,9 @@ def main():
     ap.add_argument("--feeder", default="7159",
                     help="LV feeder id whose over-voltage share to report "
                          "(bus names fdr_<id>_lv_...; default 7159 = HP00007159)")
+    ap.add_argument("--csv", default=None,
+                    help="also write the per-interval violation-point "
+                         "counts (summed over the sampled days) to this CSV")
     ap.add_argument("--glm-dir", default=str(GLM_DIR))
     ap.add_argument("--common-dir", default=str(GLM_COMMON))
     args = ap.parse_args()
@@ -75,6 +103,9 @@ def main():
             tot[f"{tag}_over"] += over.sum(axis=0)
             tot[f"{tag}_under"] += under.sum(axis=0)
             feeder[f"{tag}_over"] += int(over[on_feeder].sum())
+
+    if args.csv:
+        write_by_interval_csv(args.csv, tot, args, len(days), len(mon))
 
     def by_hour(v):
         return ", ".join(f"{i / 2:04.1f}h:{n}" for i, n in enumerate(v) if n)

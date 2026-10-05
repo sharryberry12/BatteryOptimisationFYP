@@ -5,11 +5,11 @@ Every script and test derives its default input/output locations from here,
 so nothing depends on the current working directory:
 
     ROOT/
-      data/                 inputs (gitignored): data.csv, data_3_years.csv
+      data/                 inputs (gitignored): data.csv, data_3_years.csv, Jesmond-132_11kV-FY2011.csv
       dispatch/             Part A -- QP battery scheduling (osqp_daily*.py)
       network/              Elermore Vale OpenDSS model, GLM sources, validation
       vpp/                  Part B -- multi-household coupling methods + pipeline
-      studies/              peak-duty study, event replay, write-ups
+      studies/              peak-duty study, event replays (peak, static-vs-DOE), write-ups
       docs/                 cross-cutting docs (WALKTHROUGH.md)
       tests/                pytest suite
       outputs/              everything generated (gitignored):
@@ -32,6 +32,7 @@ ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "data"
 DATA_CSV = DATA_DIR / "data.csv"                 # Ausgrid one-year window
 DATA_3Y_CSV = DATA_DIR / "data_3_years.csv"      # optional 3-year file (peak-duty study)
+JESMOND_CSV = DATA_DIR / "Jesmond-132_11kV-FY2011.csv"  # Ausgrid zone-substation MW, 15-min (static_vs_doe_replay)
 
 # ---- code-side inputs (tracked) -----------------------------------------
 NETWORK_DIR = ROOT / "network"
