@@ -14,7 +14,7 @@ data/        inputs, gitignored: data.csv (one-year Ausgrid window), data_3_year
 dispatch/    Part A: osqp_daily.py, osqp_daily_with_DOE.py, FORMULATION.md, diagnostics/
 network/     elermorevale_openDSS.py, elermorevale_gui.py, MODEL_VERIFICATION.md, glm/{Elermorevale,common}/, validation/, diagnostics/
 vpp/         Part B: vpp_common.py, vpp_registry.py, vpp_export.py, run_vpp_network.py, centralised_qp/, two_stage_doe_allocation/, VPP_EXTENSION.md, PIPELINE_DESIGN.md
-studies/     peak_duty_analysis.py, replay_peak_event.py, NETWORK_AWARE_DISPATCH.md, PEAK_DUTY_FINDINGS.md
+studies/     peak_duty_analysis.py, replay_peak_event.py, static_vs_doe_replay.py, battery_location_study.py, doe_day_sweep.py, paper_figures.py, NETWORK_AWARE_DISPATCH.md, PEAK_DUTY_FINDINGS.md
 docs/        WALKTHROUGH.md (hands-on tour, executable snippets)
 tests/       pytest suite
 outputs/     everything generated, gitignored except outputs/runs/*/manifest.json + extras.npz: profiles/, figures/, runs/, cache/
@@ -26,7 +26,7 @@ outputs/     everything generated, gitignored except outputs/runs/*/manifest.jso
 
 ```bash
 pip install -r requirements.txt          # Python 3.13 tested
-python -m pytest                         # 129 tests, ~11 s; no data.csv needed
+python -m pytest                         # 158 tests, ~13 s; no data.csv needed
 
 # Part A — QP dispatch -> outputs/profiles/{fit,net}_profiles.csv (+ interactive paper figures)
 python dispatch/osqp_daily.py
@@ -42,17 +42,21 @@ python network/elermorevale_openDSS.py --profiles outputs/profiles/fit_profiles.
 python network/elermorevale_openDSS.py --profiles outputs/profiles/net_profiles.csv --save --output-dir outputs/figures/net --oltc  # -> outputs/figures/net_oltc/
 python network/elermorevale_gui.py --open                        # dashboard (topology only, instant)
 python network/elermorevale_gui.py --simulate --day 190 --open   # with baseline-vs-QP overlay
-python network/diagnostics/diag_violation_attribution.py --every 15
+python network/diagnostics/diag_violation_attribution.py --every 15 --csv outputs/figures/paper/attribution_by_hour.csv  # --csv = per-interval counts for paper_figures.py
 python network/validation/gen_harness.py; gridlabd network/validation/harness.glm; python network/validation/compare_voltages.py
 
 # Part B — VPP (shared CLI: --n-households --date --scenario {none,static,tight_tou,dynamic_solar} --export-limit --import-limit --save)
 python vpp/centralised_qp/centralised_qp.py --n-households 20 --save   # ground truth
-python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --save # deployed practice
+python vpp/two_stage_doe_allocation/two_stage_doe_allocation.py --save # deployed practice; --soft = slack slices (shortfall reported, no dropouts), --envelope-from <run dir> = reuse a run's envelope
 python vpp/run_vpp_network.py centralised_qp --n-households 20 --scenario static # solve -> export -> Elermore Vale -> outputs/runs/<id>/
 
-# Studies (need data/data_3_years.csv, local only)
+# Studies (peak_duty/replay need data/data_3_years.csv; static_vs_doe needs data.csv + the Jesmond zone-substation CSV; all local only)
 python studies/peak_duty_analysis.py --save
 python studies/replay_peak_event.py
+python studies/static_vs_doe_replay.py   # needs data/Jesmond-132_11kV-FY2011.csv; no-battery vs static limits vs zone-sub-headroom DOE on 2011-02-05; saves voltages_<case>.npy; --two-stage-rules maxmin adds Method B cases
+python studies/battery_location_study.py # same dispatch distributed vs one aggregate Generator at the 11 kV bus (needs an existing run dir; no data.csv)
+python studies/doe_day_sweep.py          # static vs centralised DOE vs two-stage DOE on all 105 Jesmond days; appends per day, --resume/--summarise-only
+python studies/paper_figures.py --run outputs/runs/static_vs_doe_<ts> --sweep-runs "outputs/runs/static_vs_doe_2011-02-05_*"  # paper Figs 6/8/10 (+ attribution) from run folders -> outputs/figures/paper/ + checks.md
 ```
 
 There is no linter config or build step. Verification: `tests/` (translation unit tests, source-vs-circuit invariants, physics goldens, GridLAB-D harness checks — `network/MODEL_VERIFICATION.md`; census/golden constants are measured ground truth), `tests/test_doe_constraints.py` (the DOE rows bind; curtailment/import-shortfall semantics; no-envelope equals `osqp_daily`), `tests/test_vpp_methods.py` (cross-method consistency on a synthetic ensemble). Everything else is verified by running the scripts and inspecting logged metrics and figures.

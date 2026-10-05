@@ -29,7 +29,9 @@ outputs/          EVERYTHING GENERATED (not in git): profiles/, figures/, runs/,
 | [dispatch/](dispatch/) | [dispatch/README.md](dispatch/README.md), [dispatch/FORMULATION.md](dispatch/FORMULATION.md) | `osqp_daily.py` (R15 QP + heuristic), `osqp_daily_with_DOE.py` (+ export/import envelopes, PV curtailment, import shortfall), `diagnostics/` |
 | [network/](network/) | [network/README.md](network/README.md), [network/MODEL_VERIFICATION.md](network/MODEL_VERIFICATION.md) | `elermorevale_openDSS.py` (build + profile-driven simulation), `elermorevale_gui.py` (dashboard), `glm/` (GridLAB-D sources), `validation/` (GridLAB-D cross-check), `diagnostics/` |
 | [vpp/](vpp/) | [vpp/README.md](vpp/README.md), [vpp/VPP_EXTENSION.md](vpp/VPP_EXTENSION.md), [vpp/PIPELINE_DESIGN.md](vpp/PIPELINE_DESIGN.md) | two method folders (`centralised_qp`, `two_stage_doe_allocation`), `run_vpp_network.py` (solve → export → Elermore Vale → report) |
-| [studies/](studies/) | [studies/README.md](studies/README.md), [studies/NETWORK_AWARE_DISPATCH.md](studies/NETWORK_AWARE_DISPATCH.md), [studies/PEAK_DUTY_FINDINGS.md](studies/PEAK_DUTY_FINDINGS.md) | `peak_duty_analysis.py`, `replay_peak_event.py` |
+| [docs/PAPER_REVISION_BRIEF.md](docs/PAPER_REVISION_BRIEF.md) | line-by-line revision brief for `FYP_final_paper.tex`: corrections, resolved TODOs, the two-stage / season / sensitivity results to add, figure inventory, references | — |
+| [docs/NUMERICAL_SIMULATION_DRAFT.md](docs/NUMERICAL_SIMULATION_DRAFT.md) | draft Section III for the final paper (static vs DOE on 2011-02-05, network validation, location study) with figure list and number provenance | — |
+| [studies/](studies/) | [studies/README.md](studies/README.md), [studies/NETWORK_AWARE_DISPATCH.md](studies/NETWORK_AWARE_DISPATCH.md), [studies/PEAK_DUTY_FINDINGS.md](studies/PEAK_DUTY_FINDINGS.md) | `peak_duty_analysis.py`, `replay_peak_event.py`, `static_vs_doe_replay.py`, `battery_location_study.py`, `doe_day_sweep.py`, `paper_figures.py` |
 | [docs/](docs/) | [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) | — |
 | [data/](data/) | [data/README.md](data/README.md) | — |
 
