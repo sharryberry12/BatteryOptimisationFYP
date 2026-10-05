@@ -24,9 +24,12 @@ from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root
+from paths import FIGURES  # noqa: E402
 from vpp import vpp_common as vc  # noqa: E402
+from vpp import vpp_export as vexport  # noqa: E402
 
 logger = logging.getLogger("vpp.two_stage")
 
@@ -36,6 +39,38 @@ RULES = ["equal", "prorata_pv", "prorata_surplus", "maxmin"]
 # ==========================================================
 # STAGE 1 -- ALLOCATION RULES
 # ==========================================================
+
+def floor_fill(budget, floors):
+    """
+    Max-min fair allocation with LOWER bounds (the import-side mirror of
+    water_fill): every agent receives the same allowance lambda except
+    those whose floor exceeds it, who receive their floor; lambda is set
+    so the allocations sum to budget. If the floors alone exceed the
+    budget every agent gets its floor and the remainder is the fleet's
+    unavoidable shortfall (reported by the solves). An unbounded budget
+    passes through unbounded.
+    """
+    floors = np.asarray(floors, dtype=float)
+    if not np.isfinite(budget):
+        return np.full_like(floors, np.inf)
+    if floors.sum() >= budget:
+        return floors.copy()
+    pinned = np.zeros(len(floors), dtype=bool)
+    while True:
+        free = ~pinned
+        lam = (budget - floors[pinned].sum()) / free.sum()
+        newly = free & (floors > lam + 1e-12)
+        if not newly.any():
+            return np.where(pinned, floors, lam)
+        pinned |= newly
+
+
+def import_floors(households):
+    """Import a household cannot avoid even at full discharge:
+    (net - P_MAX)+ per interval, shape (N, T)."""
+    return np.vstack([np.maximum(hh.net - vc.P_MAX, 0.0)
+                      for hh in households])
+
 
 def water_fill(budget, caps):
     """
@@ -65,13 +100,22 @@ def export_caps(households):
 
 def allocate(rule, households, d_min, d_max):
     """
-    Split (d_min, d_max) into per-household envelopes.
-    Returns (d_min_i, d_max_i), each shaped (N, T), with
-    sum_i d_min_i >= d_min so feeder compliance holds by construction.
+    Split (d_min, d_max) into per-household envelopes. Returns
+    (d_min_i, d_max_i), each shaped (N, T), with sum_i d_min_i >= d_min
+    and sum_i d_max_i <= d_max so feeder compliance holds by construction.
+
+    Export side (budget -d_min): equal / prorata_pv / prorata_surplus /
+    maxmin against each household's physical export cap.
+    Import side (budget d_max): equal for `equal` and `prorata_pv` (PV
+    size says nothing about import need); proportional to forecast
+    need (net)+ for `prorata_surplus`; max-min fair with floors for
+    `maxmin` -- every household gets the same allowance except those
+    whose unavoidable import (net - P_MAX)+ exceeds it, which get their
+    floor. Unbounded intervals stay unbounded.
     """
     N = len(households)
     budget = np.where(np.isfinite(d_min), -d_min, np.inf)  # export kW >= 0
-    d_max_i = np.tile(d_max / N, (N, 1))  # import side; inf stays inf
+    d_max = np.asarray(d_max, dtype=float)
 
     if rule == "equal":
         alloc = np.tile(budget / N, (N, 1))
@@ -100,6 +144,20 @@ def allocate(rule, households, d_min, d_max):
     else:
         raise ValueError(f"unknown rule {rule!r}")
 
+    if rule == "maxmin":
+        floors = import_floors(households)
+        d_max_i = np.empty((N, vc.T))
+        for k in range(vc.T):
+            d_max_i[:, k] = floor_fill(d_max[k], floors[:, k])
+    elif rule == "prorata_surplus":
+        need = np.vstack([np.maximum(hh.net, 0.0) for hh in households])
+        col = need.sum(axis=0)
+        share = np.where(col > 1e-9, need / np.maximum(col, 1e-9), 1.0 / N)
+        d_max_i = np.where(np.isinf(d_max), np.inf,
+                           share * np.where(np.isfinite(d_max), d_max, 0.0))
+    else:
+        d_max_i = np.tile(d_max / N, (N, 1))     # inf stays inf
+
     return -alloc, d_max_i
 
 
@@ -107,8 +165,33 @@ def allocate(rule, households, d_min, d_max):
 # STAGE 2 -- INDEPENDENT HOUSEHOLD SOLVES
 # ==========================================================
 
-def run_rule(rule, households, d_min, d_max):
+def load_envelope(run_dir, n_households, date_iso):
+    """
+    Feeder envelope (d_min, d_max) from a run directory's manifest --
+    a static_vs_doe_replay run (d_max_doe_kw) or a pipeline run
+    (d_max_kw). The manifest's ensemble must match the one being solved.
+    """
+    manifest = vexport.load_manifest(run_dir)
+    ens = manifest.get("ensemble", {})
+    if (ens.get("n_households") != n_households
+            or str(ens.get("date")) != date_iso):
+        raise ValueError(
+            f"{Path(run_dir).name}: manifest ensemble "
+            f"(N={ens.get('n_households')}, {ens.get('date')}) does not "
+            f"match this run (N={n_households}, {date_iso})")
+    env = manifest["envelope"]
+    key = "d_max_doe_kw" if "d_max_doe_kw" in env else "d_max_kw"
+    return (vexport.envelope_array(env["d_min_kw"]),
+            vexport.envelope_array(env[key]))
+
+
+def run_rule(rule, households, d_min, d_max, soft=False):
     """Allocate, then solve every household independently.
+
+    soft=True gives each household the slack formulation of
+    vc.HouseholdSolver(soft=True): an energy-infeasible slice is met
+    best-effort and its excess reported, instead of the zero-dispatch
+    fallback of the hard solve (which counts in n_failed).
 
     Returns (B, curtail_kw, shortfall_kw, n_failed). curtail_kw and
     shortfall_kw are per-interval AGGREGATE arrays (T,) of the realised
@@ -124,12 +207,17 @@ def run_rule(rule, households, d_min, d_max):
     shortfall_kw = np.zeros(vc.T)
     n_failed = 0
     for i, hh in enumerate(households):
-        solver = vc.HouseholdSolver(hh, d_min=d_min_i[i], d_max=d_max_i[i])
+        solver = vc.HouseholdSolver(hh, d_min=d_min_i[i], d_max=d_max_i[i],
+                                    soft=soft)
         b, status = solver.solve()
         if "solved" not in status:
             n_failed += 1  # zeros returned; shows up in violation metrics
-        elif vc.validate_dispatch(hh, b, d_min_hh=solver.d_min_eff,
-                                  d_max_hh=solver.d_max_eff):
+        elif vc.validate_dispatch(
+                hh, b,
+                # in soft mode the envelope is met up to the reported
+                # slack, so only the local invariants are checked here
+                d_min_hh=None if soft else solver.d_min_eff,
+                d_max_hh=None if soft else solver.d_max_eff):
             n_failed += 1
             logger.warning("household %s: dispatch violates its allocated "
                            "envelope", hh.name)
@@ -148,12 +236,27 @@ def main():
                              f"from {RULES}")
     parser.add_argument("--no-benchmark", action="store_true",
                         help="Skip the centralised ground-truth solve")
+    parser.add_argument("--soft", action="store_true",
+                        help="Soft per-household envelopes: infeasible "
+                             "slices report shortfall/curtailment "
+                             "instead of falling back to no dispatch")
+    parser.add_argument("--envelope-from", default=None,
+                        help="Run directory whose manifest.json supplies "
+                             "the feeder envelope (d_min_kw and "
+                             "d_max_doe_kw or d_max_kw) instead of "
+                             "--scenario; N and date must match")
     args = parser.parse_args()
     rules = [r.strip() for r in args.rules.split(",") if r.strip()]
 
     households, date_iso, tariff, d_min, d_max = vc.setup_ensemble(args)
-    logger.info("Day %s, scenario %s, rules %s",
-                date_iso, args.scenario, rules)
+    envelope_src = f"scenario {args.scenario!r}"
+    if args.envelope_from:
+        d_min, d_max = load_envelope(args.envelope_from,
+                                     len(households), date_iso)
+        envelope_src = f"manifest in {Path(args.envelope_from).name}"
+    logger.info("Day %s, envelope from %s, rules %s, %s household "
+                "solves", date_iso, envelope_src, rules,
+                "soft" if args.soft else "hard")
 
     obj_star = None
     if not args.no_benchmark:
@@ -167,7 +270,7 @@ def main():
     rows = []
     for rule in rules:
         B, curtail_kw, shortfall_kw, n_failed = run_rule(
-            rule, households, d_min, d_max)
+            rule, households, d_min, d_max, soft=args.soft)
         obj = vc.objective_surrogate(households, B)
         agg_pi = vc.aggregate_pi(households, B)
         # deliverable aggregate: a deployed inverter spills the export
@@ -193,6 +296,19 @@ def main():
     for r in rows:
         logger.info("  %-16s %10.3f %8.2f %9.2f %6.3f %6.3f %8.3f %8.2f "
                     "%9.2f %6d", *r)
+    if args.save:
+        table = pd.DataFrame(rows, columns=[
+            "rule", "objective", "gap_pct", "savings_per_day", "jain",
+            "gini", "residual_violation_kw", "curtail_kwh",
+            "shortfall_kwh", "n_failed"])
+        table.insert(0, "solve", "soft" if args.soft else "hard")
+        table.insert(0, "date", date_iso)
+        outdir = Path(args.output_dir) if args.output_dir \
+            else FIGURES / "vpp" / Path(__file__).resolve().parent.name
+        outdir.mkdir(parents=True, exist_ok=True)
+        csv_path = outdir / "rule_comparison.csv"
+        table.to_csv(csv_path, index=False)
+        logger.info("rule table written: %s", csv_path)
 
     if np.isfinite(d_min).any():
         ax_p.plot(hours, d_min, "r--", label="feeder envelope")

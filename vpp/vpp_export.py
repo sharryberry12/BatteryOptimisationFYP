@@ -54,20 +54,22 @@ def scenario_csv_name(scenario):
     return f"dispatch_{scenario}.csv"
 
 
-def _json_safe(obj):
+def json_safe(obj):
     """
     Recursively convert numpy/Path values into strict-JSON-dumpable
     ones. Non-finite floats become "inf"/"-inf" strings (NaN -> null)
     so the manifest parses under jq/JSON.parse, not just Python.
+    Shared with the studies/ replay scripts that write their own
+    manifests; pair it with json.dumps(..., allow_nan=False).
     """
     if isinstance(obj, dict):
-        return {str(k): _json_safe(v) for k, v in obj.items()}
+        return {str(k): json_safe(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):
-        return [_json_safe(v) for v in obj]
+        return [json_safe(v) for v in obj]
     if isinstance(obj, np.ndarray):
-        return _json_safe(obj.tolist())
+        return json_safe(obj.tolist())
     if isinstance(obj, np.generic):
-        return _json_safe(obj.item())
+        return json_safe(obj.item())
     if isinstance(obj, float) and not math.isfinite(obj):
         if math.isnan(obj):
             return None
@@ -75,6 +77,9 @@ def _json_safe(obj):
     if isinstance(obj, Path):
         return str(obj)
     return obj
+
+
+_json_safe = json_safe          # module-internal alias for existing callers
 
 
 def envelope_array(values):

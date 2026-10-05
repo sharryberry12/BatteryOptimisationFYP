@@ -63,6 +63,13 @@ CACHE_DIR = _CACHE
 OSQP_SETTINGS = dict(
     verbose=False, eps_abs=1e-6, eps_rel=1e-6, polish=True, warm_start=True,
 )
+# Linear penalty per kW of envelope slack in the soft solves. The
+# flattening term's marginal value of 1 kW is 2 h |p|, so with h in
+# [1, H_BAR] and |p| of a few kW the slack is never cheaper than a
+# feasible battery action: it is used only when the envelope cannot be
+# met, never to flatten.
+SOFT_PENALTY_DEFAULT = 1e3
+SOFT_MAX_ITER = 40000            # OSQP iteration cap for the slack problems
 
 
 # ==========================================================
@@ -261,16 +268,31 @@ class HouseholdSolver:
     the rho shift on the P diagonal. The constraint matrix (including
     optional per-household DOE identity rows) is fixed at setup,
     honouring the warm-start invariant: only q ever changes.
+
+    soft=True mirrors solve_centralised(soft=True) at household level:
+    x = [b | s_up | s_lo] with s_up >= 0 absorbing import-cap excess
+    (shortfall: load cannot be shed) and s_lo >= 0 absorbing export-cap
+    excess (PV a deployed inverter would curtail), each at a linear
+    penalty per kW. The solve is then always feasible and the slacks
+    (self.slack_up / self.slack_lo after solve()) say when and by how
+    much the household could not meet its envelope -- a result, not an
+    error. Hard mode (default) keeps the previous behaviour.
     """
 
-    def __init__(self, hh, rho=0.0, d_min=None, d_max=None, settings=None):
+    def __init__(self, hh, rho=0.0, d_min=None, d_max=None, settings=None,
+                 soft=False, penalty=SOFT_PENALTY_DEFAULT):
         self.hh = hh
+        has_envelope = d_min is not None or d_max is not None
+        self.soft = bool(soft) and has_envelope
         A, l, u = base.build_constraints(hh.e_max)
         self.doe_relax_kw = np.zeros(T)
         self.import_relax_kw = np.zeros(T)
         self.d_min_eff = None
         self.d_max_eff = None
-        if d_min is not None or d_max is not None:
+        self.slack_up = np.zeros(T)      # import shortfall, kW (soft)
+        self.slack_lo = np.zeros(T)      # export excess, kW (soft)
+        n_var = T
+        if has_envelope:
             dmin = -np.inf * np.ones(T) if d_min is None else np.asarray(d_min)
             dmax = np.inf * np.ones(T) if d_max is None else np.asarray(d_max)
             l_doe = hh.net - dmax          # b >= net - D_max  (import cap)
@@ -287,26 +309,65 @@ class HouseholdSolver:
             # can validate dispatches against what was actually enforced
             self.d_min_eff = hh.net - u_doe
             self.d_max_eff = hh.net - l_doe
-            A = sp.vstack([A, sp.eye(T, format="csc")]).tocsc()
-            l = np.concatenate([l, l_doe])
-            u = np.concatenate([u, u_doe])
+            I_T = sp.eye(T, format="csc")
+            if not self.soft:
+                A = sp.vstack([A, I_T]).tocsc()
+                l = np.concatenate([l, l_doe])
+                u = np.concatenate([u, u_doe])
+            else:
+                # x = [b | s_up | s_lo]:  b + s_up >= l_doe   (import cap)
+                #                          b - s_lo <= u_doe   (export cap)
+                #                          s_up, s_lo >= 0
+                n_var = 3 * T
+                n_loc = A.shape[0]
+                Z_loc = sp.csc_matrix((n_loc, 2 * T))
+                Z_T = sp.csc_matrix((T, T))
+                A = sp.vstack([
+                    sp.hstack([A, Z_loc]),
+                    sp.hstack([I_T, I_T, Z_T]),
+                    sp.hstack([I_T, Z_T, -I_T]),
+                    sp.hstack([sp.csc_matrix((2 * T, T)), sp.eye(2 * T)]),
+                ], format="csc")
+                l = np.concatenate([l, l_doe, -np.inf * np.ones(T),
+                                    np.zeros(2 * T)])
+                u = np.concatenate([u, np.inf * np.ones(T), u_doe,
+                                    np.inf * np.ones(2 * T)])
 
-        self.q0 = -2.0 * hh.h * hh.net
-        P = sp.diags(2.0 * hh.h + rho, format="csc")
+        q0 = -2.0 * hh.h * hh.net
+        P_diag = 2.0 * hh.h + rho
+        if n_var > T:
+            q0 = np.concatenate([q0, penalty * np.ones(2 * T)])
+            P_diag = np.concatenate([P_diag, np.zeros(2 * T)])
+        self.q0 = q0
+        P = sp.diags(P_diag, format="csc")
+        settings = dict(settings or OSQP_SETTINGS)
+        if self.soft:
+            # the slack problem is 3x larger and its linear penalty makes
+            # ADMM converge more slowly; give it room before declaring
+            # 'maximum iterations reached' (which would count as a failure)
+            settings.setdefault("max_iter", SOFT_MAX_ITER)
         self.prob = osqp.OSQP()
-        self.prob.setup(P=P, q=self.q0.copy(), A=A, l=l, u=u,
-                        **(settings or OSQP_SETTINGS))
+        self.prob.setup(P=P, q=self.q0.copy(), A=A, l=l, u=u, **settings)
 
     def solve(self, q_extra=None):
-        """Solve with q = q0 + q_extra. Returns (b, status_string)."""
-        q = self.q0 if q_extra is None else self.q0 + q_extra
-        self.prob.update(q=np.asarray(q, dtype=np.float64))
+        """Solve with q = q0 + q_extra (q_extra acts on the b block).
+        Returns (b, status_string); in soft mode also sets
+        self.slack_up / self.slack_lo."""
+        q = self.q0.copy()
+        if q_extra is not None:
+            q[:T] += np.asarray(q_extra, dtype=np.float64)
+        self.prob.update(q=q)
         res = self.prob.solve()
         if res.info.status_val not in (1, 2):
             logger.warning("household %s: OSQP status %s",
                            self.hh.name, res.info.status)
             return np.zeros(T), res.info.status
-        return res.x.copy(), res.info.status
+        x = np.asarray(res.x, dtype=float)
+        if self.soft:
+            # OSQP satisfies s >= 0 only to tolerance; clip the noise
+            self.slack_up = np.maximum(x[T:2 * T], 0.0)
+            self.slack_lo = np.maximum(x[2 * T:], 0.0)
+        return x[:T].copy(), res.info.status
 
 
 # ==========================================================
@@ -326,8 +387,8 @@ class CentralisedResult:
     n_constraints: int
 
 
-def solve_centralised(households, d_min, d_max, soft=False, penalty=1e3,
-                      settings=None):
+def solve_centralised(households, d_min, d_max, soft=False,
+                      penalty=SOFT_PENALTY_DEFAULT, settings=None):
     """
     Method A: one stacked OSQP problem over all households.
 
