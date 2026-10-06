@@ -12,9 +12,9 @@ Final-year project: QP-based residential battery scheduling on the Ausgrid solar
 paths.py     single source of truth for every location (DATA_CSV, GLM_DIR, GLM_COMMON, PROFILES, FIGURES, RUNS, CACHE, ...)
 data/        inputs, gitignored: data.csv (one-year Ausgrid window), data_3_years.csv (optional)
 dispatch/    Part A: osqp_daily.py, osqp_daily_with_DOE.py, FORMULATION.md, diagnostics/
-network/     elermorevale_openDSS.py, elermorevale_gui.py, MODEL_VERIFICATION.md, glm/{Elermorevale,common}/, validation/, diagnostics/
-vpp/         Part B: vpp_common.py, vpp_registry.py, vpp_export.py, run_vpp_network.py, centralised_qp/, two_stage_doe_allocation/, VPP_EXTENSION.md, PIPELINE_DESIGN.md
-studies/     peak_duty_analysis.py, replay_peak_event.py, static_vs_doe_replay.py, battery_location_study.py, doe_day_sweep.py, paper_figures.py, NETWORK_AWARE_DISPATCH.md, PEAK_DUTY_FINDINGS.md
+network/     elermorevale_openDSS.py, voltage_sensitivity.py, elermorevale_gui.py, MODEL_VERIFICATION.md, glm/{Elermorevale,common}/, validation/, diagnostics/
+vpp/         Part B: vpp_common.py, vpp_registry.py, vpp_export.py, network_doe.py, run_vpp_network.py, centralised_qp/, two_stage_doe_allocation/, VPP_EXTENSION.md, PIPELINE_DESIGN.md
+studies/     peak_duty_analysis.py, replay_peak_event.py, static_vs_doe_replay.py, battery_location_study.py, doe_day_sweep.py, network_doe_study.py, paper_figures.py, NETWORK_AWARE_DISPATCH.md, PEAK_DUTY_FINDINGS.md
 docs/        WALKTHROUGH.md (hands-on tour, executable snippets)
 tests/       pytest suite
 outputs/     everything generated, gitignored except outputs/runs/*/manifest.json + extras.npz: profiles/, figures/, runs/, cache/
@@ -26,7 +26,7 @@ outputs/     everything generated, gitignored except outputs/runs/*/manifest.jso
 
 ```bash
 pip install -r requirements.txt          # Python 3.13 tested
-python -m pytest                         # 158 tests, ~13 s; no data.csv needed
+python -m pytest                         # 187 tests, ~15 s; no data.csv needed
 
 # Part A — QP dispatch -> outputs/profiles/{fit,net}_profiles.csv (+ interactive paper figures)
 python dispatch/osqp_daily.py
@@ -56,6 +56,7 @@ python studies/replay_peak_event.py
 python studies/static_vs_doe_replay.py   # needs data/Jesmond-132_11kV-FY2011.csv; no-battery vs static limits vs zone-sub-headroom DOE on 2011-02-05; saves voltages_<case>.npy; --two-stage-rules maxmin adds Method B cases
 python studies/battery_location_study.py # same dispatch distributed vs one aggregate Generator at the 11 kV bus (needs an existing run dir; no data.csv)
 python studies/doe_day_sweep.py          # static vs centralised DOE vs two-stage DOE on all 105 Jesmond days; appends per day, --resume/--summarise-only
+python studies/network_doe_study.py --date 2011-04-08  # network-aware per-load caps (network/voltage_sensitivity.py + vpp/network_doe.py) vs the other regimes, ~12 min/day; --cross-phase, --no-zone-row, --v-margin, --refigure <run dir> redraws figures from profiles.csv
 python studies/paper_figures.py --run outputs/runs/static_vs_doe_<ts> --sweep-runs "outputs/runs/static_vs_doe_2011-02-05_*"  # paper Figs 6/8/10 (+ attribution) from run folders -> outputs/figures/paper/ + checks.md
 ```
 

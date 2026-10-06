@@ -15,6 +15,7 @@ the feeder-head coupling `D_min ≤ Σᵢ pᵢ ≤ D_max` — and two ways of en
 | [`vpp_common.py`](vpp_common.py) | Shared infrastructure: `HouseholdDay` ensemble assembly (`assemble_ensemble`), feeder envelope scenarios (`feeder_envelope`), the centralised benchmark (`solve_centralised`), persistent per-household workspaces (`HouseholdSolver`), validation and savings/fairness metrics, the common CLI. |
 | [`vpp_registry.py`](vpp_registry.py), [`vpp_export.py`](vpp_export.py) | Uniform method interface + the three-CSV/manifest exporter used by the pipeline. |
 | [`run_vpp_network.py`](run_vpp_network.py) | **The end-to-end pipeline**: solve any method → export `dispatch_{nobatt,uncoupled,coupled}.csv` → replay on Elermore Vale → report; artefacts in `outputs/runs/<method>_<scenario>_<date>_<stamp>/` (manifests tracked). Design in [PIPELINE_DESIGN.md](PIPELINE_DESIGN.md). |
+| [`network_doe.py`](network_doe.py) | Network-aware envelopes after Mahmoodi et al. (IEEE TSG 15(2), 2024), reduced to real power: `interval_envelope()` turns voltage sensitivities and limits (plus an optional substation row) into a per-customer import cap and export cap such that the fleet can move anywhere inside them without coordination. Pure numpy/scipy, no power flow; driven by `studies/network_doe_study.py`. Not a registered pipeline method: its customers are network loads, not households. |
 | method folders (below) | one script + README each; figures → `outputs/figures/vpp/<method>/`. |
 
 | Folder | Method (VPP_EXTENSION.md §) | One-liner |
