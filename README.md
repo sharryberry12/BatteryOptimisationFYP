@@ -19,7 +19,7 @@ dispatch/         PART A -- QP battery scheduling for one household-day
 network/          the Elermore Vale OpenDSS model, its GridLAB-D sources, validation, dashboard
 vpp/              PART B -- multi-household coupling methods + the VPP -> network pipeline
 studies/          experiments and write-ups built on the above
-docs/             cross-cutting: WALKTHROUGH.md (hands-on tour of all three layers)
+docs/             cross-cutting: GUIDE.md (start here), WALKTHROUGH.md (hands-on tour of all three layers)
 tests/            pytest suite (translation invariants, physics goldens, DOE + VPP consistency)
 outputs/          EVERYTHING GENERATED (not in git): profiles/, figures/, runs/, cache/
 ```
@@ -32,7 +32,7 @@ outputs/          EVERYTHING GENERATED (not in git): profiles/, figures/, runs/,
 | [docs/PAPER_REVISION_BRIEF.md](docs/PAPER_REVISION_BRIEF.md) | line-by-line revision brief for `FYP_final_paper.tex`: corrections, resolved TODOs, the two-stage / season / sensitivity results to add, figure inventory, references | — |
 | [docs/NUMERICAL_SIMULATION_DRAFT.md](docs/NUMERICAL_SIMULATION_DRAFT.md) | draft Section III for the final paper (static vs DOE on 2011-02-05, network validation, location study) with figure list and number provenance | — |
 | [studies/](studies/) | [studies/README.md](studies/README.md), [studies/NETWORK_AWARE_DISPATCH.md](studies/NETWORK_AWARE_DISPATCH.md), [studies/PEAK_DUTY_FINDINGS.md](studies/PEAK_DUTY_FINDINGS.md) | `peak_duty_analysis.py`, `replay_peak_event.py`, `static_vs_doe_replay.py`, `battery_location_study.py`, `doe_day_sweep.py`, `network_doe_study.py`, `paper_figures.py` |
-| [docs/](docs/) | [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) | — |
+| [docs/](docs/) | [docs/GUIDE.md](docs/GUIDE.md), [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md) | — |
 | [data/](data/) | [data/README.md](data/README.md) | — |
 
 ## Quick start
@@ -76,6 +76,7 @@ override. `outputs/` is created on demand.
   and each method's README; cross-method consistency is pinned by
   [tests/test_vpp_methods.py](tests/test_vpp_methods.py).
 - **VPP as a peaker:** [studies/PEAK_DUTY_FINDINGS.md](studies/PEAK_DUTY_FINDINGS.md).
+- **New to the project:** [docs/GUIDE.md](docs/GUIDE.md) explains all three layers, the four kinds of envelope, every study and the open questions, with no prior knowledge assumed.
 - **Learn it by hand:** [docs/WALKTHROUGH.md](docs/WALKTHROUGH.md).
 
 ## References
