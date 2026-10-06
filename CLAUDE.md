@@ -17,7 +17,7 @@ vpp/         Part B: vpp_common.py, vpp_registry.py, vpp_export.py, network_doe.
 studies/     peak_duty_analysis.py, replay_peak_event.py, static_vs_doe_replay.py, battery_location_study.py, doe_day_sweep.py, network_doe_study.py, paper_figures.py, NETWORK_AWARE_DISPATCH.md, PEAK_DUTY_FINDINGS.md
 docs/        WALKTHROUGH.md (hands-on tour, executable snippets)
 tests/       pytest suite
-outputs/     everything generated, gitignored except outputs/runs/*/manifest.json + extras.npz: profiles/, figures/, runs/, cache/
+outputs/     everything generated, gitignored except outputs/runs/*/manifest.json + extras.npz and the figures/ of network_doe_* runs: profiles/, figures/, runs/, cache/
 ```
 
 `dispatch`, `network`, `vpp` (and each `vpp/<method>`), `studies` are packages: `from dispatch import osqp_daily`, `from network import elermorevale_openDSS`, `from vpp import vpp_common`. Every entry script inserts the repo root into `sys.path` from its own location, so `python <folder>/<script>.py` works from any cwd, and every default path (`--data`, `--profiles`, `--output-dir`, `--glm-dir`, `--common-dir`, `--runs-root`, caches) comes from `paths.py`. Do not hard-code `profiles/`, `figures/`, `runs/`, `Elermorevale/` or `data.csv` anywhere — import from `paths`.
@@ -89,5 +89,5 @@ vpp/  ── imports dispatch.osqp_daily; N households + feeder envelope; two me
 - **OLTC**: solves run `controlmode=off` unless `--oltc`; the zone regulator never moves on real profiles (11 kV bus within ±0.5 %) — a documented negative result. `summaries.txt` is append-mode with an OLTC header per block; `--oltc` redirects outputs to `<output-dir>_oltc`.
 - **Unmapped network loads are zeroed** in profile mode; the ~152 customers are cycled over the 1,785 loads.
 - Both QP scripts use `multiprocessing.Pool` (Windows spawn) — keep module top level side-effect free.
-- `.gitignore` excludes `data/`, `outputs/*` (except run manifests/npz), `*.csv`, `*.pdf`, `*.html`, `*.pkl`. Method figures go to `outputs/figures/vpp/<method>/`.
+- `.gitignore` excludes `data/`, `outputs/*` (except run manifests/npz and `network_doe_*/figures/`), `*.csv`, `*.pdf`, `*.html`, `*.pkl`. Method figures go to `outputs/figures/vpp/<method>/`.
 - Flask is optional (`network/elermorevale_gui.py --serve`); the import is deferred with a friendly error.

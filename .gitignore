@@ -8,6 +8,7 @@ outputs/*
 outputs/runs/*/*
 !outputs/runs/*/manifest.json
 !outputs/runs/*/extras.npz
+!outputs/runs/network_doe_*/figures/
 
 # generic generated file types anywhere
 *.csv
